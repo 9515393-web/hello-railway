@@ -1,5 +1,5 @@
 import asyncio
-import aiosqlite
+import asyncpg
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
