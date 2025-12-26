@@ -3,6 +3,7 @@ import aiosqlite
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
+from aiogram.types import BufferedInputFile
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
 from io import BytesIO
 import qrcode
@@ -29,13 +30,16 @@ dp = Dispatcher()
 async def debug_bot(bot: Bot):
     me = await bot.get_me()
     print("БОТ ЗАПУЩЕН КАК:", me.username)
-async def generate_qr() -> BytesIO:
+async def generate_qr() -> BufferedInputFile:
     qr = qrcode.make("https://t.me/Recreator_info_bot")
+
     bio = BytesIO()
-    bio.name = "recreator_bot_qr.png"
     qr.save(bio, format="PNG")
-    bio.seek(0)
-    return bio
+
+    return BufferedInputFile(
+        file=bio.getvalue(),
+        filename="recreator_bot_qr.png"
+    )
 
 # ===== КЛАВИАТУРА =====
 keyboard = ReplyKeyboardMarkup(
@@ -402,7 +406,7 @@ async def stats_cmd(message: types.Message):
     await message.answer(f"Участников: {await get_votes_count()}")
 
 @dp.message(F.text == "💬 Чат жителей")
-async def chat_cmd(message: types.Message):
+async def chat_cmd(mess11:22 26.12.2025age: types.Message):
     await message.answer(f"👉 {CHAT_URL}")
 
 @dp.message(F.text == "🤝 Как помочь")
@@ -422,7 +426,7 @@ async def help_cmd(message: types.Message):
             "https://t.me/Recreator_info_bot"
         )
     )
-    
+
 # ===== ЗАПУСК =====
 async def main():
     bot = Bot(API_TOKEN, default=DefaultBotProperties(parse_mode="Markdown"))
