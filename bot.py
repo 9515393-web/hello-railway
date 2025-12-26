@@ -406,7 +406,7 @@ async def stats_cmd(message: types.Message):
     await message.answer(f"Участников: {await get_votes_count()}")
 
 @dp.message(F.text == "💬 Чат жителей")
-async def chat_cmd(mess11:22 26.12.2025age: types.Message):
+async def chat_cmd(message: types.Message):
     await message.answer(f"👉 {CHAT_URL}")
 
 @dp.message(F.text == "🤝 Как помочь")
@@ -436,4 +436,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
