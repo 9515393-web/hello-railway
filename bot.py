@@ -4,6 +4,8 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
+from io import BytesIO
+import qrcode
 
 import os
 
@@ -27,6 +29,13 @@ dp = Dispatcher()
 async def debug_bot(bot: Bot):
     me = await bot.get_me()
     print("БОТ ЗАПУЩЕН КАК:", me.username)
+async def generate_qr() -> BytesIO:
+    qr = qrcode.make("https://t.me/Recreator_info_bot")
+    bio = BytesIO()
+    bio.name = "recreator_bot_qr.png"
+    qr.save(bio, format="PNG")
+    bio.seek(0)
+    return bio
 
 # ===== КЛАВИАТУРА =====
 keyboard = ReplyKeyboardMarkup(
@@ -398,8 +407,22 @@ async def chat_cmd(message: types.Message):
 
 @dp.message(F.text == "🤝 Как помочь")
 async def help_cmd(message: types.Message):
-    await message.answer("Пройдите опрос и расскажите соседям.")
+    qr_image = await generate_qr()
 
+    await message.answer_photo(
+        photo=qr_image,
+        caption=(
+            "🤝 **Как помочь проекту восстановления деревни Захожье**\n\n"
+            "1️⃣ Пройти опрос\n"
+            f"{GOOGLE_FORM_URL}\n\n"
+            "2️⃣ Поделитесь этим ботом с соседями\n"
+            "3️⃣ Отсканируйте QR-код или перешлите ссылку\n"
+            "4️⃣ Примите участие в обсуждении\n\n"
+            "🔗 Ссылка на бота:\n"
+            "https://t.me/Recreator_info_bot"
+        )
+    )
+    
 # ===== ЗАПУСК =====
 async def main():
     bot = Bot(API_TOKEN, default=DefaultBotProperties(parse_mode="Markdown"))
@@ -409,3 +432,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
