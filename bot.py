@@ -22,6 +22,10 @@ GOOGLE_FORM_URL = (
 )
 
 CHAT_URL = "https://t.me/+dmJ15VfkRCc3YjUy"
+# ===== АДМИНЫ =====
+ADMIN_IDS = {852852917}
+def is_admin(user_id: int) -> bool:
+    return user_id in ADMIN_IDS
 
 dp = Dispatcher()
 
@@ -468,4 +472,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
