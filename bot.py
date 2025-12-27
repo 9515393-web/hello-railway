@@ -1,5 +1,5 @@
-import asyncio
 import asyncpg
+import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
@@ -22,7 +22,6 @@ GOOGLE_FORM_URL = (
 )
 
 CHAT_URL = "https://t.me/+dmJ15VfkRCc3YjUy"
-DB_NAME = "votes.db"
 
 dp = Dispatcher()
 
@@ -62,33 +61,46 @@ keyboard = ReplyKeyboardMarkup(
 )
 
 # ===== БАЗА =====
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set in Railway Variables")
+
+
 async def init_db():
-    async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute(
-            "CREATE TABLE IF NOT EXISTS votes (user_id INTEGER PRIMARY KEY)"
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS votes (
+            user_id BIGINT PRIMARY KEY
         )
-        await db.commit()
+    """)
+    await conn.close()
+
 
 async def has_voted(uid: int) -> bool:
-    async with aiosqlite.connect(DB_NAME) as db:
-        cur = await db.execute(
-            "SELECT 1 FROM votes WHERE user_id = ?", (uid,)
-        )
-        return await cur.fetchone() is not None
+    conn = await asyncpg.connect(DATABASE_URL)
+    row = await conn.fetchrow(
+        "SELECT 1 FROM votes WHERE user_id = $1",
+        uid
+    )
+    await conn.close()
+    return row is not None
+
 
 async def register_vote(uid: int):
-    async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute(
-            "INSERT OR IGNORE INTO votes (user_id) VALUES (?)", (uid,)
-        )
-        await db.commit()
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute(
+        "INSERT INTO votes (user_id) VALUES ($1) ON CONFLICT DO NOTHING",
+        uid
+    )
+    await conn.close()
+
 
 async def get_votes_count() -> int:
-    async with aiosqlite.connect(DB_NAME) as db:
-        cur = await db.execute("SELECT COUNT(*) FROM votes")
-        (count,) = await cur.fetchone()
-        return count
-
+    conn = await asyncpg.connect(DATABASE_URL)
+    count = await conn.fetchval("SELECT COUNT(*) FROM votes")
+    await conn.close()
+    return count
+  
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
@@ -447,7 +459,6 @@ async def help_cmd(message: types.Message):
         parse_mode=None   # 🔴 ВАЖНО
     )
 
-
 # ===== ЗАПУСК =====
 async def main():
     bot = Bot(API_TOKEN, default=DefaultBotProperties(parse_mode="Markdown"))
@@ -457,3 +468,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
