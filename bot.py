@@ -50,17 +50,22 @@ keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="🏡 О проекте")],
         [KeyboardButton(text="📜 История деревни Захожье")],
-
-        [KeyboardButton(text="🗺 Карта 1792 года")],
-        [KeyboardButton(text="🗺 План деревни 1885 г.")],
-        [KeyboardButton(text="🗺 План деревни 1941 г.")],
-        [KeyboardButton(text="🗺 Карта — настоящее время")],
-
+        [KeyboardButton(text="🗺 Карты")],
         [KeyboardButton(text="🗺 Дорожная карта")],
         [KeyboardButton(text="🗳 Принять участие в опросе")],
         [KeyboardButton(text="📊 Статистика")],
         [KeyboardButton(text="💬 Чат жителей")],
         [KeyboardButton(text="🤝 Как помочь")]
+    ],
+    resize_keyboard=True
+)
+maps_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🗺 1792 год")],
+        [KeyboardButton(text="🗺 1885 год")],
+        [KeyboardButton(text="🗺 1941 год")],
+        [KeyboardButton(text="🗺 Настоящее время")],
+        [KeyboardButton(text="🔙 Назад")]
     ],
     resize_keyboard=True
 )
