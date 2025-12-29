@@ -1,6 +1,7 @@
 import asyncpg
 import asyncio
-from aiogram import Bot, Dispatcher, types, F
+from aiogram 
+import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
@@ -216,6 +217,14 @@ async def about_cmd(message: types.Message):
 
 
 # ===== КАРТЫ =====
+@dp.message(F.text == "🗺 Карты")
+async def maps_menu(message: types.Message):
+    await message.answer(
+        "🗺 <b>Карты деревни Захожье</b>\n\n"
+        "Выберите период:",
+        reply_markup=maps_keyboard
+    )
+
 @dp.message(F.text == "🗺 Карта 1792 года")
 async def map_1792_cmd(message: types.Message):
     await message.answer_photo(
