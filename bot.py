@@ -60,13 +60,8 @@ keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 MAPS maps_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="🗺 Карта 1792 год")],
-        [KeyboardButton(text="🗺 План деревни 1885 г.")],
-        [KeyboardButton(text="🗺 План деревни 1941 г.")],
-        [KeyboardButton(text="🗺 Карта - Настоящее время (выкопировка карты Росреестра)")],
-        [KeyboardButton(text="⬅ Назад")],
-    ],
+    keyboard=[[KeyboardButton(text=key)] for key in MAPS.keys()] +
+             [[KeyboardButton(text="⬅ Назад")]],
     resize_keyboard=True
 )
 MAPS = {
