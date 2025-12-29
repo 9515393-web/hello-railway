@@ -59,7 +59,17 @@ keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
-MAPS = MAPS = {
+MAPS maps_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🗺 Карта 1792 год")],
+        [KeyboardButton(text="🗺 План деревни 1885 г.")],
+        [KeyboardButton(text="🗺 План деревни 1941 г.")],
+        [KeyboardButton(text="🗺 Карта - Настоящее время (выкопировка карты Росреестра)")],
+        [KeyboardButton(text="⬅ Назад")],
+    ],
+    resize_keyboard=True
+)
+MAPS = {
     "🗺 Карта 1792 год": {
         "file": "maps/map_1792.jpg",
         "caption": (
@@ -95,7 +105,7 @@ MAPS = MAPS = {
             "Используется для сравнения с историческими картами."
         ),
     },
-},
+}
 
 # ===== БАЗА =====
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -247,7 +257,7 @@ async def maps_menu(message: types.Message):
     await message.answer(
         "🗺 <b>Карты деревни Захожье</b>\n\n"
         "Выберите период:",
-        maps_keyboard = ReplyKeyboardMarkup(...)
+        reply_markup=maps_keyboard
     )
 
 @dp.message(F.text == "🗺 Карта 1792 год")
