@@ -37,13 +37,13 @@ async def generate_qr() -> BufferedInputFile:
     qr = qrcode.make("https://t.me/Recreator_info_bot")
 
     bio = BytesIO()
-qr.save(bio, format="PNG")
-bio.seek(0)
+    qr.save(bio, format="PNG")
+    bio.seek(0)
 
-return BufferedInputFile(
-    file=bio.read(),
-    filename="recreator_bot_qr.png"
-)
+    return BufferedInputFile(
+        file=bio.read(),
+        filename="recreator_bot_qr.png"
+    )
 
 # ===== КЛАВИАТУРА =====
 keyboard = ReplyKeyboardMarkup(
