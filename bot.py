@@ -224,7 +224,7 @@ async def maps_menu(message: types.Message):
         reply_markup=maps_keyboard
     )
 
-@dp.message(F.text == "🗺 Карта 1792 года")
+@dp.message(F.text == "🗺 Карта 1792 год")
 async def map_1792_cmd(message: types.Message):
     await message.answer_photo(
         FSInputFile("maps/map_1792.jpg"),
@@ -246,7 +246,7 @@ async def map_1885_cmd(message: types.Message):
     )
 
 @dp.message(F.text == "🗺 План деревни 1941 г.")
-async def map_1941_cmd(message: types.Message):
+async def map_now_cmd(message: types.Message):
     await message.answer_photo(
         FSInputFile("maps/map_1941.jpg"),
         caption="🗺 **Карта местности, 1941 год**\n\n"
