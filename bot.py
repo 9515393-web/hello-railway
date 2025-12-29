@@ -1,7 +1,6 @@
 import asyncpg
 import asyncio
-from aiogram 
-import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
@@ -62,10 +61,10 @@ keyboard = ReplyKeyboardMarkup(
 )
 maps_keyboard = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="🗺 1792 год")],
-        [KeyboardButton(text="🗺 1885 год")],
-        [KeyboardButton(text="🗺 1941 год")],
-        [KeyboardButton(text="🗺 Настоящее время")],
+        [KeyboardButton(text="🗺 Карта 1792 года")],
+        [KeyboardButton(text="🗺 План деревни 1885 г.")],
+        [KeyboardButton(text="🗺 План деревни 1941 г.")],
+        [KeyboardButton(text="🗺 Карта - Настоящее время (выкопировка карты Росреестра)")],
         [KeyboardButton(text="🔙 Назад")]
     ],
     resize_keyboard=True
