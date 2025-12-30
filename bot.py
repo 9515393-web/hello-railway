@@ -63,6 +63,7 @@ admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
+        [KeyboardButton(text="🗳 Принять участие в опросе")],  # ← ДОБАВИЛИ
         [KeyboardButton(text="⬅ Назад")]
     ],
     resize_keyboard=True
