@@ -59,11 +59,6 @@ keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
-MAPS maps_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text=key)] for key in MAPS.keys()] +
-             [[KeyboardButton(text="⬅ Назад")]],
-    resize_keyboard=True
-)
 MAPS = {
     "🗺 Карта 1792 год": {
         "file": "maps/map_1792.jpg",
@@ -75,7 +70,7 @@ MAPS = {
             "в составе Российской империи."
         ),
     },
-     "🗺 План деревни 1885 г.": {
+    "🗺 План деревни 1885 г.": {
         "file": "maps/map_1885.jpg",
         "caption": (
             "🗺 **План деревни Захожье, 1885 год**\n\n"
@@ -92,7 +87,7 @@ MAPS = {
             "накануне и в период Великой Отечественной войны."
         ),
     },
-    ""🗺 Карта - Настоящее время (выкопировка карты Росреестра)": {
+    "🗺 Карта - Настоящее время (выкопировка карты Росреестра)": {
         "file": "maps/map_now.jpg",
         "caption": (
             "🗺 **Территория Захожья — современное состояние**\n\n"
@@ -101,6 +96,11 @@ MAPS = {
         ),
     },
 }
+maps_keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text=key)] for key in MAPS.keys()] +
+             [[KeyboardButton(text="⬅ Назад")]],
+    resize_keyboard=True
+)
 
 # ===== БАЗА =====
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -253,49 +253,20 @@ async def maps_menu(message: types.Message):
         "🗺 <b>Карты деревни Захожье</b>\n\nВыберите период:",
         reply_markup=maps_keyboard
     )
-
-@dp.message(F.text == "🗺 Карта 1792 год")
-async def map_1792_cmd(message: types.Message):
+@dp.message(F.text.in_(MAPS.keys()))
+async def maps_handler(message: types.Message):
+    data = MAPS[message.text]
     await message.answer_photo(
-        FSInputFile("maps/map_1792.jpg"),
-        caption="🗺 **Выкопировка из карты Санкт-Петербургской губернии, 1792 г.**\n\n"
-            "На карте деревня обозначена как **«М. Захонье»** "
-            "(Малое Захонье).\n\n"
-            "Первое картографическое подтверждение существования деревни "
-            "в составе Российской империи."
+        FSInputFile(data["file"]),
+        caption=data["caption"]
+    )
+@dp.message(F.text == "⬅ Назад")
+async def back_to_main(message: types.Message):
+    await message.answer(
+        "Главное меню",
+        reply_markup=keyboard
     )
 
-@dp.message(F.text == "🗺 План деревни 1885 г.")
-async def map_1885_cmd(message: types.Message):
-    await message.answer_photo(
-        FSInputFile("maps/map_1885.jpg"),
-        caption="🗺 **План деревни Захожье, 1885 год**\n\n"
-            "Отражает структуру застройки, "
-            "расположение дворов и дорог.\n\n"
-            "Период устойчивого развития XIX века."
-    )
-
-@dp.message(F.text == "🗺 План деревни 1941 г.")
-async def map_1941_cmd(message: types.Message):
-    await message.answer_photo(
-        FSInputFile("maps/map_1941.jpg"),
-        caption=(
-            "🗺 **Карта местности, 1941 год**\n\n"
-            "Положение деревни Захожье "
-            "накануне и в период Великой Отечественной войны."
-        )
-    )
-
-@dp.message(F.text == "🗺 Карта - Настоящее время (выкопировка карты Росреестра)")
-async def map_now_cmd(message: types.Message):
-    await message.answer_photo(
-        FSInputFile("maps/map_now.jpg"),
-        caption=(
-            "🗺 **Территория Захожья — современное состояние**\n\n"
-            "Границы СНТ, застройка и дорожная сеть.\n\n"
-            "Используется для сравнения с историческими картами."
-        )
-    )
 # ===== ИСТОРИЯ =====
 @dp.message(F.text == "📜 История деревни Захожье")
 async def history_cmd(message: types.Message):
