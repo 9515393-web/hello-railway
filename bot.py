@@ -168,10 +168,10 @@ async def version_cmd(message: types.Message):
         "🟢 BOT VERSION 3.2\n"
         "Диагностика активна\n"
     )
-    @dp.message(Command("admin"))
+@dp.message(Command("admin"))
 async def admin_menu(message: types.Message):
     if not is_admin(message.from_user.id):
-        return  # скрыто для обычных пользователей
+        return
 
     await message.answer(
         "🔐 Админ-панель",
