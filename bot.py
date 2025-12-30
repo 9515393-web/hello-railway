@@ -59,6 +59,15 @@ keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+admin_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📊 Админ: статистика")],
+        [KeyboardButton(text="📣 Админ: рассылка")],
+        [KeyboardButton(text="⬅ Назад")]
+    ],
+    resize_keyboard=True
+)
+
 MAPS = {
     "🗺 Карта 1792 год": {
         "file": "maps/map_1792.jpg",
@@ -158,6 +167,15 @@ async def version_cmd(message: types.Message):
     await message.answer(
         "🟢 BOT VERSION 3.2\n"
         "Диагностика активна\n"
+    )
+    @dp.message(Command("admin"))
+async def admin_menu(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return  # скрыто для обычных пользователей
+
+    await message.answer(
+        "🔐 Админ-панель",
+        reply_markup=admin_keyboard
     )
 
 # ===== О ПРОЕКТЕ =====
