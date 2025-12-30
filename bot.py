@@ -6,6 +6,9 @@ from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
 from io import BytesIO
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 import qrcode
 
 import os
@@ -179,7 +182,6 @@ async def version_cmd(message: types.Message):
         "🟢 BOT VERSION 3.2\n"
         "Диагностика активна\n"
     )
-    # ===== АДМИН-ПАНЕЛЬ =====
 
 @dp.message(Command("admin"))
 async def admin_menu(message: types.Message):
@@ -214,19 +216,6 @@ async def admin_repeat_process(message: types.Message, state: FSMContext):
 
     await message.answer(
         f"✅ Пользователю {uid} разрешено повторное участие в опросе",
-        reply_markup=admin_keyboard
-    )
-
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
-
-@dp.message(Command("admin"))
-async def admin_menu(message: types.Message):
-    if not is_admin(message.from_user.id):
-        return
-
-    await message.answer(
-        "🔐 Админ-панель",
         reply_markup=admin_keyboard
     )
 
