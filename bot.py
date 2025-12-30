@@ -27,7 +27,7 @@ ADMIN_IDS = {852852917}
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
-dp = Dispatcher()
+dp = Dispatcher(storage=MemoryStorage())
 
 # ===== ДИАГНОСТИКА =====
 async def debug_bot(bot: Bot):
@@ -63,11 +63,13 @@ admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
-        [KeyboardButton(text="🗳 Принять участие в опросе")],  # ← ДОБАВИЛИ
+        [KeyboardButton(text="🔁 Админ: разрешить повтор")],  # ← ВАЖНО
         [KeyboardButton(text="⬅ Назад")]
     ],
     resize_keyboard=True
 )
+class AdminRepeatState(StatesGroup):
+    waiting_user_id = State()
 
 MAPS = {
     "🗺 Карта 1792 год": {
@@ -145,6 +147,14 @@ async def register_vote(uid: int):
         uid
     )
     await conn.close()
+    
+async def remove_vote(uid: int):
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute(
+        "DELETE FROM votes WHERE user_id = $1",
+        uid
+    )
+    await conn.close()
 
 
 async def get_votes_count() -> int:
@@ -169,6 +179,47 @@ async def version_cmd(message: types.Message):
         "🟢 BOT VERSION 3.2\n"
         "Диагностика активна\n"
     )
+    # ===== АДМИН-ПАНЕЛЬ =====
+
+@dp.message(Command("admin"))
+async def admin_menu(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    await message.answer(
+        "🔐 Админ-панель",
+        reply_markup=admin_keyboard
+    )
+
+@dp.message(F.text == "🔁 Админ: разрешить повтор")
+async def admin_repeat_start(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    await message.answer(
+        "✏️ Отправьте ID пользователя, которому нужно разрешить повторное участие"
+    )
+    await state.set_state(AdminRepeatState.waiting_user_id)
+
+@dp.message(AdminRepeatState.waiting_user_id)
+async def admin_repeat_process(message: types.Message, state: FSMContext):
+    if not message.text.isdigit():
+        await message.answer("❌ ID должен быть числом")
+        return
+
+    uid = int(message.text)
+
+    await remove_vote(uid)
+    await state.clear()
+
+    await message.answer(
+        f"✅ Пользователю {uid} разрешено повторное участие в опросе",
+        reply_markup=admin_keyboard
+    )
+
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
+
 @dp.message(Command("admin"))
 async def admin_menu(message: types.Message):
     if not is_admin(message.from_user.id):
