@@ -225,6 +225,9 @@ async def admin_menu(message: types.Message):
         "🔐 Админ-панель",
         reply_markup=admin_keyboard
     )
+@dp.message(Command("whoami"))
+async def whoami(message: types.Message):
+    await message.answer(f"Ваш ID: {message.from_user.id}")
 
 @dp.message(F.text == "🔁 Админ: разрешить повтор")
 async def admin_repeat_start(message: types.Message, state: FSMContext):
