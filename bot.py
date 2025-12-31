@@ -125,13 +125,36 @@ if not DATABASE_URL:
 
 async def init_db():
     conn = await asyncpg.connect(DATABASE_URL)
+
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS votes (
-            user_id BIGINT PRIMARY KEY
+            user_id BIGINT PRIMARY KEY,
+            created_at TIMESTAMP DEFAULT NOW()
         )
     """)
-    await conn.close()
 
+    await conn.execute("""
+        ALTER TABLE votes
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    """)
+
+    await conn.close()
+async def init_db():
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS votes (
+            user_id BIGINT PRIMARY KEY,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    await conn.execute("""
+        ALTER TABLE votes
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    """)
+
+    await conn.close()
 
 async def has_voted(uid: int) -> bool:
     conn = await asyncpg.connect(DATABASE_URL)
@@ -165,6 +188,20 @@ async def get_votes_count() -> int:
     count = await conn.fetchval("SELECT COUNT(*) FROM votes")
     await conn.close()
     return count
+
+
+async def get_last_vote():
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    row = await conn.fetchrow("""
+        SELECT user_id, created_at
+        FROM votes
+        ORDER BY created_at DESC
+        LIMIT 1
+    """)
+
+    await conn.close()
+    return row
   
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
