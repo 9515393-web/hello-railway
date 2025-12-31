@@ -74,6 +74,9 @@ admin_keyboard = ReplyKeyboardMarkup(
 class AdminRepeatState(StatesGroup):
     waiting_user_id = State()
 
+class AdminBroadcastState(StatesGroup):
+    waiting_text = State()
+    
 MAPS = {
     "🗺 Карта 1792 год": {
         "file": "maps/map_1792.jpg",
@@ -166,13 +169,17 @@ async def remove_vote(uid: int):
     )
     await conn.close()
 
-
 async def get_votes_count() -> int:
     conn = await asyncpg.connect(DATABASE_URL)
     count = await conn.fetchval("SELECT COUNT(*) FROM votes")
     await conn.close()
     return count
 
+async def get_all_user_ids() -> list[int]:
+    conn = await asyncpg.connect(DATABASE_URL)
+    rows = await conn.fetch("SELECT user_id FROM votes")
+    await conn.close()
+    return [r["user_id"] for r in rows]
 
 async def get_last_vote():
     conn = await asyncpg.connect(DATABASE_URL)
@@ -289,6 +296,43 @@ async def admin_stats(message: types.Message):
             "⚠️ Ошибка получения статистики.\n"
             "Смотри логи."
         )
+@dp.message(F.text == "📣 Админ: рассылка")
+async def admin_broadcast_start(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    await message.answer(
+        "✏️ Отправьте текст рассылки.\n\n"
+        "Сообщение будет отправлено всем участникам опроса."
+    )
+    await state.set_state(AdminBroadcastState.waiting_text)
+@dp.message(AdminBroadcastState.waiting_text)
+async def admin_broadcast_send(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    text = message.text
+    user_ids = await get_all_user_ids()
+
+    sent = 0
+    failed = 0
+
+    for uid in user_ids:
+        try:
+            await message.bot.send_message(uid, text)
+            sent += 1
+            await asyncio.sleep(0.05)  # 🔴 антифлуд
+        except Exception:
+            failed += 1
+
+    await state.clear()
+
+    await message.answer(
+        "📣 <b>Рассылка завершена</b>\n\n"
+        f"✅ Отправлено: <b>{sent}</b>\n"
+        f"⚠️ Ошибок: <b>{failed}</b>",
+        reply_markup=admin_keyboard
+    )
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
