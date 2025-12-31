@@ -574,7 +574,11 @@ async def help_cmd(message: types.Message):
 
 # ===== ЗАПУСК =====
 async def main():
-    bot = Bot(API_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
+    bot = Bot(
+    API_TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML"),
+    timeout=30
+)
     await init_db()
     await debug_bot(bot)
     await dp.start_polling(bot)
