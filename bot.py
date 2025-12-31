@@ -139,22 +139,6 @@ async def init_db():
     """)
 
     await conn.close()
-async def init_db():
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS votes (
-            user_id BIGINT PRIMARY KEY,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-
-    await conn.execute("""
-        ALTER TABLE votes
-        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-    """)
-
-    await conn.close()
 
 async def has_voted(uid: int) -> bool:
     conn = await asyncpg.connect(DATABASE_URL)
@@ -202,6 +186,18 @@ async def get_last_vote():
 
     await conn.close()
     return row
+    
+async def get_votes_by_date(days_ago: int) -> int:
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    count = await conn.fetchval("""
+        SELECT COUNT(*)
+        FROM votes
+        WHERE created_at::date = CURRENT_DATE - $1
+    """, days_ago)
+
+    await conn.close()
+    return count
   
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
@@ -257,19 +253,39 @@ async def admin_repeat_process(message: types.Message, state: FSMContext):
     )
 @dp.message(F.text == "📊 Админ: статистика")
 async def admin_stats(message: types.Message):
-    # 1. Защита от обычных пользователей
     if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
         return
 
-    # 2. Получаем количество голосов
-    count = await get_votes_count()
+    try:
+        total = await get_votes_count()
+        today = await get_votes_by_date(0)
+        yesterday = await get_votes_by_date(1)
+        last = await get_last_vote()
 
-    # 3. Отправляем результат
-    await message.answer(
-        "📊 <b>Админ-статистика</b>\n\n"
-        f"👥 Участников опроса: <b>{count}</b>",
-        reply_markup=admin_keyboard
-    )
+        if last:
+            last_user = last["user_id"]
+            last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
+        else:
+            last_user = "—"
+            last_time = "—"
+
+        await message.answer(
+            "📊 <b>Админ-статистика</b>\n\n"
+            f"👥 Всего участников: <b>{total}</b>\n\n"
+            f"📅 Сегодня: <b>{today}</b>\n"
+            f"📅 Вчера: <b>{yesterday}</b>\n\n"
+            f"🆔 Последний голос: <code>{last_user}</code>\n"
+            f"🕒 Время: <b>{last_time}</b>",
+            reply_markup=admin_keyboard
+        )
+
+    except Exception as e:
+        await message.answer(
+            "⚠️ Ошибка получения статистики.\n"
+            "Попробуйте позже."
+        )
+        print("Ошибка админ-статистики:", e)
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
@@ -612,9 +628,9 @@ async def help_cmd(message: types.Message):
 # ===== ЗАПУСК =====
 async def main():
     bot = Bot(
-    API_TOKEN,
-    default=DefaultBotProperties(parse_mode="HTML"),
-    timeout=30
+        API_TOKEN,
+        default=DefaultBotProperties(parse_mode="HTML"),
+        timeout=30
 )
     await init_db()
     await debug_bot(bot)
