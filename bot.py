@@ -266,12 +266,12 @@ async def admin_stats(message: types.Message):
         yesterday = await get_votes_by_date(1)
         last = await get_last_vote()
 
-        if last:
-            last_user = last["user_id"]
-            last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
-        else:
-            last_user = "—"
-            last_time = "—"
+        if last and last["created_at"]:
+    last_user = last["user_id"]
+    last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
+else:
+    last_user = "—"
+    last_time = "—"
 
         await message.answer(
             "📊 <b>Админ-статистика</b>\n\n"
@@ -283,12 +283,12 @@ async def admin_stats(message: types.Message):
             reply_markup=admin_keyboard
         )
 
-    except Exception as e:
-        await message.answer(
-            "⚠️ Ошибка получения статистики.\n"
-            "Попробуйте позже."
-        )
-        print("Ошибка админ-статистики:", e)
+except Exception as e:
+    await message.answer(
+        "⚠️ Ошибка получения статистики.\n"
+        "Смотри логи."
+    )
+    print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
@@ -632,12 +632,17 @@ async def debug_all(message: types.Message):
     print("ПРИШЛО СООБЩЕНИЕ:", message.text)
 
 # ===== ЗАПУСК =====
+# ===== ЗАПУСК =====
 async def main():
     bot = Bot(
         API_TOKEN,
         default=DefaultBotProperties(parse_mode="HTML"),
         timeout=30
-)
+    )
+
+    # 🔴 ВАЖНО: гарантированно убираем webhook
+    await bot.delete_webhook(drop_pending_updates=True)
+
     await init_db()
     await debug_bot(bot)
     await dp.start_polling(bot)
