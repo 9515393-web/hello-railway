@@ -266,7 +266,7 @@ async def admin_stats(message: types.Message):
         yesterday = await get_votes_by_date(1)
         last = await get_last_vote()
 
-        if last and last["created_at"]:
+if last and last["created_at"]:
     last_user = last["user_id"]
     last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
 else:
