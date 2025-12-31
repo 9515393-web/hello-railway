@@ -218,6 +218,21 @@ async def admin_repeat_process(message: types.Message, state: FSMContext):
         f"✅ Пользователю {uid} разрешено повторное участие в опросе",
         reply_markup=admin_keyboard
     )
+    @dp.message(F.text == "📊 Админ: статистика")
+async def admin_stats(message: types.Message):
+    # 1. Защита от обычных пользователей
+    if not is_admin(message.from_user.id):
+        return
+
+    # 2. Получаем количество голосов
+    count = await get_votes_count()
+
+    # 3. Отправляем результат
+    await message.answer(
+        "📊 <b>Админ-статистика</b>\n\n"
+        f"👥 Участников опроса: <b>{count}</b>",
+        reply_markup=admin_keyboard
+    )
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
