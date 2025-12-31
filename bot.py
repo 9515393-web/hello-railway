@@ -627,6 +627,9 @@ async def help_cmd(message: types.Message):
         ),
         parse_mode=None   # 🔴 ВАЖНО
     )
+@dp.message()
+async def debug_all(message: types.Message):
+    print("ПРИШЛО СООБЩЕНИЕ:", message.text)
 
 # ===== ЗАПУСК =====
 async def main():
