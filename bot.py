@@ -193,8 +193,7 @@ async def get_votes_by_date(days_ago: int) -> int:
     count = await conn.fetchval("""
         SELECT COUNT(*)
         FROM votes
-        WHERE created_at >= date_trunc('day', now()) - ($1 * interval '1 day')
-          AND created_at <  date_trunc('day', now()) - ($1 * interval '1 day') + interval '1 day'
+        WHERE created_at::date = CURRENT_DATE - $1
     """, days_ago)
 
     await conn.close()
