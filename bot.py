@@ -284,7 +284,7 @@ async def admin_stats(message: types.Message):
             reply_markup=admin_keyboard
         )
 
-        except Exception as e:
+    except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
         await message.answer(
             "⚠️ Ошибка получения статистики.\n"
