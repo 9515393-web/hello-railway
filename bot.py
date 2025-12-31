@@ -267,12 +267,12 @@ async def admin_stats(message: types.Message):
         yesterday = await get_votes_by_date(1)
         last = await get_last_vote()
 
-if last and last["created_at"]:
-    last_user = last["user_id"]
-    last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
-else:
-    last_user = "—"
-    last_time = "—"
+        if last and last["created_at"]:
+            last_user = last["user_id"]
+            last_time = last["created_at"].strftime("%d.%m.%Y %H:%M")
+        else:
+            last_user = "—"
+            last_time = "—"
 
         await message.answer(
             "📊 <b>Админ-статистика</b>\n\n"
@@ -284,12 +284,12 @@ else:
             reply_markup=admin_keyboard
         )
 
-except Exception as e:
-    await message.answer(
-        "⚠️ Ошибка получения статистики.\n"
-        "Смотри логи."
-    )
-    print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
+        except Exception as e:
+        print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
+        await message.answer(
+            "⚠️ Ошибка получения статистики.\n"
+            "Смотри логи."
+        )
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
