@@ -200,8 +200,8 @@ async def get_votes_by_date(days_ago: int) -> int:
     count = await conn.fetchval("""
         SELECT COUNT(*)
         FROM votes
-        WHERE created_at >= CURRENT_DATE - ($1 || ' days')::interval
-          AND created_at <  CURRENT_DATE - ($1 || ' days')::interval + INTERVAL '1 day'
+        WHERE created_at >= CURRENT_DATE - ($1::text || ' days')::interval
+          AND created_at <  CURRENT_DATE - ($1::text || ' days')::interval + INTERVAL '1 day'
     """, days_ago)
 
     await conn.close()
@@ -677,7 +677,6 @@ async def debug_all(message: types.Message):
     print("ПРИШЛО СООБЩЕНИЕ:", message.text)
 
 # ===== ЗАПУСК =====
-# ===== ЗАПУСК =====
 async def main():
     bot = Bot(
         API_TOKEN,
@@ -685,7 +684,7 @@ async def main():
         timeout=30
     )
 
-    # 🔴 ВАЖНО: гарантированно убираем webhook
+    # 🔴 КРИТИЧЕСКИ ВАЖНО
     await bot.delete_webhook(drop_pending_updates=True)
 
     await init_db()
