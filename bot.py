@@ -66,13 +66,10 @@ admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
-        [KeyboardButton(text="🔁 Админ: разрешить повтор")],  # ← ВАЖНО
         [KeyboardButton(text="⬅ Назад")]
     ],
     resize_keyboard=True
 )
-class AdminRepeatState(StatesGroup):
-    waiting_user_id = State()
 
 class AdminBroadcastState(StatesGroup):
     waiting_text = State()
@@ -131,53 +128,40 @@ async def init_db():
 
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS votes (
-            user_id BIGINT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
 
-    await conn.execute("""
-        ALTER TABLE votes
-        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-    """)
-
     await conn.close()
-
-async def has_voted(uid: int) -> bool:
-    conn = await asyncpg.connect(DATABASE_URL)
-    row = await conn.fetchrow(
-        "SELECT 1 FROM votes WHERE user_id = $1",
-        uid
-    )
-    await conn.close()
-    return row is not None
-
 
 async def register_vote(uid: int):
     conn = await asyncpg.connect(DATABASE_URL)
     await conn.execute(
-        "INSERT INTO votes (user_id) VALUES ($1) ON CONFLICT DO NOTHING",
+        "INSERT INTO votes (user_id) VALUES ($1)",
         uid
     )
     await conn.close()
     
-async def remove_vote(uid: int):
-    conn = await asyncpg.connect(DATABASE_URL)
-    await conn.execute(
-        "DELETE FROM votes WHERE user_id = $1",
-        uid
-    )
-    await conn.close()
-
 async def get_votes_count() -> int:
     conn = await asyncpg.connect(DATABASE_URL)
     count = await conn.fetchval("SELECT COUNT(*) FROM votes")
     await conn.close()
     return count
+async def get_unique_users_count() -> int:
+    conn = await asyncpg.connect(DATABASE_URL)
+    count = await conn.fetchval(
+        "SELECT COUNT(DISTINCT user_id) FROM votes"
+    )
+    await conn.close()
+    return count
 
 async def get_all_user_ids() -> list[int]:
     conn = await asyncpg.connect(DATABASE_URL)
-    rows = await conn.fetch("SELECT user_id FROM votes")
+    rows = await conn.fetch(
+        "SELECT DISTINCT user_id FROM votes"
+    )
     await conn.close()
     return [r["user_id"] for r in rows]
 
@@ -237,31 +221,6 @@ async def admin_menu(message: types.Message):
 async def whoami(message: types.Message):
     await message.answer(f"Ваш ID: {message.from_user.id}")
 
-@dp.message(F.text == "🔁 Админ: разрешить повтор")
-async def admin_repeat_start(message: types.Message, state: FSMContext):
-    if not is_admin(message.from_user.id):
-        return
-
-    await message.answer(
-        "✏️ Отправьте ID пользователя, которому нужно разрешить повторное участие"
-    )
-    await state.set_state(AdminRepeatState.waiting_user_id)
-
-@dp.message(AdminRepeatState.waiting_user_id)
-async def admin_repeat_process(message: types.Message, state: FSMContext):
-    if not message.text.isdigit():
-        await message.answer("❌ ID должен быть числом")
-        return
-
-    uid = int(message.text)
-
-    await remove_vote(uid)
-    await state.clear()
-
-    await message.answer(
-        f"✅ Пользователю {uid} разрешено повторное участие в опросе",
-        reply_markup=admin_keyboard
-    )
 @dp.message(F.text == "📊 Админ: статистика")
 async def admin_stats(message: types.Message):
     if not is_admin(message.from_user.id):
@@ -270,6 +229,7 @@ async def admin_stats(message: types.Message):
 
     try:
         total = await get_votes_count()
+        unique = await get_unique_users_count()
         today = await get_votes_by_date(0)
         yesterday = await get_votes_by_date(1)
         last = await get_last_vote()
@@ -283,20 +243,19 @@ async def admin_stats(message: types.Message):
 
         await message.answer(
             "📊 <b>Админ-статистика</b>\n\n"
-            f"👥 Всего участников: <b>{total}</b>\n\n"
+            f"🔘 Всего переходов: <b>{total}</b>\n"
+            f"👥 Уникальных пользователей: <b>{unique}</b>\n\n"
             f"📅 Сегодня: <b>{today}</b>\n"
             f"📅 Вчера: <b>{yesterday}</b>\n\n"
-            f"🆔 Последний голос: <code>{last_user}</code>\n"
+            f"🆔 Последний переход: <code>{last_user}</code>\n"
             f"🕒 Время: <b>{last_time}</b>",
             reply_markup=admin_keyboard
         )
 
     except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
-        await message.answer(
-            "⚠️ Ошибка получения статистики.\n"
-            "Смотри логи."
-        )
+        await message.answer("⚠️ Ошибка получения статистики.")
+
 @dp.message(F.text == "📣 Админ: рассылка")
 async def admin_broadcast_start(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
@@ -618,38 +577,31 @@ async def roadmap_cmd(message: types.Message):
     "Прокрутите чат вверх, чтобы читать с начала."
     )
 
-
 # ===== ПРОЧЕЕ =====
 @dp.message(F.text.contains("Принять участие в опросе"))
 async def vote_cmd(message: types.Message):
     uid = message.from_user.id
 
-    if await has_voted(uid):
-        await message.answer(
-            "❗ Вы уже принимали участие в опросе.\n\n"
-            "Для корректности сбора данных повторное "
-            "прохождение опроса недоступно.\n\n"
-            "Если вы считаете, что произошла ошибка — "
-            "напишите в инициативную группу:\n"
-            "recreator2026@mail.ru"
-        )
-        return
-
+    # логируем каждый клик
     await register_vote(uid)
 
     await message.answer(
         "🗳 Участие в опросе\n\n"
-        "Для корректности и достоверности данных "
-        "опрос можно пройти только один раз.\n\n"
-        "Пожалуйста, отвечайте внимательно.\n\n"
+        "Спасибо за интерес к проекту!\n\n"
         "👉 Перейти к опросу:"
     )
-
     await message.answer(GOOGLE_FORM_URL)
 
 @dp.message(F.text == "📊 Статистика")
 async def stats_cmd(message: types.Message):
-    await message.answer(f"Участников: {await get_votes_count()}")
+    total = await get_votes_count()
+    unique = await get_unique_users_count()
+
+    await message.answer(
+        f"📊 Статистика опроса\n\n"
+        f"🔘 Переходов: {total}\n"
+        f"👥 Участников: {unique}"
+    )
 
 @dp.message(F.text == "💬 Чат жителей")
 async def chat_cmd(message: types.Message):
