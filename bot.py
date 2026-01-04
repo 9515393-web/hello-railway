@@ -3,12 +3,18 @@ import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
-from aiogram.types import BufferedInputFile
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
 from io import BytesIO
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+from aiogram.types import (
+    BufferedInputFile,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    FSInputFile,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
 import qrcode
 
 import os
@@ -25,6 +31,13 @@ GOOGLE_FORM_URL = (
 )
 
 CHAT_URL = "https://t.me/+dmJ15VfkRCc3YjUy"
+BOT_URL = "https://t.me/Recreator_info_bot"
+
+bot_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🤖 Открыть бота", url=BOT_URL)]
+    ]
+)
 # ===== АДМИНЫ =====
 ADMIN_IDS = {852852917}
 def is_admin(user_id: int) -> bool:
@@ -220,7 +233,13 @@ async def admin_menu(message: types.Message):
 @dp.message(Command("whoami"))
 async def whoami(message: types.Message):
     await message.answer(f"Ваш ID: {message.from_user.id}")
-
+    
+@dp.message(Command("bot"))
+async def bot_link(message: types.Message):
+    await message.answer(
+        "🤖 Официальный бот проекта восстановления деревни Захожье:",
+        reply_markup=bot_kb
+    )
 @dp.message(F.text == "📊 Админ: статистика")
 async def admin_stats(message: types.Message):
     if not is_admin(message.from_user.id):
@@ -612,18 +631,18 @@ async def help_cmd(message: types.Message):
     qr_image = await generate_qr()
 
     await message.answer_photo(
-        photo=qr_image,
-        caption=(
-            "🤝 Как помочь проекту восстановления деревни Захожье\n\n"
-            "1️⃣ Пройти опрос\n"
-            "2️⃣ Поделитесь этим ботом с соседями\n"
-            "3️⃣ Отсканируйте QR-код или перешлите ссылку\n"
-            "4️⃣ Примите участие в обсуждении\n\n"
-            "Ссылка на бота:\n"
-            "https://t.me/Recreator_info_bot"
-        ),
-        parse_mode=None   # 🔴 ВАЖНО
-    )
+    photo=qr_image,
+    caption=(
+        "🤝 Как помочь проекту восстановления деревни Захожье\n\n"
+        "1️⃣ Пройти опрос\n"
+        "2️⃣ Поделитесь этим ботом с соседями\n"
+        "3️⃣ Отсканируйте QR-код или перешлите ссылку\n"
+        "4️⃣ Примите участие в обсуждении\n\n"
+        "Ссылка на бота:\n"
+        "https://t.me/Recreator_info_bot"
+    ),
+    parse_mode=None
+)
 @dp.message()
 async def debug_all(message: types.Message):
     print("ПРИШЛО СООБЩЕНИЕ:", message.text)
