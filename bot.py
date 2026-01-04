@@ -637,10 +637,9 @@ async def help_cmd(message: types.Message):
         "1️⃣ Пройти опрос\n"
         "2️⃣ Поделитесь этим ботом с соседями\n"
         "3️⃣ Отсканируйте QR-код или перешлите ссылку\n"
-        "4️⃣ Примите участие в обсуждении\n\n"
-        "Ссылка на бота:\n"
-        "https://t.me/Recreator_info_bot"
+        "4️⃣ Примите участие в обсуждении"
     ),
+    reply_markup=bot_kb,
     parse_mode=None
 )
 @dp.message()
