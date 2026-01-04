@@ -126,12 +126,8 @@ if not DATABASE_URL:
 async def init_db():
     conn = await asyncpg.connect(DATABASE_URL)
 
-    # 🔥 УДАЛЯЕМ СТАРУЮ ТАБЛИЦУ
-    await conn.execute("DROP TABLE IF EXISTS votes")
-
-    # ✅ СОЗДАЁМ ПРАВИЛЬНУЮ
     await conn.execute("""
-        CREATE TABLE votes (
+        CREATE TABLE IF NOT EXISTS votes (
             id SERIAL PRIMARY KEY,
             user_id BIGINT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
