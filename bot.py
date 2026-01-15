@@ -292,6 +292,9 @@ async def admin_stats(message: types.Message):
                # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
         try:
             rows = await fetch_google_sheet_rows()
+            await message.answer(f"DEBUG: rows={len(rows)}")
+            await message.answer(f"DEBUG: keys={list(rows[0].keys()) if rows else 'EMPTY'}")
+
         except Exception as e:
             rows = []
             await message.answer(f"❌ Ошибка чтения Google Sheets: {repr(e)}")
