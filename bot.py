@@ -296,13 +296,19 @@ async def admin_stats(message: types.Message):
             rows = []
             await message.answer(f"❌ Ошибка чтения Google Sheets: {repr(e)}")
 
-        total_forms = len(rows)
+        total_forms = sum(1 for r in rows if (r.get("Отметка времени") or "").strip() != "")
         await message.answer(f"DEBUG: rows={total_forms}")
 
         # Подсчёт ответов по вопросам
-        support_yes = count_checked(rows, "Поддерживаю инициативу по\nвосстановлению деревни\nЗахожье")
-        support_no  = count_checked(rows, "Не поддерживаю инициативу\nпо восстановлению деревни\nЗахожье")
+        support_yes = sum(
+    1 for r in rows
+    if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
+)
 
+support_no = sum(
+    1 for r in rows
+    if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
+)
         sign_ready  = count_checked(rows, "Готов(а) поставить подпись под\nколлективным обращением в\nорганы власти")
 
         live_const  = count_checked(rows, "Проживаю на территории\nпостоянно")
