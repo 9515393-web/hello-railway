@@ -312,7 +312,7 @@ async def admin_stats(message: types.Message):
             if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
         )
 
-                sign_ready = sum(
+        sign_ready = sum(
             1 for r in rows
             if (r.get("Готов(а) поставить подпись под коллективным обращением в органы власти?") or "").strip() != ""
         )
@@ -320,6 +320,11 @@ async def admin_stats(message: types.Message):
         live_const = sum(
             1 for r in rows
             if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю постоянно")
+        )
+
+        live_season = sum(
+            1 for r in rows
+            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю сезонно")
         )
 
         live_season = sum(
