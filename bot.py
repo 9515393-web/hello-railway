@@ -1,9 +1,12 @@
 import asyncpg
 import asyncio
+import aiohttp
+import csv
+
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
-from io import BytesIO
+from io import BytesIO, StringIO
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -16,8 +19,8 @@ from aiogram.types import (
     InlineKeyboardButton
 )
 import qrcode
-
 import os
+
 
 API_TOKEN = os.getenv("BOT_TOKEN")
 if not API_TOKEN:
@@ -32,6 +35,9 @@ GOOGLE_FORM_URL = (
 
 CHAT_URL = "https://t.me/+dmJ15VfkRCc3YjUy"
 BOT_URL = "https://t.me/Recreator_info_bot"
+
+GOOGLE_SHEET_ID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg"
+GOOGLE_SHEET_GID = "1620808508"
 
 bot_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -203,7 +209,29 @@ async def get_votes_by_date(days_ago: int) -> int:
 
     await conn.close()
     return count
-  
+
+async def fetch_google_sheet_rows() -> list[dict]:
+    url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid={GOOGLE_SHEET_GID}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=30) as resp:
+            if resp.status != 200:
+                raise RuntimeError(f"Google Sheets HTTP {resp.status}")
+            text = await resp.text()
+
+    reader = csv.DictReader(StringIO(text))
+    return list(reader)
+
+
+def count_checked(rows: list[dict], column_name: str) -> int:
+    count = 0
+    for r in rows:
+        val = (r.get(column_name) or "").strip()
+        if val != "":
+            count += 1
+    return count
+
+
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
@@ -247,6 +275,7 @@ async def admin_stats(message: types.Message):
         return
 
     try:
+        # ==== СТАРАЯ СТАТИСТИКА ====
         total = await get_votes_count()
         unique = await get_unique_users_count()
         today = await get_votes_by_date(0)
@@ -260,16 +289,48 @@ async def admin_stats(message: types.Message):
             last_user = "—"
             last_time = "—"
 
-        await message.answer(
+        # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
+        try:
+            rows = await fetch_google_sheet_rows()
+        except Exception as e:
+            rows = []
+            print("Ошибка чтения Google Sheets:", repr(e))
+
+        total_forms = len(rows)
+
+        # Подсчёт ответов по вопросам
+        support_yes = count_checked(rows, "Поддерживаю инициативу по\nвосстановлению деревни\nЗахожье")
+        support_no  = count_checked(rows, "Не поддерживаю инициативу\nпо восстановлению деревни\nЗахожье")
+
+        sign_ready  = count_checked(rows, "Готов(а) поставить подпись под\nколлективным обращением в\nорганы власти")
+
+        live_const  = count_checked(rows, "Проживаю на территории\nпостоянно")
+        live_season = count_checked(rows, "Проживаю сезонно")
+
+        def pct(x: int, total: int) -> str:
+            if total == 0:
+                return "0%"
+            return f"{round(x * 100 / total)}%"
+
+        # ==== СБОР СООБЩЕНИЯ ====
+        report = (
             "📊 <b>Админ-статистика</b>\n\n"
-            f"🔘 Всего переходов: <b>{total}</b>\n"
+            f"🔘 Переходов (клики): <b>{total}</b>\n"
             f"👥 Уникальных пользователей: <b>{unique}</b>\n\n"
             f"📅 Сегодня: <b>{today}</b>\n"
             f"📅 Вчера: <b>{yesterday}</b>\n\n"
             f"🆔 Последний переход: <code>{last_user}</code>\n"
-            f"🕒 Время: <b>{last_time}</b>",
-            reply_markup=admin_keyboard
+            f"🕒 Время: <b>{last_time}</b>\n\n"
+            "📌 <b>Реальная ситуация по опросу</b>\n"
+            f"📝 Ответов в форме: <b>{total_forms}</b>\n\n"
+            f"👍 Поддерживают: <b>{support_yes}</b> ({pct(support_yes, total_forms)})\n"
+            f"👎 Не поддерживают: <b>{support_no}</b> ({pct(support_no, total_forms)})\n\n"
+            f"✍️ Готовы подписать: <b>{sign_ready}</b> ({pct(sign_ready, total_forms)})\n\n"
+            f"🏠 Постоянно живут: <b>{live_const}</b> ({pct(live_const, total_forms)})\n"
+            f"🌿 Сезонно: <b>{live_season}</b> ({pct(live_season, total_forms)})"
         )
+
+        await message.answer(report, reply_markup=admin_keyboard)
 
     except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
