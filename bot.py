@@ -302,6 +302,8 @@ async def admin_stats(message: types.Message):
         await message.answer(f"DEBUG: total_forms={total_forms}")
 
         # Подсчёт ответов по вопросам
+
+               # Поддержка / не поддержка
         support_yes = sum(
             1 for r in rows
             if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
@@ -312,30 +314,25 @@ async def admin_stats(message: types.Message):
             if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
         )
 
+        # Готовность участвовать
         sign_ready = sum(
-            1 for r in rows
-            if (r.get("Готов(а) поставить подпись под коллективным обращением в органы власти?") or "").strip() != ""
-       
-        )sign_ready = sum(
             1 for r in rows
             if (r.get("Готовность участвовать в инициативе") or "").strip() != ""
         )
 
+        # Проживание (по желанию)
+        col_live = "Сведения о проживании на территории (по желанию)"
+
         live_const = sum(
             1 for r in rows
-            if "постоян" in ((r.get("Сведения о проживании на территории (по желанию)") or "").lower())
+            if "постоян" in (r.get(col_live) or "").lower()
         )
 
         live_season = sum(
             1 for r in rows
-            if "сезон" in ((r.get("Сведения о проживании на территории (по желанию)") or "").lower())
+            if "сезон" in (r.get(col_live) or "").lower()
         )
 
-
-        live_season = sum(
-            1 for r in rows
-            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю сезонно")
-        )
 
         def pct(x: int, total: int) -> str:
             if total == 0:
