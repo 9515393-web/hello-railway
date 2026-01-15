@@ -289,14 +289,15 @@ async def admin_stats(message: types.Message):
             last_user = "—"
             last_time = "—"
 
-        # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
+               # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
         try:
             rows = await fetch_google_sheet_rows()
         except Exception as e:
             rows = []
-            print("Ошибка чтения Google Sheets:", repr(e))
+            await message.answer(f"❌ Ошибка чтения Google Sheets: {repr(e)}")
 
         total_forms = len(rows)
+        await message.answer(f"DEBUG: rows={total_forms}")
 
         # Подсчёт ответов по вопросам
         support_yes = count_checked(rows, "Поддерживаю инициативу по\nвосстановлению деревни\nЗахожье")
