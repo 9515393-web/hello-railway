@@ -289,21 +289,19 @@ async def admin_stats(message: types.Message):
             last_user = "—"
             last_time = "—"
 
-                # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
+        # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
         try:
             rows = await fetch_google_sheet_rows()
-            await message.answer(f"DEBUG: rows={len(rows)}")
-            await message.answer(f"DEBUG: keys={list(rows[0].keys()) if rows else 'EMPTY'}")
         except Exception as e:
             rows = []
             await message.answer(f"❌ Ошибка чтения Google Sheets: {repr(e)}")
 
-        total_forms = sum(1 for r in rows if (r.get("Отметка времени") or "").strip() != "")
-        await message.answer(f"DEBUG: total_forms={total_forms}")
+        total_forms = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+        )
 
-        # Подсчёт ответов по вопросам
-
-               # Поддержка / не поддержка
+        # Поддержка / не поддержка
         support_yes = sum(
             1 for r in rows
             if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
@@ -333,7 +331,6 @@ async def admin_stats(message: types.Message):
             if "сезон" in (r.get(col_live) or "").lower()
         )
 
-
         def pct(x: int, total: int) -> str:
             if total == 0:
                 return "0%"
@@ -352,7 +349,7 @@ async def admin_stats(message: types.Message):
             f"📝 Ответов в форме: <b>{total_forms}</b>\n\n"
             f"👍 Поддерживают: <b>{support_yes}</b> ({pct(support_yes, total_forms)})\n"
             f"👎 Не поддерживают: <b>{support_no}</b> ({pct(support_no, total_forms)})\n\n"
-            f"✍️ Готовы подписать: <b>{sign_ready}</b> ({pct(sign_ready, total_forms)})\n\n"
+            f"✍️ Готовы участвовать: <b>{sign_ready}</b> ({pct(sign_ready, total_forms)})\n\n"
             f"🏠 Постоянно живут: <b>{live_const}</b> ({pct(live_const, total_forms)})\n"
             f"🌿 Сезонно: <b>{live_season}</b> ({pct(live_season, total_forms)})"
         )
@@ -362,6 +359,7 @@ async def admin_stats(message: types.Message):
     except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
         await message.answer("⚠️ Ошибка получения статистики.")
+        
 
 @dp.message(F.text == "📣 Админ: рассылка")
 async def admin_broadcast_start(message: types.Message, state: FSMContext):
