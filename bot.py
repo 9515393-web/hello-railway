@@ -315,17 +315,22 @@ async def admin_stats(message: types.Message):
         sign_ready = sum(
             1 for r in rows
             if (r.get("Готов(а) поставить подпись под коллективным обращением в органы власти?") or "").strip() != ""
+       
+        )sign_ready = sum(
+            1 for r in rows
+            if (r.get("Готовность участвовать в инициативе") or "").strip() != ""
         )
 
         live_const = sum(
             1 for r in rows
-            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю постоянно")
+            if "постоян" in ((r.get("Сведения о проживании на территории (по желанию)") or "").lower())
         )
 
         live_season = sum(
             1 for r in rows
-            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю сезонно")
+            if "сезон" in ((r.get("Сведения о проживании на территории (по желанию)") or "").lower())
         )
+
 
         live_season = sum(
             1 for r in rows
