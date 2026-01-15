@@ -289,33 +289,43 @@ async def admin_stats(message: types.Message):
             last_user = "—"
             last_time = "—"
 
-               # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
+                # ==== НОВАЯ РЕАЛЬНАЯ СИТУАЦИЯ ====
         try:
             rows = await fetch_google_sheet_rows()
             await message.answer(f"DEBUG: rows={len(rows)}")
             await message.answer(f"DEBUG: keys={list(rows[0].keys()) if rows else 'EMPTY'}")
-
         except Exception as e:
             rows = []
             await message.answer(f"❌ Ошибка чтения Google Sheets: {repr(e)}")
 
         total_forms = sum(1 for r in rows if (r.get("Отметка времени") or "").strip() != "")
-        await message.answer(f"DEBUG: rows={total_forms}")
+        await message.answer(f"DEBUG: total_forms={total_forms}")
 
         # Подсчёт ответов по вопросам
         support_yes = sum(
-    1 for r in rows
-    if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
-)
+            1 for r in rows
+            if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
+        )
 
-support_no = sum(
-    1 for r in rows
-    if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
-)
-        sign_ready  = count_checked(rows, "Готов(а) поставить подпись под\nколлективным обращением в\nорганы власти")
+        support_no = sum(
+            1 for r in rows
+            if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
+        )
 
-        live_const  = count_checked(rows, "Проживаю на территории\nпостоянно")
-        live_season = count_checked(rows, "Проживаю сезонно")
+                sign_ready = sum(
+            1 for r in rows
+            if (r.get("Готов(а) поставить подпись под коллективным обращением в органы власти?") or "").strip() != ""
+        )
+
+        live_const = sum(
+            1 for r in rows
+            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю постоянно")
+        )
+
+        live_season = sum(
+            1 for r in rows
+            if (r.get("Как часто вы проживаете на территории?") or "").startswith("Проживаю сезонно")
+        )
 
         def pct(x: int, total: int) -> str:
             if total == 0:
