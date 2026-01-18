@@ -307,31 +307,50 @@ async def admin_stats(message: types.Message):
         col_ready = "Готовность участвовать в инициативе"
         col_live = "Сведения о проживании на территории (по желанию)"
 
-# Поддержка / не поддержка (ловим любые варианты)
-support_yes = 0
-support_no = 0
+                # Поддержка / не поддержка (ловим любые варианты)
+        support_yes = 0
+        support_no = 0
 
-for r in rows:
-    # считаем только реальные ответы формы
-    if (r.get("Отметка времени") or "").strip() == "":
-        continue
+        for r in rows:
+            # считаем только реальные ответы формы
+            if (r.get("Отметка времени") or "").strip() == "":
+                continue
 
-    val = (r.get(col_support) or "").strip().lower()
+            val = (r.get(col_support) or "").strip().lower()
 
-    # отрицательные ответы (важно проверять первыми!)
-    if "не поддерж" in val or "против" in val:
-        support_no += 1
+            # отрицательные ответы (важно проверять первыми!)
+            if "не поддерж" in val or "против" in val:
+                support_no += 1
 
-    # положительные ответы
-    elif "поддерж" in val:
-        support_yes += 1
-
+            # положительные ответы
+            elif "поддерж" in val:
+                support_yes += 1
 
         # Готовность участвовать (любое заполненное значение)
-    sign_ready = sum(
-        1 for r in rows
-        if (r.get("Отметка времени") or "").strip() != ""
-        and (r.get(col_ready) or "").strip() != ""
+        sign_ready = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+            and (r.get(col_ready) or "").strip() != ""
+        )
+
+        # Проживание (по желанию)
+        live_const = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+            and "постоян" in (r.get(col_live) or "").lower()
+        )
+
+        live_season = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+            and "сезон" in (r.get(col_live) or "").lower()
+        )
+
+
+        live_season = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+            and "сезон" in (r.get(col_live) or "").lower()
         )
 
         # Проживание (по желанию)
