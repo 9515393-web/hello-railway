@@ -307,8 +307,8 @@ async def admin_stats(message: types.Message):
         col_ready = "Готовность участвовать в инициативе"
         col_live = "Сведения о проживании на территории (по желанию)"
 
-        # Поддержка / не поддержка (ловим любые варианты)
-        support_yes = 0
+# Поддержка / не поддержка (ловим любые варианты)
+support_yes = 0
 support_no = 0
 
 for r in rows:
