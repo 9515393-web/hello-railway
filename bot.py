@@ -309,15 +309,23 @@ async def admin_stats(message: types.Message):
 
         # Поддержка / не поддержка (ловим любые варианты)
         support_yes = 0
-        support_no = 0
+support_no = 0
 
-        for r in rows:
-            val = (r.get(col_support) or "").strip().lower()
+for r in rows:
+    # считаем только реальные ответы формы
+    if (r.get("Отметка времени") or "").strip() == "":
+        continue
 
-            if val.startswith("поддерж"):
-                support_yes += 1
-            elif val.startswith("не поддерж"):
-                support_no += 1
+    val = (r.get(col_support) or "").strip().lower()
+
+    # отрицательные ответы (важно проверять первыми!)
+    if "не поддерж" in val or "против" in val:
+        support_no += 1
+
+    # положительные ответы
+    elif "поддерж" in val:
+        support_yes += 1
+
 
         # Готовность участвовать (любое заполненное значение)
         sign_ready = sum(
