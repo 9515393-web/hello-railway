@@ -328,9 +328,10 @@ for r in rows:
 
 
         # Готовность участвовать (любое заполненное значение)
-        sign_ready = sum(
-            1 for r in rows
-            if (r.get(col_ready) or "").strip() != ""
+    sign_ready = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+        and (r.get(col_ready) or "").strip() != ""
         )
 
         # Проживание (по желанию)
