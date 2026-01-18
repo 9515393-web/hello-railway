@@ -301,7 +301,7 @@ async def admin_stats(message: types.Message):
             if (r.get("Отметка времени") or "").strip() != ""
         )
 
-                # Поддержка / не поддержка
+        # Поддержка / не поддержка
         col_support = "Ваше отношение к инициативе по восстановлению деревни Захожье"
 
         support_yes = sum(
@@ -314,6 +314,7 @@ async def admin_stats(message: types.Message):
             1 for r in rows
             if "не поддерживаю" in (r.get(col_support) or "").lower()
         )
+
 
         # Готовность участвовать
         sign_ready = sum(
