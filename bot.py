@@ -301,19 +301,19 @@ async def admin_stats(message: types.Message):
             if (r.get("Отметка времени") or "").strip() != ""
         )
 
-        # Поддержка / не поддержка
+                # Поддержка / не поддержка
         col_support = "Ваше отношение к инициативе по восстановлению деревни Захожье"
 
-support_yes = sum(
-    1 for r in rows
-    if "поддерживаю" in (r.get(col_support) or "").lower()
-    and "не поддерживаю" not in (r.get(col_support) or "").lower()
-)
+        support_yes = sum(
+            1 for r in rows
+            if "поддерживаю" in (r.get(col_support) or "").lower()
+            and "не поддерживаю" not in (r.get(col_support) or "").lower()
+        )
 
-support_no = sum(
-    1 for r in rows
-    if "не поддерживаю" in (r.get(col_support) or "").lower()
-)
+        support_no = sum(
+            1 for r in rows
+            if "не поддерживаю" in (r.get(col_support) or "").lower()
+        )
 
         # Готовность участвовать
         sign_ready = sum(
@@ -333,7 +333,8 @@ support_no = sum(
             1 for r in rows
             if "сезон" in (r.get(col_live) or "").lower()
         )
-await message.answer(f"DEBUG: support_yes={support_yes}, support_no={support_no}")
+
+        await message.answer(f"DEBUG: support_yes={support_yes}, support_no={support_no}")
 
         def pct(x: int, total: int) -> str:
             if total == 0:
