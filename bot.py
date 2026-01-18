@@ -335,7 +335,6 @@ async def admin_stats(message: types.Message):
             if "сезон" in (r.get(col_live) or "").lower()
         )
 
-        await message.answer(f"DEBUG: support_yes={support_yes}, support_no={support_no}")
 
         def pct(x: int, total: int) -> str:
             if total == 0:
