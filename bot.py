@@ -302,15 +302,18 @@ async def admin_stats(message: types.Message):
         )
 
         # Поддержка / не поддержка
-        support_yes = sum(
-            1 for r in rows
-            if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Поддерживаю")
-        )
+        col_support = "Ваше отношение к инициативе по восстановлению деревни Захожье"
 
-        support_no = sum(
-            1 for r in rows
-            if (r.get("Ваше отношение к инициативе по восстановлению деревни Захожье") or "").startswith("Не поддерживаю")
-        )
+support_yes = sum(
+    1 for r in rows
+    if "поддерживаю" in (r.get(col_support) or "").lower()
+    and "не поддерживаю" not in (r.get(col_support) or "").lower()
+)
+
+support_no = sum(
+    1 for r in rows
+    if "не поддерживаю" in (r.get(col_support) or "").lower()
+)
 
         # Готовность участвовать
         sign_ready = sum(
@@ -330,6 +333,7 @@ async def admin_stats(message: types.Message):
             1 for r in rows
             if "сезон" in (r.get(col_live) or "").lower()
         )
+await message.answer(f"DEBUG: support_yes={support_yes}, support_no={support_no}")
 
         def pct(x: int, total: int) -> str:
             if total == 0:
