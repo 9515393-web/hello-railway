@@ -44,6 +44,12 @@ bot_kb = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="🤖 Открыть бота", url=BOT_URL)]
     ]
 )
+chat_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="💬 Открыть чат", url=CHAT_URL)]
+    ]
+)
+
 # ===== АДМИНЫ =====
 ADMIN_IDS = {852852917}
 def is_admin(user_id: int) -> bool:
@@ -553,6 +559,60 @@ async def back_to_main(message: types.Message):
         reply_markup=keyboard
     )
 
+
+# ===== ДОКУМЕНТЫ ПО ПРОЕКТУ =====
+@dp.message(F.text == "📁 Документы по проекту")
+async def docs_menu(message: types.Message):
+    await message.answer(
+        "📁 <b>Документы по проекту</b>\n\nВыберите категорию:",
+        reply_markup=docs_keyboard
+    )
+
+
+@dp.message(F.text == "📌 Нормативные документы")
+async def docs_normative(message: types.Message):
+    await message.answer(
+        "📌 <b>Нормативные документы</b>\n\n"
+        "Раздел в разработке.\n"
+        "Сюда будут добавлены законы, постановления, регламенты."
+    )
+
+
+@dp.message(F.text == "📝 Подготовленные документы")
+async def docs_prepared(message: types.Message):
+    await message.answer(
+        "📝 <b>Подготовленные документы</b>\n\n"
+        "Раздел в разработке.\n"
+        "Сюда будут добавлены подготовленные инициативной группой материалы."
+    )
+
+
+@dp.message(F.text == "📤 Исходящие документы")
+async def docs_outgoing(message: types.Message):
+    await message.answer(
+        "📤 <b>Исходящие документы</b>\n\n"
+        "Раздел в разработке.\n"
+        "Сюда будут добавлены письма и обращения, отправленные в органы власти."
+    )
+
+
+@dp.message(F.text == "📥 Входящие документы")
+async def docs_incoming(message: types.Message):
+    await message.answer(
+        "📥 <b>Входящие документы</b>\n\n"
+        "Раздел в разработке.\n"
+        "Сюда будут добавлены ответы и письма, полученные от органов власти."
+    )
+
+
+@dp.message(F.text == "📎 Иные документы")
+async def docs_other(message: types.Message):
+    await message.answer(
+        "📎 <b>Иные документы</b>\n\n"
+        "Раздел в разработке.\n"
+        "Сюда будут добавлены прочие документы, схемы, справки и т.д."
+    )
+
 # ===== ИСТОРИЯ =====
 @dp.message(F.text == "📜 История деревни Захожье")
 async def history_cmd(message: types.Message):
@@ -757,7 +817,11 @@ async def stats_cmd(message: types.Message):
 
 @dp.message(F.text == "💬 Чат жителей")
 async def chat_cmd(message: types.Message):
-    await message.answer(f"👉 {CHAT_URL}")
+    await message.answer(
+        "💬 <b>Чат жителей</b>\n\n"
+        "Нажмите кнопку ниже, чтобы перейти в чат 👇",
+        reply_markup=chat_kb
+    )
 
 @dp.message(F.text == "🤝 Как помочь")
 async def help_cmd(message: types.Message):
