@@ -367,11 +367,6 @@ async def admin_stats(message: types.Message):
         )
 
 
-        live_season = sum(
-            1 for r in rows
-            if (r.get("Отметка времени") or "").strip() != ""
-            and "сезон" in (r.get(col_live) or "").lower()
-        )
 
         # Проживание (по желанию)
         live_const = sum(
@@ -571,11 +566,41 @@ async def docs_menu(message: types.Message):
 
 @dp.message(F.text == "📌 Нормативные документы")
 async def docs_normative(message: types.Message):
+    folder = "docs/normative"
+
     await message.answer(
         "📌 <b>Нормативные документы</b>\n\n"
-        "Раздел в разработке.\n"
-        "Сюда будут добавлены законы, постановления, регламенты."
+        "Отправляю PDF файлы 👇"
     )
+
+    # Проверяем, что папка существует
+    if not os.path.exists(folder):
+        await message.answer(
+            f"⚠️ Папка не найдена:\n<code>{folder}</code>\n\n"
+            "Проверь, что папка есть в репозитории GitHub."
+        )
+        return
+
+    # Берём все PDF файлы из папки
+    pdf_files = sorted([
+        f for f in os.listdir(folder)
+        if f.lower().endswith(".pdf")
+    ])
+
+    if not pdf_files:
+        await message.answer(
+            "⚠️ В папке <code>docs/normative/</code> пока нет PDF файлов."
+        )
+        return
+
+    # Отправляем каждый PDF
+    for filename in pdf_files:
+        path = os.path.join(folder, filename)
+
+        await message.answer_document(
+            document=FSInputFile(path),
+            caption=f"📄 {filename}"
+        )
 
 
 @dp.message(F.text == "📝 Подготовленные документы")
