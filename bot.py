@@ -322,29 +322,28 @@ async def admin_stats(message: types.Message):
             if (r.get("Отметка времени") or "").strip() != ""
         )
 
-        # Колонки формы
+                        # Колонки формы
         col_support = "Ваше отношение к инициативе по восстановлению деревни Захожье"
         col_ready = "Готовность участвовать в инициативе"
         col_live = "Сведения о проживании на территории (по желанию)"
 
-                # Поддержка / не поддержка (ловим любые варианты)
+        # Поддержка / не поддержка / нейтрально
         support_yes = 0
         support_no = 0
+        support_neutral = 0
 
         for r in rows:
-            # считаем только реальные ответы формы
             if (r.get("Отметка времени") or "").strip() == "":
                 continue
 
             val = (r.get(col_support) or "").strip().lower()
 
-            # отрицательные ответы (важно проверять первыми!)
             if "не поддерж" in val or "против" in val:
                 support_no += 1
-
-            # положительные ответы
             elif "поддерж" in val:
                 support_yes += 1
+            else:
+                support_neutral += 1
 
         # Готовность участвовать (любое заполненное значение)
         sign_ready = sum(
@@ -366,19 +365,6 @@ async def admin_stats(message: types.Message):
             and "сезон" in (r.get(col_live) or "").lower()
         )
 
-
-
-        # Проживание (по желанию)
-        live_const = sum(
-            1 for r in rows
-            if "постоян" in (r.get(col_live) or "").lower()
-        )
-
-        live_season = sum(
-            1 for r in rows
-            if "сезон" in (r.get(col_live) or "").lower()
-        )
-
         def pct(x: int, total: int) -> str:
             if total == 0:
                 return "0%"
@@ -397,6 +383,8 @@ async def admin_stats(message: types.Message):
             "📌 <b>Реальные ответы в Google Form</b>\n"
             f"📝 Ответов в форме: <b>{total_forms}</b>\n\n"
             f"👍 Поддерживают: <b>{support_yes}</b> ({pct(support_yes, total_forms)})\n"
+            f"⚖️ Нейтрально: <b>{support_neutral}</b> ({pct(support_neutral, total_forms)})\n"
+            f"👎 Не поддерживают: <b>{support_no}</b> ({pct(support_no, total_forms)})\n"
             f"✍️ Готовы участвовать: <b>{sign_ready}</b> ({pct(sign_ready, total_forms)})\n\n"
             f"🏠 Постоянно живут: <b>{live_const}</b> ({pct(live_const, total_forms)})\n"
             f"🌿 Сезонно: <b>{live_season}</b> ({pct(live_season, total_forms)})"
