@@ -77,6 +77,7 @@ keyboard = ReplyKeyboardMarkup(
         [KeyboardButton(text="🗳 Принять участие в опросе")],
         [KeyboardButton(text="📊 Статистика")],
         [KeyboardButton(text="💬 Чат жителей")],
+        [KeyboardButton(text="📁 Документы по проекту")],
         [KeyboardButton(text="🤝 Как помочь")]
     ],
     resize_keyboard=True
@@ -133,6 +134,19 @@ MAPS = {
 maps_keyboard = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text=key)] for key in MAPS.keys()] +
              [[KeyboardButton(text="⬅ Назад")]],
+    resize_keyboard=True
+)
+
+# ===== ДОКУМЕНТЫ ПО ПРОЕКТУ =====
+docs_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📌 Нормативные документы")],
+        [KeyboardButton(text="📝 Подготовленные документы")],
+        [KeyboardButton(text="📤 Исходящие документы")],
+        [KeyboardButton(text="📥 Входящие документы")],
+        [KeyboardButton(text="📎 Иные документы")],
+        [KeyboardButton(text="⬅ Назад")]
+    ],
     resize_keyboard=True
 )
 
