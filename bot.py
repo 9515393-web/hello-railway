@@ -320,46 +320,23 @@ async def admin_stats(message: types.Message):
         )
 
         # Колонки формы
-        col_support = "Ваше отношение к инициативе по восстановлению деревни Захожье"
+        col_disagree = "Несогласие с инициативой (при наличии)"
         col_ready = "Готовность участвовать в инициативе"
         col_live = "Сведения о проживании на территории (по желанию)"
 
-                # Поддержка / не поддержка / нейтрально
-        support_yes = 0
-        support_no = 0
+        # Несогласие (если поле заполнено — значит есть несогласие)
+        support_no = sum(
+            1 for r in rows
+            if (r.get("Отметка времени") or "").strip() != ""
+            and (r.get(col_disagree) or "").strip() != ""
+        )
+
+        # Поддерживают = остальные ответы формы
+        support_yes = total_forms - support_no
+
+        # Нейтрально пока не считаем (нет отдельного поля)
         support_neutral = 0
 
-        for r in rows:
-            if (r.get("Отметка времени") or "").strip() == "":
-                continue
-
-            val = (r.get(col_support) or "").strip().lower()
-
-            # ❌ отрицательные варианты (проверяем первыми!)
-            negative_words = [
-                "не поддерж",
-                "против",
-                "нет",
-                "отриц",
-                "не одобр",
-                "скорее не"
-            ]
-
-            # ✅ положительные варианты
-            positive_words = [
-                "поддерж",
-                "за",
-                "да",
-                "одобр",
-                "полож"
-            ]
-
-            if any(w in val for w in negative_words):
-                support_no += 1
-            elif any(w in val for w in positive_words):
-                support_yes += 1
-            else:
-                support_neutral += 1
 
         # Готовность участвовать (любое заполненное значение)
         sign_ready = sum(
