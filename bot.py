@@ -588,14 +588,44 @@ async def docs_normative(message: types.Message):
             caption=f"📄 {filename}"
         )
 
-
 @dp.message(F.text == "📝 Подготовленные документы")
 async def docs_prepared(message: types.Message):
+    folder = "docs/docs/prepared"
+
     await message.answer(
         "📝 <b>Подготовленные документы</b>\n\n"
-        "Раздел в разработке.\n"
-        "Сюда будут добавлены подготовленные инициативной группой материалы."
+        "Отправляю DOCX файлы 👇"
     )
+
+    # Проверяем, что папка существует
+    if not os.path.exists(folder):
+        await message.answer(
+            f"⚠️ Папка не найдена:\n<code>{folder}</code>\n\n"
+            "Проверь, что папка есть в репозитории GitHub."
+        )
+        return
+
+    # Берём все DOCX файлы из папки
+    doc_files = sorted([
+        f for f in os.listdir(folder)
+        if f.lower().endswith(".docx")
+    ])
+
+    if not doc_files:
+        await message.answer(
+            "⚠️ В папке <code>docs/docs/prepared/</code> пока нет DOCX файлов."
+        )
+        return
+
+    # Отправляем каждый DOCX
+    for filename in doc_files:
+        path = os.path.join(folder, filename)
+
+        await message.answer_document(
+            document=FSInputFile(path),
+            caption=f"📄 {filename}"
+        )
+
 
 
 @dp.message(F.text == "📤 Исходящие документы")
