@@ -324,7 +324,7 @@ async def admin_stats(message: types.Message):
         col_ready = "Готовность участвовать в инициативе"
         col_live = "Сведения о проживании на территории (по желанию)"
 
-        # Поддержка / не поддержка / нейтрально
+                # Поддержка / не поддержка / нейтрально
         support_yes = 0
         support_no = 0
         support_neutral = 0
@@ -335,9 +335,28 @@ async def admin_stats(message: types.Message):
 
             val = (r.get(col_support) or "").strip().lower()
 
-            if "не поддерж" in val or "против" in val:
+            # ❌ отрицательные варианты (проверяем первыми!)
+            negative_words = [
+                "не поддерж",
+                "против",
+                "нет",
+                "отриц",
+                "не одобр",
+                "скорее не"
+            ]
+
+            # ✅ положительные варианты
+            positive_words = [
+                "поддерж",
+                "за",
+                "да",
+                "одобр",
+                "полож"
+            ]
+
+            if any(w in val for w in negative_words):
                 support_no += 1
-            elif "поддерж" in val:
+            elif any(w in val for w in positive_words):
                 support_yes += 1
             else:
                 support_neutral += 1
