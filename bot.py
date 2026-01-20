@@ -377,7 +377,6 @@ async def admin_stats(message: types.Message):
             "📌 <b>Реальные ответы в Google Form</b>\n"
             f"📝 Ответов в форме: <b>{total_forms}</b>\n\n"
             f"👍 Поддерживают: <b>{support_yes}</b> ({pct(support_yes, total_forms)})\n"
-            f"⚖️ Нейтрально: <b>{support_neutral}</b> ({pct(support_neutral, total_forms)})\n"
             f"👎 Не поддерживают: <b>{support_no}</b> ({pct(support_no, total_forms)})\n"
             f"✍️ Готовы участвовать: <b>{sign_ready}</b> ({pct(sign_ready, total_forms)})\n\n"
             f"🏠 Постоянно живут: <b>{live_const}</b> ({pct(live_const, total_forms)})\n"
