@@ -35,6 +35,7 @@ GOOGLE_FORM_URL = (
 
 CHAT_URL = "https://t.me/+dmJ15VfkRCc3YjUy"
 BOT_URL = "https://t.me/Recreator_info_bot"
+INIT_GROUP_CHAT_URL = "https://t.me/+ssdkgwxAIfZiMjUy"
 
 GOOGLE_SHEET_ID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg"
 GOOGLE_SHEET_GID = "1620808508"
@@ -47,6 +48,11 @@ bot_kb = InlineKeyboardMarkup(
 chat_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="💬 Открыть чат", url=CHAT_URL)]
+    ]
+)
+init_group_chat_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="💬 Открыть чат инициативной группы", url=INIT_GROUP_CHAT_URL)]
     ]
 )
 
@@ -86,12 +92,12 @@ keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
-admin_stats_kb = InlineKeyboardMarkup(
-    inline_keyboard=[
+admin_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
-        [InlineKeyboardButton(text="📁 Документы инициативной группы", url=INIT_GROUP_DOCS_URL)],
-        [InlineKeyboardButton(text="💬 Чат инициативной группы", url=INIT_GROUP_CHAT_URL)],
+        [KeyboardButton(text="📁 Документы инициативной группы")],
+        [KeyboardButton(text="💬 Чат инициативной группы")],
         [KeyboardButton(text="⬅ Назад")]
     ],
     resize_keyboard=True
@@ -385,7 +391,7 @@ async def admin_stats(message: types.Message):
             f"🌿 Сезонно: <b>{live_season}</b> ({pct(live_season, total_forms)})"
         )
 
-        await message.answer(report, reply_markup=admin_stats_kb)
+        await message.answer(report, reply_markup=admin_keyboard)
         await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
 
     except Exception as e:
@@ -559,7 +565,7 @@ async def faq_cmd(message: types.Message):
         "📌 <b>КЛЮЧЕВОЙ ПРИНЦИП</b>\n\n"
         "Никаких решений без жителей.\n"
         "Никаких обязательств без согласия.\n"
-        "Только официальный и поэтапный процесс."
+        "Только официальный и поэтапный процесс.",
         
         "ℹ️ <i>Персональные данные обрабатываются в соответствии с ФЗ-152 "
         "и используются только для целей информирования и анализа.</i>"
@@ -603,7 +609,54 @@ async def docs_menu(message: types.Message):
         "📁 <b>Документы по проекту</b>\n\nВыберите категорию:",
         reply_markup=docs_keyboard
     )
+    
+@dp.message(F.text == "📁 Документы инициативной группы")
+async def admin_docs_init_group(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
+        return
 
+    folder = "docs/initiative"
+
+    await message.answer("📁 <b>Документы инициативной группы</b>\n\nОтправляю файлы 👇")
+
+    if not os.path.exists(folder):
+        await message.answer(
+            f"⚠️ Папка не найдена:\n<code>{folder}</code>\n\n"
+            "Проверь, что папка есть в репозитории."
+        )
+        return
+
+    files = sorted(os.listdir(folder))
+    if not files:
+        await message.answer("⚠️ В папке пока нет файлов.")
+        return
+
+    for filename in files:
+        path = os.path.join(folder, filename)
+
+        if os.path.isdir(path):
+            continue
+
+        try:
+            await message.answer_document(
+                document=FSInputFile(path),
+                caption=f"📄 {filename}"
+            )
+        except Exception as e:
+            await message.answer(f"⚠️ Не удалось отправить {filename}: {repr(e)}")
+
+@dp.message(F.text == "💬 Чат инициативной группы")
+async def admin_init_group_chat(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
+        return
+
+    await message.answer(
+        "💬 <b>Чат инициативной группы</b>\n\n"
+        "Нажмите кнопку ниже 👇",
+        reply_markup=init_group_chat_kb
+    )
 
 @dp.message(F.text == "📌 Нормативные документы")
 async def docs_normative(message: types.Message):
