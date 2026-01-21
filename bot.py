@@ -55,6 +55,14 @@ init_group_chat_kb = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="💬 Открыть чат инициативной группы", url=INIT_GROUP_CHAT_URL)]
     ]
 )
+broadcast_confirm_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Отправить", callback_data="broadcast_send"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="broadcast_cancel")
+        ]
+    ]
+)
 
 # ===== АДМИНЫ =====
 ADMIN_IDS = {852852917}
@@ -105,6 +113,7 @@ admin_keyboard = ReplyKeyboardMarkup(
 
 class AdminBroadcastState(StatesGroup):
     waiting_text = State()
+    waiting_confirm = State()
     
 MAPS = {
     "🗺 Карта 1792 год": {
