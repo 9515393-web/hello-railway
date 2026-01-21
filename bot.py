@@ -61,8 +61,11 @@ init_group_chat_kb = InlineKeyboardMarkup(
 broadcast_confirm_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
+            InlineKeyboardButton(text="🧪 Тест себе", callback_data="broadcast_test"),
+        ],
+        [
             InlineKeyboardButton(text="✅ Отправить", callback_data="broadcast_send"),
-            InlineKeyboardButton(text="❌ Отмена", callback_data="broadcast_cancel")
+            InlineKeyboardButton(text="❌ Отмена", callback_data="broadcast_cancel"),
         ]
     ]
 )
@@ -421,33 +424,112 @@ async def admin_broadcast_start(message: types.Message, state: FSMContext):
         "Сообщение будет отправлено всем участникам опроса."
     )
     await state.set_state(AdminBroadcastState.waiting_text)
+
+
 @dp.message(AdminBroadcastState.waiting_text)
-async def admin_broadcast_send(message: types.Message, state: FSMContext):
+async def admin_broadcast_preview(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
 
     text = message.text
+
+    # сохраняем текст для подтверждения
+    await state.update_data(broadcast_text=text)
+
+    await message.answer(
+        "📣 <b>Подтверждение рассылки</b>\n\n"
+        "Будет отправлено сообщение:\n\n"
+        f"{text}\n\n"
+        "Подтвердить отправку?",
+        reply_markup=broadcast_confirm_kb
+    )
+
+    await state.set_state(AdminBroadcastState.waiting_confirm)
+
+
+# ===== CALLBACK: ПОДТВЕРЖДЕНИЕ РАССЫЛКИ =====
+@dp.callback_query(F.data == "broadcast_cancel")
+async def broadcast_cancel(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    await state.clear()
+    await callback.message.edit_text("❌ Рассылка отменена.")
+    await callback.message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "broadcast_send")
+async def broadcast_send(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    current_state = await state.get_state()
+    if current_state != AdminBroadcastState.waiting_confirm.state:
+        await callback.answer("⚠️ Рассылка уже завершена или не активна", show_alert=True)
+        return
+
+    data = await state.get_data()
+    text = data.get("broadcast_text")
+
+    if not text:
+        await callback.answer("⚠️ Текст рассылки не найден", show_alert=True)
+        await state.clear()
+        return
+
     user_ids = await get_all_user_ids()
 
     sent = 0
     failed = 0
 
+    await callback.message.edit_text("⏳ Рассылка отправляется...")
+
     for uid in user_ids:
         try:
-            await message.bot.send_message(uid, text)
+            await callback.bot.send_message(uid, text)
             sent += 1
-            await asyncio.sleep(0.05)  # 🔴 антифлуд
+            await asyncio.sleep(0.05)
         except Exception:
             failed += 1
 
     await state.clear()
 
-    await message.answer(
+    await callback.message.edit_text(
         "📣 <b>Рассылка завершена</b>\n\n"
         f"✅ Отправлено: <b>{sent}</b>\n"
-        f"⚠️ Ошибок: <b>{failed}</b>",
-        reply_markup=admin_keyboard
+        f"⚠️ Ошибок: <b>{failed}</b>"
     )
+    await callback.message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "broadcast_test")
+async def broadcast_test(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    current_state = await state.get_state()
+    if current_state != AdminBroadcastState.waiting_confirm.state:
+        await callback.answer("⚠️ Рассылка уже завершена или не активна", show_alert=True)
+        return
+
+    data = await state.get_data()
+    text = data.get("broadcast_text")
+
+    if not text:
+        await callback.answer("⚠️ Текст рассылки не найден", show_alert=True)
+        await state.clear()
+        return
+
+    try:
+        await callback.bot.send_message(callback.from_user.id, f"🧪 <b>Тест рассылки</b>\n\n{text}")
+        await callback.answer("✅ Тест отправлен тебе в личку", show_alert=True)
+    except Exception as e:
+        await callback.answer(f"❌ Ошибка: {repr(e)}", show_alert=True)
+
 
 # ===== О ПРОЕКТЕ =====
 @dp.message(F.text == "🏡 О проекте")
@@ -1018,7 +1100,7 @@ async def main():
     await init_db()
     await debug_bot(bot)
 
-        # 🔒 Защита от случайного двойного запуска
+    # 🔒 Защита от случайного двойного запуска
     # Railway = всегда можно
     # Локально = только если RUN_LOCAL=1
     if not IS_RAILWAY and not RUN_LOCAL:
