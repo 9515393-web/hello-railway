@@ -86,10 +86,12 @@ keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
-admin_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
+admin_stats_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
+        [InlineKeyboardButton(text="📁 Документы инициативной группы", url=INIT_GROUP_DOCS_URL)],
+        [InlineKeyboardButton(text="💬 Чат инициативной группы", url=INIT_GROUP_CHAT_URL)],
         [KeyboardButton(text="⬅ Назад")]
     ],
     resize_keyboard=True
@@ -383,7 +385,8 @@ async def admin_stats(message: types.Message):
             f"🌿 Сезонно: <b>{live_season}</b> ({pct(live_season, total_forms)})"
         )
 
-        await message.answer(report, reply_markup=admin_keyboard)
+        await message.answer(report, reply_markup=admin_stats_kb)
+        await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
 
     except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
