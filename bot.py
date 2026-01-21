@@ -26,6 +26,8 @@ API_TOKEN = os.getenv("BOT_TOKEN")
 if not API_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set in Railway Variables")
 
+RUN_LOCAL = os.getenv("RUN_LOCAL", "0") == "1"
+
 
 GOOGLE_FORM_URL = (
     "https://docs.google.com/forms/d/e/"
@@ -1014,6 +1016,13 @@ async def main():
 
     await init_db()
     await debug_bot(bot)
+
+    # 🔒 Защита от случайного локального запуска
+    if not RUN_LOCAL:
+        print("⛔ Локальный запуск запрещён (RUN_LOCAL=0).")
+        print("✅ Railway запускается автоматически.")
+        return
+
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
