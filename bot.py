@@ -120,10 +120,33 @@ admin_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+# ===== ДОКУМЕНТЫ ИНИЦИАТИВНОЙ ГРУППЫ (ПАПКИ) =====
+init_docs_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📣 Агитационные материалы")],
+        [KeyboardButton(text="📄 Протоколы / решения")],
+        [KeyboardButton(text="✉️ Шаблоны писем / обращения")],
+        [KeyboardButton(text="📎 Прочее")],
+        [KeyboardButton(text="⬅ Назад")]
+    ],
+    resize_keyboard=True
+)
+
+# ===== ПАПКИ ИНИЦИАТИВНОЙ ГРУППЫ =====
+INIT_DOCS_FOLDERS = {
+    "📣 Агитационные материалы": "docs/initiative/agit",
+    "📄 Протоколы / решения": "docs/initiative/protocols",
+    "✉️ Шаблоны писем / обращения": "docs/initiative/templates",
+    "📎 Прочее": "docs/initiative/other",
+}
+
 class AdminBroadcastState(StatesGroup):
     waiting_text = State()
     waiting_confirm = State()
     waiting_pin = State()
+
+class InitDocsState(StatesGroup):
+    choosing_file = State()
 
 MAPS = {
     "🗺 Карта 1792 год": {
@@ -310,6 +333,78 @@ def count_checked(rows: list[dict], column_name: str) -> int:
             count += 1
     return count
 
+PAGE_SIZE = 10
+
+async def show_files_page(message: types.Message, folder: str, title: str, page: int = 0):
+    if not os.path.exists(folder):
+        await message.answer(f"⚠️ Папка не найдена:\n<code>{folder}</code>")
+        return
+
+    files = sorted([
+        f for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f))
+    ])
+
+    if not files:
+        await message.answer("⚠️ В этой папке пока нет файлов.")
+        return
+
+    total_pages = (len(files) + PAGE_SIZE - 1) // PAGE_SIZE
+    page = max(0, min(page, total_pages - 1))
+
+    start = page * PAGE_SIZE
+    end = start + PAGE_SIZE
+    chunk = files[start:end]
+
+    inline_rows = []
+
+    # кнопки файлов
+    for f in chunk:
+        inline_rows.append([
+            InlineKeyboardButton(
+                text=f"📄 {f}",
+                callback_data=f"initdoc_file:{f}"
+            )
+        ])
+
+    # навигация
+    nav_row = []
+    if page > 0:
+        nav_row.append(
+            InlineKeyboardButton(
+                text="⬅ Назад",
+                callback_data=f"initdoc_page:{page-1}"
+            )
+        )
+
+    nav_row.append(
+        InlineKeyboardButton(
+            text=f"{page+1}/{total_pages}",
+            callback_data="noop"
+        )
+    )
+
+    if page < total_pages - 1:
+        nav_row.append(
+            InlineKeyboardButton(
+                text="Вперёд ➡",
+                callback_data=f"initdoc_page:{page+1}"
+            )
+        )
+
+    if nav_row:
+        inline_rows.append(nav_row)
+
+    inline_rows.append([
+        InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
+    ])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
+
+    await message.answer(
+        f"{title}\n\nВыберите файл 👇",
+        reply_markup=kb
+    )
 
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
@@ -797,40 +892,111 @@ async def docs_menu(message: types.Message):
     )
     
 @dp.message(F.text == "📁 Документы инициативной группы")
-async def admin_docs_init_group(message: types.Message):
+async def admin_docs_init_group(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         await message.answer("⛔ Доступ только для администратора")
         return
 
-    folder = "docs/initiative"
+    # сбрасываем прошлое состояние (если было)
+    await state.clear()
 
-    await message.answer("📁 <b>Документы инициативной группы</b>\n\nОтправляю файлы 👇")
+    # показываем меню папок
+    await message.answer(
+        "📁 <b>Документы инициативной группы</b>\n\nВыберите раздел:",
+        reply_markup=init_docs_keyboard
+    )
+# ===== ИНИЦИАТИВНАЯ ГРУППА: ВЫБОР ПАПКИ =====
+@dp.message(F.text.in_(INIT_DOCS_FOLDERS.keys()))
+async def init_docs_choose_folder(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
+        return
 
-    if not os.path.exists(folder):
-        await message.answer(
-            f"⚠️ Папка не найдена:\n<code>{folder}</code>\n\n"
-            "Проверь, что папка есть в репозитории."
+    folder = INIT_DOCS_FOLDERS[message.text]
+    title = message.text
+
+    # сохраняем выбранную папку
+    await state.update_data(init_docs_folder=folder, init_docs_title=title)
+    await state.set_state(InitDocsState.choosing_file)
+
+    await show_files_page(message, folder, f"📁 <b>{title}</b>", page=0)
+
+
+# ===== ИНИЦИАТИВНАЯ ГРУППА: ПАГИНАЦИЯ =====
+@dp.callback_query(F.data.startswith("initdoc_page:"))
+async def init_docs_page(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    data = await state.get_data()
+    folder = data.get("init_docs_folder")
+    title = data.get("init_docs_title", "Документы")
+
+    if not folder:
+        await callback.message.answer("⚠️ Папка не выбрана. Откройте раздел заново.")
+        await callback.answer()
+        return
+
+    page = int(callback.data.split(":")[1])
+
+    await show_files_page(callback.message, folder, f"📁 <b>{title}</b>", page=page)
+    await callback.answer()
+
+# ===== ИНИЦИАТИВНАЯ ГРУППА: ОТПРАВКА ФАЙЛА =====
+@dp.callback_query(F.data.startswith("initdoc_file:"))
+async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    filename = callback.data.split(":", 1)[1]
+
+    data = await state.get_data()
+    folder = data.get("init_docs_folder")
+
+    if not folder:
+        await callback.message.answer("⚠️ Папка не выбрана. Откройте раздел заново.")
+        await callback.answer()
+        return
+
+    path = os.path.join(folder, filename)
+
+    if not os.path.exists(path):
+        await callback.message.answer("⚠️ Файл не найден.")
+        await callback.answer()
+        return
+
+    try:
+        await callback.message.answer_document(
+            document=FSInputFile(path),
+            caption=f"📄 {filename}"
         )
+        await callback.answer("✅ Отправлено")
+    except Exception as e:
+        await callback.message.answer(f"⚠️ Не удалось отправить файл: {repr(e)}")
+        await callback.answer("❌ Ошибка", show_alert=True)
+
+
+# ===== ИНИЦИАТИВНАЯ ГРУППА: НАЗАД К ПАПКАМ =====
+@dp.callback_query(F.data == "initdoc_back")
+async def init_docs_back(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
         return
 
-    files = sorted(os.listdir(folder))
-    if not files:
-        await message.answer("⚠️ В папке пока нет файлов.")
-        return
+    await state.clear()
+    await callback.message.answer(
+        "📁 <b>Документы инициативной группы</b>\n\nВыберите раздел:",
+        reply_markup=init_docs_keyboard
+    )
+    await callback.answer()
 
-    for filename in files:
-        path = os.path.join(folder, filename)
 
-        if os.path.isdir(path):
-            continue
-
-        try:
-            await message.answer_document(
-                document=FSInputFile(path),
-                caption=f"📄 {filename}"
-            )
-        except Exception as e:
-            await message.answer(f"⚠️ Не удалось отправить {filename}: {repr(e)}")
+# ===== NOOP (для кнопки 1/3, 2/3 и т.п.) =====
+@dp.callback_query(F.data == "noop")
+async def noop_callback(callback: types.CallbackQuery):
+    await callback.answer()
 
 @dp.message(F.text == "💬 Чат инициативной группы")
 async def admin_init_group_chat(message: types.Message):
