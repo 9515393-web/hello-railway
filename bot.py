@@ -361,7 +361,7 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         inline_rows.append([
             InlineKeyboardButton(
                 text=f"📄 {f}",
-                callback_data=f"initdoc_file:{page}:{f}"
+                callback_data=f"initdoc_file:{page}:{i}"
             )
         ])
 
@@ -959,35 +959,53 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
 
-    parts = callback.data.split(":", 2)
-    # parts = ["initdoc_file", "0", "filename.pdf"]
+    parts = callback.data.split(":")
     if len(parts) < 3:
         await callback.answer("⚠️ Ошибка выбора файла", show_alert=True)
         return
 
-    filename = parts[2]
+    page = int(parts[1])
+    idx = int(parts[2])
 
     data = await state.get_data()
     folder = data.get("init_docs_folder")
+    title = data.get("init_docs_title", "Документы")
 
     if not folder:
-        await callback.message.answer("⚠️ Папка не выбрана. Откройте раздел заново.")
-        await callback.answer()
+        await callback.answer("⚠️ Папка не выбрана. Открой раздел заново.", show_alert=True)
         return
 
+    files = sorted([
+        f for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f))
+        and f != ".gitkeep"
+    ])
+
+    start = page * PAGE_SIZE
+    end = start + PAGE_SIZE
+    chunk = files[start:end]
+
+    if idx < 0 or idx >= len(chunk):
+        await callback.answer("⚠️ Файл не найден", show_alert=True)
+        return
+
+    filename = chunk[idx]
     path = os.path.join(folder, filename)
 
-    if not os.path.exists(path):
-        await callback.message.answer("⚠️ Файл не найден.")
-        await callback.answer()
-        return
+    await callback.message.answer_document(
+        FSInputFile(path),
+        caption=f"📄 {filename}"
+    )
 
-    try:
-        await callback.message.answer_document(
-            document=FSInputFile(path),
-            caption=f"📄 {filename}"
-        )
-        await callback.answer("✅ Отправлено")
+    back_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅ Назад к списку файлов", callback_data=f"initdoc_page:{page}")],
+            [InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")],
+        ]
+    )
+
+    await callback.message.answer(f"⬅ Вернуться назад в «{title}»", reply_markup=back_kb)
+    await callback.answer("✅ Отправлено")
 
         # ✅ показываем кнопку возврата к списку файлов
         data = await state.get_data()
