@@ -341,13 +341,14 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         return
 
     files = sorted([
-        f for f in os.listdir(folder)
-        if os.path.isfile(os.path.join(folder, f))
-    ])
+    f for f in os.listdir(folder)
+    if os.path.isfile(os.path.join(folder, f))
+    and f != ".gitkeep"
+])
 
-    if not files:
-        await message.answer("⚠️ В этой папке пока нет файлов.")
-        return
+if not files:
+    await message.answer("⚠️ В этой папке пока нет файлов.")
+    return
 
     total_pages = (len(files) + PAGE_SIZE - 1) // PAGE_SIZE
     page = max(0, min(page, total_pages - 1))
