@@ -352,9 +352,7 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
     total_pages = (len(files) + PAGE_SIZE - 1) // PAGE_SIZE
     page = max(0, min(page, total_pages - 1))
 
-    start = page * PAGE_SIZE
-    end = start + PAGE_SIZE
-    chunk = files[start:end]
+    chunk = files[page * PAGE_SIZE: page * PAGE_SIZE + PAGE_SIZE]
 
     inline_rows = []
 
@@ -367,44 +365,32 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
             )
         ])
 
-    # навигация
+    # навигация страниц
     nav_row = []
     if page > 0:
-        nav_row.append(
-            InlineKeyboardButton(
-                text="⬅ Назад",
-                callback_data=f"initdoc_page:{page-1}"
-            )
-        )
+        nav_row.append(InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}"))
 
-    nav_row.append(
-        InlineKeyboardButton(
-            text=f"{page+1}/{total_pages}",
-            callback_data="noop"
-        )
-    )
+    nav_row.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="noop"))
 
     if page < total_pages - 1:
-        nav_row.append(
-            InlineKeyboardButton(
-                text="Вперёд ➡",
-                callback_data=f"initdoc_page:{page+1}"
-            )
-        )
+        nav_row.append(InlineKeyboardButton(text="Вперёд ➡", callback_data=f"initdoc_page:{page+1}"))
 
-    if nav_row:
-        inline_rows.append(nav_row)
+    inline_rows.append(nav_row)
 
-    inline_rows.append([
-    InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
-])
+    # назад к папкам
+    inline_rows.append([InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")])
 
     kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
 
-    await message.answer(
-        f"{title}\n\nВыберите файл 👇",
-        reply_markup=kb
-    )
+    text = f"{title}\n\nВыберите файл 👇"
+
+    # ✅ пытаемся редактировать текущее сообщение
+    try:
+        await message.edit_text(text, reply_markup=kb)
+    except Exception:
+        # если редактировать нельзя (например, это сообщение пользователя) — отправляем новое
+        await message.answer(text, reply_markup=kb)
+
 
 
 # ======================================================
@@ -970,7 +956,7 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
 
-    parts = callback.data.split(":")
+    parts = callback.data.split(":", 2)
     # parts = ["initdoc_file", "0", "filename.pdf"]
     if len(parts) < 3:
         await callback.answer("⚠️ Ошибка выбора файла", show_alert=True)
