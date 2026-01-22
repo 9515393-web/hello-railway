@@ -112,6 +112,7 @@ admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
         [KeyboardButton(text="📣 Админ: рассылка")],
+        [KeyboardButton(text="📜 История рассылок")],
         [KeyboardButton(text="📁 Документы инициативной группы")],
         [KeyboardButton(text="💬 Чат инициативной группы")],
         [KeyboardButton(text="⬅ Назад")]
@@ -184,7 +185,15 @@ docs_keyboard = ReplyKeyboardMarkup(
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set in Railway Variables")
+    
 
+async def register_vote(uid: int):
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute(
+        "INSERT INTO votes (user_id) VALUES ($1)",
+        uid
+    )
+    await conn.close()
 
 async def init_db():
     conn = await asyncpg.connect(DATABASE_URL)
@@ -197,16 +206,20 @@ async def init_db():
         )
     """)
 
+    # ✅ Логи рассылок
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id SERIAL PRIMARY KEY,
+            admin_id BIGINT NOT NULL,
+            text TEXT NOT NULL,
+            sent INT NOT NULL,
+            failed INT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
     await conn.close()
 
-async def register_vote(uid: int):
-    conn = await asyncpg.connect(DATABASE_URL)
-    await conn.execute(
-        "INSERT INTO votes (user_id) VALUES ($1)",
-        uid
-    )
-    await conn.close()
-    
 async def get_votes_count() -> int:
     conn = await asyncpg.connect(DATABASE_URL)
     count = await conn.fetchval("SELECT COUNT(*) FROM votes")
@@ -253,6 +266,28 @@ async def get_votes_by_date(days_ago: int) -> int:
 
     await conn.close()
     return count
+
+# ===== ЛОГИ РАССЫЛОК =====
+async def log_broadcast(admin_id: int, text: str, sent: int, failed: int):
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute(
+        "INSERT INTO broadcasts (admin_id, text, sent, failed) VALUES ($1, $2, $3, $4)",
+        admin_id, text, sent, failed
+    )
+    await conn.close()
+
+
+async def get_last_broadcast():
+    conn = await asyncpg.connect(DATABASE_URL)
+    row = await conn.fetchrow("""
+        SELECT admin_id, text, sent, failed, created_at
+        FROM broadcasts
+        ORDER BY created_at DESC
+        LIMIT 1
+    """)
+    await conn.close()
+    return row
+
 
 async def fetch_google_sheet_rows() -> list[dict]:
     url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid={GOOGLE_SHEET_GID}"
@@ -364,7 +399,6 @@ async def admin_stats(message: types.Message):
         # Нейтрально пока не считаем (нет отдельного поля)
         support_neutral = 0
 
-
         # Готовность участвовать (любое заполненное значение)
         sign_ready = sum(
             1 for r in rows
@@ -410,13 +444,45 @@ async def admin_stats(message: types.Message):
         )
 
         await message.answer(report, reply_markup=admin_keyboard)
-
         await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
 
     except Exception as e:
         print("АДМИН-СТАТИСТИКА ОШИБКА:", repr(e))
         await message.answer("⚠️ Ошибка получения статистики.")
-        
+
+
+# ======================================================
+# ✅ ВОТ СЮДА ВСТАВЬ ОБРАБОТЧИК "📜 История рассылок"
+# ======================================================
+@dp.message(F.text == "📜 История рассылок")
+async def admin_broadcast_history(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
+        return
+
+    last = await get_last_broadcast()
+
+    if not last:
+        await message.answer("📜 История пуста — рассылок ещё не было.", reply_markup=admin_keyboard)
+        return
+
+    dt = last["created_at"].strftime("%d.%m.%Y %H:%M") if last["created_at"] else "—"
+
+    text = last["text"] or ""
+    if len(text) > 800:
+        text = text[:800] + "...\n\n(текст обрезан)"
+
+    await message.answer(
+        "📜 <b>Последняя рассылка</b>\n\n"
+        f"👤 Админ ID: <code>{last['admin_id']}</code>\n"
+        f"🕒 Время: <b>{dt}</b>\n"
+        f"✅ Отправлено: <b>{last['sent']}</b>\n"
+        f"⚠️ Ошибок: <b>{last['failed']}</b>\n\n"
+        "📝 <b>Текст:</b>\n"
+        f"{text}",
+        reply_markup=admin_keyboard
+    )
+    await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
 
 @dp.message(F.text == "📣 Админ: рассылка")
 async def admin_broadcast_start(message: types.Message, state: FSMContext):
@@ -513,7 +579,6 @@ async def broadcast_pin_check(message: types.Message, state: FSMContext):
 
     pin = (message.text or "").strip()
 
-    # ✅ ДОБАВЬ ВОТ ЭТО (отмена ввода PIN)
     if pin.lower() in ("отмена", "/cancel"):
         await state.clear()
         await message.answer("❌ Рассылка отменена.", reply_markup=admin_keyboard)
@@ -524,7 +589,6 @@ async def broadcast_pin_check(message: types.Message, state: FSMContext):
         return
 
     data = await state.get_data()
-
     text = data.get("broadcast_text")
 
     if not text:
@@ -546,6 +610,9 @@ async def broadcast_pin_check(message: types.Message, state: FSMContext):
             await asyncio.sleep(0.05)
         except Exception:
             failed += 1
+
+    # ✅ ЛОГИРУЕМ РАССЫЛКУ В БД (после цикла)
+    await log_broadcast(message.from_user.id, text, sent, failed)
 
     await state.clear()
 
