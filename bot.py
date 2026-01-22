@@ -357,13 +357,14 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows = []
 
-    for f in chunk:
-        inline_rows.append([
-            InlineKeyboardButton(
-                text=f"📄 {f}",
-                callback_data=f"initdoc_file:{page}:{i}"
-            )
-        ])
+    for i, f in enumerate(chunk):
+    inline_rows.append([
+        InlineKeyboardButton(
+            text=f"📄 {f}",
+            callback_data=f"initdoc_file:{page}:{i}"
+        )
+    ])
+
 
     nav_row = []
     if page > 0:
@@ -1006,27 +1007,6 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
 
     await callback.message.answer(f"⬅ Вернуться назад в «{title}»", reply_markup=back_kb)
     await callback.answer("✅ Отправлено")
-
-        # ✅ показываем кнопку возврата к списку файлов
-        data = await state.get_data()
-        title = data.get("init_docs_title", "Документы")
-
-        back_kb = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="⬅ Назад к списку файлов", callback_data=f"initdoc_page:{parts[1]}")],
-                [InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")]
-            ]
-        )
-
-        await callback.message.answer(
-            f"⬅ Вернуться назад в «{title}»",
-            reply_markup=back_kb
-        )
-
-    except Exception as e:
-        await callback.message.answer(f"⚠️ Не удалось отправить файл: {repr(e)}")
-        await callback.answer("❌ Ошибка", show_alert=True)
-
 
 # ===== ИНИЦИАТИВНАЯ ГРУППА: НАЗАД К ПАПКАМ =====
 @dp.callback_query(F.data == "initdoc_back")
