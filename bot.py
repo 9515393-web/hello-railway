@@ -396,7 +396,6 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         inline_rows.append(nav_row)
 
     inline_rows.append([
-    InlineKeyboardButton(text="⬅ Назад к списку", callback_data=f"initdoc_page:{page}"),
     InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
 ])
 
@@ -1051,7 +1050,9 @@ async def init_docs_back(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
 
-    await state.clear()
+    # ❌ НЕ НАДО state.clear()
+    # await state.clear()
+
     await callback.message.answer(
         "📁 <b>Документы инициативной группы</b>\n\nВыберите раздел:",
         reply_markup=init_docs_keyboard
