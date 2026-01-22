@@ -357,14 +357,16 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows = []
 
+    # ✅ кнопки файлов (только индекс!)
     for i, f in enumerate(chunk):
-    inline_rows.append([
-        InlineKeyboardButton(
-            text=f"📄 {f}",
-            callback_data=f"initdoc_file:{page}:{i}"
-        )
-    ])
+        inline_rows.append([
+            InlineKeyboardButton(
+                text=f"📄 {f}",
+                callback_data=f"initdoc_file:{page}:{i}"
+            )
+        ])
 
+    # навигация страниц
     nav_row = []
     if page > 0:
         nav_row.append(InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}"))
@@ -376,12 +378,14 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows.append(nav_row)
 
+    # назад к папкам
     inline_rows.append([InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")])
 
     kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
 
     text = f"{title}\n\nВыберите файл 👇"
 
+    # ✅ главное: пытаемся редактировать текущее сообщение
     try:
         await message.edit_text(text, reply_markup=kb)
     except Exception:
@@ -968,27 +972,56 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("⚠️ Ошибка выбора файла", show_alert=True)
         return
 
-    page = int(parts[1])
-    filename = parts[2]
+    try:
+        page = int(parts[1])
+        idx = int(parts[2])
+    except Exception:
+        await callback.answer("⚠️ Ошибка данных кнопки", show_alert=True)
+        return
 
     data = await state.get_data()
     folder = data.get("init_docs_folder")
     title = data.get("init_docs_title", "Документы")
 
     if not folder:
-        await callback.answer("⚠️ Папка не выбрана", show_alert=True)
+        await callback.answer("⚠️ Папка не выбрана. Открой раздел заново.", show_alert=True)
         return
 
+    if not os.path.exists(folder):
+        await callback.answer("⚠️ Папка не найдена на сервере", show_alert=True)
+        return
+
+    files = sorted([
+        f for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f))
+        and f != ".gitkeep"
+    ])
+
+    total_pages = (len(files) + PAGE_SIZE - 1) // PAGE_SIZE
+    page = max(0, min(page, total_pages - 1))
+
+    chunk = files[page * PAGE_SIZE: page * PAGE_SIZE + PAGE_SIZE]
+
+    if idx < 0 or idx >= len(chunk):
+        await callback.answer("⚠️ Файл не найден", show_alert=True)
+        return
+
+    filename = chunk[idx]
     path = os.path.join(folder, filename)
 
     if not os.path.exists(path):
         await callback.answer("⚠️ Файл не найден на сервере", show_alert=True)
         return
 
-    await callback.message.answer_document(
-        FSInputFile(path),
-        caption=f"📄 {filename}"
-    )
+    try:
+        await callback.message.answer_document(
+            FSInputFile(path),
+            caption=f"📄 {filename}"
+        )
+    except Exception as e:
+        await callback.message.answer(f"⚠️ Не удалось отправить файл: {repr(e)}")
+        await callback.answer("❌ Ошибка", show_alert=True)
+        return
 
     back_kb = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -997,11 +1030,9 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         ]
     )
 
-    await callback.message.answer(
-        f"⬅ Вернуться назад в «{title}»",
-        reply_markup=back_kb
-    )
+    await callback.message.answer(f"⬅ Вернуться назад в «{title}»", reply_markup=back_kb)
     await callback.answer("✅ Отправлено")
+
     
 # ===== ИНИЦИАТИВНАЯ ГРУППА: НАЗАД К ПАПКАМ =====
 @dp.callback_query(F.data == "initdoc_back")
