@@ -341,14 +341,14 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         return
 
     files = sorted([
-    f for f in os.listdir(folder)
-    if os.path.isfile(os.path.join(folder, f))
-    and f != ".gitkeep"
-])
+        f for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f))
+        and f != ".gitkeep"
+    ])
 
-if not files:
-    await message.answer("⚠️ В этой папке пока нет файлов.")
-    return
+    if not files:
+        await message.answer("⚠️ В этой папке пока нет файлов.")
+        return
 
     total_pages = (len(files) + PAGE_SIZE - 1) // PAGE_SIZE
     page = max(0, min(page, total_pages - 1))
@@ -357,7 +357,6 @@ if not files:
 
     inline_rows = []
 
-    # кнопки файлов
     for f in chunk:
         inline_rows.append([
             InlineKeyboardButton(
@@ -366,7 +365,6 @@ if not files:
             )
         ])
 
-    # навигация страниц
     nav_row = []
     if page > 0:
         nav_row.append(InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}"))
@@ -378,20 +376,16 @@ if not files:
 
     inline_rows.append(nav_row)
 
-    # назад к папкам
     inline_rows.append([InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")])
 
     kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
 
     text = f"{title}\n\nВыберите файл 👇"
 
-    # ✅ пытаемся редактировать текущее сообщение
     try:
         await message.edit_text(text, reply_markup=kb)
     except Exception:
-        # если редактировать нельзя (например, это сообщение пользователя) — отправляем новое
         await message.answer(text, reply_markup=kb)
-
 
 
 # ======================================================
