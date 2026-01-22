@@ -963,28 +963,6 @@ async def init_docs_open_folder(message: types.Message, state: FSMContext):
     # включаем режим выбора файла
     await state.set_state(InitDocsState.choosing_file)
 
-
-# ===== ИНИЦИАТИВНАЯ ГРУППА: ПАГИНАЦИЯ =====
-@dp.callback_query(F.data.startswith("initdoc_page:"))
-async def init_docs_page(callback: types.CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Нет доступа", show_alert=True)
-        return
-
-    data = await state.get_data()
-    folder = data.get("init_docs_folder")
-    title = data.get("init_docs_title", "Документы")
-
-    if not folder:
-        await callback.message.answer("⚠️ Папка не выбрана. Откройте раздел заново.")
-        await callback.answer()
-        return
-
-    page = int(callback.data.split(":")[1])
-
-    await show_files_page(callback.message, folder, f"📁 <b>{title}</b>", page=page)
-    await callback.answer()
-
 # ===== ИНИЦИАТИВНАЯ ГРУППА: ОТПРАВКА ФАЙЛА =====
 @dp.callback_query(F.data.startswith("initdoc_file:"))
 async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
