@@ -357,11 +357,11 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows = []
 
-    for i, f in enumerate(chunk):
-    inline_rows.append([
+    for f in chunk:
+        inline_rows.append([
         InlineKeyboardButton(
             text=f"📄 {f}",
-            callback_data=f"initdoc_file:{page}:{i}"
+            callback_data=f"initdoc_file:{page}:{f}"
         )
     ])
 
@@ -966,32 +966,21 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         return
 
     page = int(parts[1])
-    idx = int(parts[2])
+    filename = parts[2]
 
     data = await state.get_data()
     folder = data.get("init_docs_folder")
     title = data.get("init_docs_title", "Документы")
 
     if not folder:
-        await callback.answer("⚠️ Папка не выбрана. Открой раздел заново.", show_alert=True)
+        await callback.answer("⚠️ Папка не выбрана", show_alert=True)
         return
 
-    files = sorted([
-        f for f in os.listdir(folder)
-        if os.path.isfile(os.path.join(folder, f))
-        and f != ".gitkeep"
-    ])
-
-    start = page * PAGE_SIZE
-    end = start + PAGE_SIZE
-    chunk = files[start:end]
-
-    if idx < 0 or idx >= len(chunk):
-        await callback.answer("⚠️ Файл не найден", show_alert=True)
-        return
-
-    filename = chunk[idx]
     path = os.path.join(folder, filename)
+
+    if not os.path.exists(path):
+        await callback.answer("⚠️ Файл не найден на сервере", show_alert=True)
+        return
 
     await callback.message.answer_document(
         FSInputFile(path),
@@ -1005,9 +994,12 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
         ]
     )
 
-    await callback.message.answer(f"⬅ Вернуться назад в «{title}»", reply_markup=back_kb)
+    await callback.message.answer(
+        f"⬅ Вернуться назад в «{title}»",
+        reply_markup=back_kb
+    )
     await callback.answer("✅ Отправлено")
-
+    
 # ===== ИНИЦИАТИВНАЯ ГРУППА: НАЗАД К ПАПКАМ =====
 @dp.callback_query(F.data == "initdoc_back")
 async def init_docs_back(callback: types.CallbackQuery, state: FSMContext):
