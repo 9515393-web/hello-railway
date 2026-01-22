@@ -363,7 +363,7 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         inline_rows.append([
             InlineKeyboardButton(
                 text=f"📄 {f}",
-                callback_data=f"initdoc_file:{f}"
+                callback_data=f"initdoc_file:{page}:{f}"
             )
         ])
 
@@ -405,6 +405,38 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         f"{title}\n\nВыберите файл 👇",
         reply_markup=kb
     )
+
+
+# ======================================================
+# ✅ CALLBACK: листание страниц (⬅➡) — СРАЗУ ПОД show_files_page()
+# ======================================================
+@dp.callback_query(F.data.startswith("initdoc_page:"))
+async def initdoc_page_callback(callback: types.CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    data = await state.get_data()
+    folder = data.get("init_docs_folder")
+
+    if not folder:
+        await callback.answer("⚠️ Папка не выбрана. Открой раздел заново.", show_alert=True)
+        return
+
+    try:
+        page = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer("⚠️ Ошибка страницы", show_alert=True)
+        return
+
+    await show_files_page(
+        message=callback.message,
+        folder=folder,
+        title="📁 <b>Документы инициативной группы</b>",
+        page=page
+    )
+
+    await callback.answer()
 
 # ===== КОМАНДЫ =====
 @dp.message(Command("start"))
@@ -905,6 +937,31 @@ async def admin_docs_init_group(message: types.Message, state: FSMContext):
         "📁 <b>Документы инициативной группы</b>\n\nВыберите раздел:",
         reply_markup=init_docs_keyboard
     )
+@dp.message(F.text.in_(INIT_DOCS_FOLDERS.keys()))
+async def init_docs_open_folder(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ только для администратора")
+        return
+
+    folder = INIT_DOCS_FOLDERS[message.text]
+
+    # сохраним выбранную папку
+    await state.update_data(init_docs_folder=folder)
+
+    await show_files_page(
+        message=message,
+        folder=folder,
+        title=f"📁 <b>{message.text}</b>",
+        page=0
+    )
+
+    await state.set_state(InitDocsState.choosing_file)
+
+@dp.message(F.text == "⬅ Назад")
+async def back_to_main(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Главное меню", reply_markup=keyboard)
+
 # ===== ИНИЦИАТИВНАЯ ГРУППА: ВЫБОР ПАПКИ =====
 @dp.message(F.text.in_(INIT_DOCS_FOLDERS.keys()))
 async def init_docs_choose_folder(message: types.Message, state: FSMContext):
