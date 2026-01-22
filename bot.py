@@ -940,10 +940,10 @@ async def init_docs_open_folder(message: types.Message, state: FSMContext):
 
     folder = INIT_DOCS_FOLDERS[message.text]
 
-    # сохраним выбранную папку + заголовок
+    # сохраним выбранную папку
     await state.update_data(init_docs_folder=folder, init_docs_title=message.text)
-    await state.set_state(InitDocsState.choosing_file)
 
+    # показываем список файлов (страница 0)
     await show_files_page(
         message=message,
         folder=folder,
@@ -951,10 +951,8 @@ async def init_docs_open_folder(message: types.Message, state: FSMContext):
         page=0
     )
 
+    # включаем режим выбора файла
     await state.set_state(InitDocsState.choosing_file)
-
-    await state.clear()
-    await message.answer("Главное меню", reply_markup=keyboard)
 
 
 # ===== ИНИЦИАТИВНАЯ ГРУППА: ПАГИНАЦИЯ =====
