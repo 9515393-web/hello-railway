@@ -134,10 +134,10 @@ init_docs_keyboard = ReplyKeyboardMarkup(
 
 # ===== ПАПКИ ИНИЦИАТИВНОЙ ГРУППЫ =====
 INIT_DOCS_FOLDERS = {
-    "📣 Агитационные материалы": "docs/initiative/agit",
-    "📄 Протоколы / решения": "docs/initiative/protocols",
-    "✉️ Шаблоны писем / обращения": "docs/initiative/templates",
-    "📎 Прочее": "docs/initiative/other",
+    "📣 Агитационные материалы": "docs/docs/initiative/agit",
+    "📄 Протоколы / решения": "docs/docs/initiative/protocols",
+    "✉️ Шаблоны писем / обращения": "docs/docs/initiative/templates",
+    "📎 Прочее": "docs/docs/initiative/other",
 }
 
 class AdminBroadcastState(StatesGroup):
