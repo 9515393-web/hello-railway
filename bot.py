@@ -927,6 +927,14 @@ async def back_to_admin_menu(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
 
+@dp.message(F.text == "⬅ Назад")
+async def back_handler(message: types.Message, state: FSMContext):
+    if is_admin(message.from_user.id):
+        await state.clear()
+        await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
+    else:
+        await message.answer("⬅ Главное меню", reply_markup=keyboard)
+
 @dp.message(F.text.in_(INIT_DOCS_FOLDERS.keys()))
 async def init_docs_open_folder(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
