@@ -127,7 +127,7 @@ init_docs_keyboard = ReplyKeyboardMarkup(
         [KeyboardButton(text="📄 Протоколы / решения")],
         [KeyboardButton(text="✉️ Шаблоны писем / обращения")],
         [KeyboardButton(text="📎 Прочее")],
-        [KeyboardButton(text="⬅ Назад")]
+        [KeyboardButton(text="⬅ Назад в админ-меню")]
     ],
     resize_keyboard=True
 )
@@ -396,8 +396,9 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
         inline_rows.append(nav_row)
 
     inline_rows.append([
-        InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
-    ])
+    InlineKeyboardButton(text="⬅ Назад к списку", callback_data=f"initdoc_page:{page}"),
+    InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
+])
 
     kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
 
@@ -932,6 +933,15 @@ async def admin_docs_init_group(message: types.Message, state: FSMContext):
         "📁 <b>Документы инициативной группы</b>\n\nВыберите раздел:",
         reply_markup=init_docs_keyboard
     )
+
+@dp.message(F.text == "⬅ Назад в админ-меню")
+async def back_to_admin_menu(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    await state.clear()
+    await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
+
 @dp.message(F.text.in_(INIT_DOCS_FOLDERS.keys()))
 async def init_docs_open_folder(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
@@ -1012,6 +1022,23 @@ async def init_docs_send_file(callback: types.CallbackQuery, state: FSMContext):
             caption=f"📄 {filename}"
         )
         await callback.answer("✅ Отправлено")
+
+        # ✅ показываем кнопку возврата к списку файлов
+        data = await state.get_data()
+        title = data.get("init_docs_title", "Документы")
+
+        back_kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="⬅ Назад к списку файлов", callback_data=f"initdoc_page:{parts[1]}")],
+                [InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")]
+            ]
+        )
+
+        await callback.message.answer(
+            f"⬅ Вернуться назад в «{title}»",
+            reply_markup=back_kb
+        )
+
     except Exception as e:
         await callback.message.answer(f"⚠️ Не удалось отправить файл: {repr(e)}")
         await callback.answer("❌ Ошибка", show_alert=True)
@@ -1124,8 +1151,6 @@ async def docs_prepared(message: types.Message):
             document=FSInputFile(path),
             caption=f"📄 {filename}"
         )
-
-
 
 @dp.message(F.text == "📤 Исходящие документы")
 async def docs_outgoing(message: types.Message):
@@ -1381,7 +1406,8 @@ async def help_cmd(message: types.Message):
 )
 @dp.message()
 async def debug_all(message: types.Message):
-    print("ПРИШЛО СООБЩЕНИЕ:", message.text)
+    if is_admin(message.from_user.id):
+        print("ПРИШЛО СООБЩЕНИЕ:", message.text)
 
 # ===== ЗАПУСК =====
 async def main():
