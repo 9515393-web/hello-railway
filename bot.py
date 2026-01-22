@@ -357,14 +357,13 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows = []
 
-    for f in chunk:
-        inline_rows.append([
+    for i, f in enumerate(chunk):
+    inline_rows.append([
         InlineKeyboardButton(
             text=f"📄 {f}",
-            callback_data=f"initdoc_file:{page}:{f}"
+            callback_data=f"initdoc_file:{page}:{i}"
         )
     ])
-
 
     nav_row = []
     if page > 0:
