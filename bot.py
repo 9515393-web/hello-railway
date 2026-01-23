@@ -364,8 +364,10 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
             )
         ])
 
-    # навигация страниц
+   # навигация страниц (показываем только если страниц больше 1)
+if total_pages > 1:
     nav_row = []
+
     if page > 0:
         nav_row.append(InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}"))
 
