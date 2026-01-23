@@ -111,10 +111,8 @@ keyboard = ReplyKeyboardMarkup(
 admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
-        [KeyboardButton(text="📣 Админ: рассылка")],
-        [KeyboardButton(text="📜 История рассылок")],
-        [KeyboardButton(text="📁 Документы инициативной группы")],
-        [KeyboardButton(text="💬 Чат инициативной группы")],
+        [KeyboardButton(text="📣 Админ: рассылка"), KeyboardButton(text="📜 История рассылок")],
+        [KeyboardButton(text="📁 Документы инициативной группы"), KeyboardButton(text="💬 Чат инициативной группы")],
         [KeyboardButton(text="⬅ Главное меню")]
     ],
     resize_keyboard=True
