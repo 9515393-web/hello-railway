@@ -355,28 +355,43 @@ async def show_files_page(message: types.Message, folder: str, title: str, page:
 
     inline_rows = []
 
-    # ✅ кнопки файлов (только индекс!)
-    for i, f in enumerate(chunk):
-        inline_rows.append([
-            InlineKeyboardButton(
-                text=f"📄 {f}",
-                callback_data=f"initdoc_file:{page}:{i}"
-            )
-        ])
+# ✅ кнопки файлов
+for i, f in enumerate(chunk):
+    inline_rows.append([
+        InlineKeyboardButton(
+            text=f"📄 {f}",
+            callback_data=f"initdoc_file:{page}:{i}"
+        )
+    ])
 
-   # навигация страниц (показываем только если страниц больше 1)
+# навигация страниц (показываем только если страниц больше 1)
 if total_pages > 1:
     nav_row = []
 
     if page > 0:
-        nav_row.append(InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}"))
+        nav_row.append(
+            InlineKeyboardButton(text="⬅ Назад", callback_data=f"initdoc_page:{page-1}")
+        )
 
-    nav_row.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="noop"))
+    nav_row.append(
+        InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="noop")
+    )
 
     if page < total_pages - 1:
-        nav_row.append(InlineKeyboardButton(text="Вперёд ➡", callback_data=f"initdoc_page:{page+1}"))
+        nav_row.append(
+            InlineKeyboardButton(text="Вперёд ➡", callback_data=f"initdoc_page:{page+1}")
+        )
 
     inline_rows.append(nav_row)
+
+# назад к папкам (ВСЕГДА)
+inline_rows.append([
+    InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")
+])
+
+kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
+
+text = f"{title}\n\nВыберите файл 👇"
 
     # назад к папкам
     inline_rows.append([InlineKeyboardButton(text="⬅ Назад к папкам", callback_data="initdoc_back")])
