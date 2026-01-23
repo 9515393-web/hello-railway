@@ -947,10 +947,6 @@ async def init_docs_open_folder(message: types.Message, state: FSMContext):
         return
 
     folder = INIT_DOCS_FOLDERS[message.text]
-    
-    # ✅ DEBUG (временно)
-    await message.answer(f"DEBUG folder: {folder}")
-    await message.answer(f"DEBUG exists: {os.path.exists(folder)}")
 
     # сохраним выбранную папку
     await state.update_data(init_docs_folder=folder, init_docs_title=message.text)
