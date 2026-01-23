@@ -115,7 +115,7 @@ admin_keyboard = ReplyKeyboardMarkup(
         [KeyboardButton(text="📜 История рассылок")],
         [KeyboardButton(text="📁 Документы инициативной группы")],
         [KeyboardButton(text="💬 Чат инициативной группы")],
-        [KeyboardButton(text="⬅ Назад")]
+        [KeyboardButton(text="⬅ Главное меню")]
     ],
     resize_keyboard=True
 )
@@ -925,6 +925,14 @@ async def back_to_admin_menu(message: types.Message, state: FSMContext):
 
     await state.clear()
     await message.answer("⬇️ Админ-меню", reply_markup=admin_keyboard)
+    
+@dp.message(F.text == "⬅ Главное меню")
+async def admin_back_to_main(message: types.Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    await state.clear()
+    await message.answer("⬅ Главное меню", reply_markup=keyboard)
 
 @dp.message(F.text == "⬅ Назад")
 async def back_handler(message: types.Message, state: FSMContext):
