@@ -71,7 +71,7 @@ broadcast_confirm_kb = InlineKeyboardMarkup(
 )
 
 # ===== АДМИНЫ =====
-ADMIN_IDS = {852852917, 1506477293}
+ADMIN_IDS = {852852917, 1506477293, 954799948}
 BROADCAST_PIN = os.getenv("BROADCAST_PIN", "1938")
 
 def is_admin(user_id: int) -> bool:
