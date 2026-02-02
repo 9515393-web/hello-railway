@@ -102,8 +102,8 @@ keyboard = ReplyKeyboardMarkup(
         [KeyboardButton(text="❓ Вопросы и ответы (FAQ)")],
         [KeyboardButton(text="📜 История деревни Захожье"), KeyboardButton(text="🗺 Карты")],
         [KeyboardButton(text="🗺 Дорожная карта"), KeyboardButton(text="📊 Статистика")],
-        [KeyboardButton(text="🗳 Принять участие в опросе"), KeyboardButton(text="💬 Чат жителей")],
-        [KeyboardButton(text="📁 Документы по проекту")],
+        [KeyboardButton(text="🗳 ОПРОС")],
+        [KeyboardButton(text="📁 Документы по проекту"),KeyboardButton(text="💬 Чат жителей")],
         [KeyboardButton(text="🤝 Как помочь")]
     ],
     resize_keyboard=True
