@@ -239,6 +239,15 @@ async def init_db():
         )
     """)
 
+    # ✅ Сессии админов для карты
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+            token TEXT PRIMARY KEY,
+            admin_id BIGINT NOT NULL,
+            expires_at TIMESTAMP NOT NULL
+        )
+    """)
+
     await conn.close()
 
 async def get_votes_count() -> int:
