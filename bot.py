@@ -237,7 +237,14 @@ async def create_admin_session(admin_id: int) -> str:
 async def init_db():
     conn = await asyncpg.connect(DATABASE_URL)
 
-    # Таблица кликов по опросу
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+            token TEXT PRIMARY KEY,
+            admin_id BIGINT NOT NULL,
+            expires_at TIMESTAMP NOT NULL
+        )
+    """)
+
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS votes (
             id SERIAL PRIMARY KEY,
@@ -246,7 +253,6 @@ async def init_db():
         )
     """)
 
-    # Таблица логов рассылок
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS broadcasts (
             id SERIAL PRIMARY KEY,
@@ -255,15 +261,6 @@ async def init_db():
             sent INT NOT NULL,
             failed INT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-
-    # Таблица сессий админов для карты
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS admin_sessions (
-            token TEXT PRIMARY KEY,
-            admin_id BIGINT NOT NULL,
-            expires_at TIMESTAMP NOT NULL
         )
     """)
 
