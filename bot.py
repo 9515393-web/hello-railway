@@ -512,25 +512,7 @@ async def bot_link(message: types.Message):
         "🤖 Официальный бот проекта восстановления деревни Захожье:",
         reply_markup=bot_kb
     )
-
-ADMIN_MAP_BASE_URL = "https://example.com/admin/map"
-
-@dp.message(F.text == "🗺 Открыть админ-карту")
-async def open_admin_map(message: types.Message):
-    if not is_admin(message.from_user.id):
-        await message.answer("⛔ Доступ запрещён")
-        return
-
-    token = await create_admin_session(message.from_user.id)
-
-    url = f"{ADMIN_MAP_BASE_URL}?token={token}"
-
-    await message.answer(
-        "🗺 <b>Админ-карта</b>\n\n"
-        "Ссылка действует 10 минут:\n"
-        f"{url}"
-    )
-    
+   
 @dp.message(F.text == "📊 Админ: статистика")
 async def admin_stats(message: types.Message):
     if not is_admin(message.from_user.id):
