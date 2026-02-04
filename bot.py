@@ -1406,7 +1406,7 @@ async def roadmap_cmd(message: types.Message):
     )
 
 # ===== ПРОЧЕЕ =====
-@dp.message(F.text.contains("Принять участие в опросе"))
+@dp.message(F.text == "🗳 ОПРОС")
 async def vote_cmd(message: types.Message):
     uid = message.from_user.id
 
