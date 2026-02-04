@@ -2,7 +2,9 @@ import asyncpg
 import asyncio
 import aiohttp
 import csv
+import secrets
 
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
@@ -111,6 +113,7 @@ keyboard = ReplyKeyboardMarkup(
 admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📊 Админ: статистика")],
+        [KeyboardButton(text="🗺 Открыть админ-карту")],  # 👈 НОВАЯ КНОПКА
         [KeyboardButton(text="📣 Админ: рассылка"), KeyboardButton(text="📜 История рассылок")],
         [KeyboardButton(text="📁 Документы инициативной группы"), KeyboardButton(text="💬 Чат инициативной группы")],
         [KeyboardButton(text="⬅ Главное меню")]
@@ -215,9 +218,32 @@ async def register_vote(uid: int):
         uid
     )
     await conn.close()
+async def create_admin_session(admin_id: int) -> str:
+    token = secrets.token_urlsafe(32)  # случайный безопасный токен
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute(
+        """
+        INSERT INTO admin_sessions (token, admin_id, expires_at)
+        VALUES ($1, $2, $3)
+        """,
+        token, admin_id, expires_at
+    )
+    await conn.close()
+
+    return token
 
 async def init_db():
     conn = await asyncpg.connect(DATABASE_URL)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+            token TEXT PRIMARY KEY,
+            admin_id BIGINT NOT NULL,
+            expires_at TIMESTAMP NOT NULL
+        )
+    """)
 
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS votes (
@@ -226,6 +252,19 @@ async def init_db():
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
+
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id SERIAL PRIMARY KEY,
+            admin_id BIGINT NOT NULL,
+            text TEXT NOT NULL,
+            sent INT NOT NULL,
+            failed INT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    await conn.close()
 
     # ✅ Логи рассылок
     await conn.execute("""
@@ -476,6 +515,25 @@ async def bot_link(message: types.Message):
         "🤖 Официальный бот проекта восстановления деревни Захожье:",
         reply_markup=bot_kb
     )
+
+ADMIN_MAP_BASE_URL = "https://example.com/admin/map"
+
+@dp.message(F.text == "🗺 Открыть админ-карту")
+async def open_admin_map(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ запрещён")
+        return
+
+    token = await create_admin_session(message.from_user.id)
+
+    url = f"{ADMIN_MAP_BASE_URL}?token={token}"
+
+    await message.answer(
+        "🗺 <b>Админ-карта</b>\n\n"
+        "Ссылка действует 10 минут:\n"
+        f"{url}"
+    )
+    
 @dp.message(F.text == "📊 Админ: статистика")
 async def admin_stats(message: types.Message):
     if not is_admin(message.from_user.id):
