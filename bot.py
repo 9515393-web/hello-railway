@@ -270,29 +270,6 @@ async def init_db():
     await conn.close()
 
 
-    # ✅ Логи рассылок
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS broadcasts (
-            id SERIAL PRIMARY KEY,
-            admin_id BIGINT NOT NULL,
-            text TEXT NOT NULL,
-            sent INT NOT NULL,
-            failed INT NOT NULL,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-
-    # ✅ Сессии админов для карты
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS admin_sessions (
-            token TEXT PRIMARY KEY,
-            admin_id BIGINT NOT NULL,
-            expires_at TIMESTAMP NOT NULL
-        )
-    """)
-
-    await conn.close()
-
 async def get_votes_count() -> int:
     conn = await asyncpg.connect(DATABASE_URL)
     count = await conn.fetchval("SELECT COUNT(*) FROM votes")
