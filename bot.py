@@ -483,6 +483,25 @@ async def admin_menu(message: types.Message):
         "🔐 Админ-панель",
         reply_markup=admin_keyboard
     )
+ADMIN_MAP_BASE_URL = "https://admin-map-web-production.up.railway.app"  # ← твой домен из Railway
+
+@dp.message(F.text == "🗺 Открыть админ-карту")
+async def open_admin_map(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступ запрещён")
+        return
+
+    token = await create_admin_session(message.from_user.id)
+
+    url = f"{ADMIN_MAP_BASE_URL}/?token={token}"
+
+    await message.answer(
+        "🗺 <b>Админ-карта</b>\n\n"
+        "🔐 Ссылка действует 10 минут:\n"
+        f"{url}"
+    )
+
+
 @dp.message(Command("whoami"))
 async def whoami(message: types.Message):
     await message.answer(f"Ваш ID: {message.from_user.id}")
