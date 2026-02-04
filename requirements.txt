@@ -2,5 +2,4 @@ aiogram==3.*
 qrcode[pil]
 pillow
 asyncpg
-fastapi
-uvicorn
+
