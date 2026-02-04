@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
 import os
 import asyncpg
@@ -9,7 +9,7 @@ app = FastAPI()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 @app.get("/Zahozhe_final_2026.geojson")
-async def get_geojson(request: Request, token: str):
+async def get_geojson(token: str):
     conn = await asyncpg.connect(DATABASE_URL)
 
     row = await conn.fetchrow(
@@ -20,9 +20,17 @@ async def get_geojson(request: Request, token: str):
     await conn.close()
 
     if not row:
-        return {"error": "invalid token"}
+        raise HTTPException(status_code=403, detail="Invalid token")
 
     if row["expires_at"] < datetime.utcnow():
-        return {"error": "token expired"}
+        raise HTTPException(status_code=403, detail="Token expired")
 
-    return FileResponse("Zahozhe_final_2026.geojson", media_type="application/geo+json")
+    # Проверим, что файл реально существует
+    if not os.path.exists("Zahozhe_final_2026.geojson"):
+        raise HTTPException(status_code=500, detail="GeoJSON file not found on server")
+
+    return FileResponse(
+        "Zahozhe_final_2026.geojson",
+        media_type="application/geo+json",
+        filename="Zahozhe_final_2026.geojson"
+    )
