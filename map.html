@@ -18,6 +18,7 @@
     padding: 6px;
     border-radius: 6px;
     box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    z-index: 1000;            /* 👈 важно: поверх карты */
   }
 
   .leaflet-control.custom-buttons button {
@@ -101,7 +102,7 @@
 
       // 🔘 Кастомный контрол с кнопками
       const ButtonsControl = L.Control.extend({
-        options: { position: 'topright' },
+        options: { position: 'topleft' },
 
         onAdd: function () {
           const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
