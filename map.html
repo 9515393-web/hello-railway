@@ -26,7 +26,6 @@
     throw new Error("No token");
   }
 
-  // Создаём карту БЕЗ начального setView
   const map = L.map('map');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -34,32 +33,50 @@
   }).addTo(map);
 
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-  .then(r => {
-    console.log("HTTP status:", r.status);
-    if (!r.ok) throw new Error("Forbidden or not found");
-    return r.json();
-  })
-  .then(data => {
-    console.log("Loaded GeoJSON:", data);
+    .then(r => {
+      console.log("HTTP status:", r.status);
+      if (!r.ok) throw new Error("Forbidden or not found");
+      return r.json();
+    })
+    .then(data => {
+      console.log("Loaded GeoJSON:", data);
 
-    const layer = L.geoJSON(data, {
-      style: { color: '#ff0000', weight: 2, fill: false }
-    }).addTo(map);
+      const layer = L.geoJSON(data, {
+        style: { color: '#ff0000', weight: 2, fill: false }
+      }).addTo(map);
 
-    const bounds = layer.getBounds();
-    console.log("Bounds:", bounds, "isValid:", bounds.isValid());
+      // 🧹 Считаем bounds только по “нормальным” объектам вокруг Захожья
+      const goodBounds = L.latLngBounds([]);
 
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-      setTimeout(() => map.invalidateSize(), 200);
-    } else {
-      document.body.innerHTML = "⛔ Данные карты пустые или повреждены";
-    }
-  })
-  .catch(err => {
-    console.error(err);
-    document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
-  });
+      layer.eachLayer(l => {
+        if (l.getBounds) {
+          const b = l.getBounds();
+          const sw = b.getSouthWest();
+          const ne = b.getNorthEast();
+
+          // Ожидаемый район: примерно 28..35 долгота, 57..62 широта
+          if (
+            sw.lng > 28 && ne.lng < 35 &&
+            sw.lat > 57 && ne.lat < 62
+          ) {
+            goodBounds.extend(b);
+          }
+        }
+      });
+
+      console.log("Filtered bounds:", goodBounds, "isValid:", goodBounds.isValid());
+
+      if (goodBounds.isValid()) {
+        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+        setTimeout(() => map.invalidateSize(), 200);
+      } else {
+        document.body.innerHTML = "⛔ Не удалось вычислить границы данных";
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
+    });
 </script>
 
 </body>
