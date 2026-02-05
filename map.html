@@ -81,8 +81,23 @@
     })
     .then(data => {
       const layer = L.geoJSON(data, {
-        style: { color: '#ff0000', weight: 2, fill: false }
-      }).addTo(map);
+  style: { color: '#ff0000', weight: 2, fillOpacity: 0.25 },
+
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
+
+    const html = `
+      <b>Кадастровый №:</b> ${p.cn || "—"}<br>
+      <b>Площадь:</b> ${p.area || "—"} м²<br>
+      <b>Стоимость:</b> ${p.cost || "—"} ₽<br>
+      <b>Тип:</b> ${p.type || "—"}<br>
+      <b>ФИО:</b> ${p.fio || "—"}<br>
+      <b>Адрес:</b> ${p.phone || "—"}<br>
+    `;
+
+    layer.bindPopup(html);
+  }
+}).addTo(map);
 
       const goodBounds = L.latLngBounds([]);
 
