@@ -45,6 +45,9 @@ async def get_geojson(token: str):
         raise HTTPException(status_code=403, detail="Token expired")
 
     # Проверим, что файл реально существует
+    print("CWD:", os.getcwd())
+    print("Files:", os.listdir("."))
+
     if not os.path.exists("Zahozhe_final_2026.geojson"):
         raise HTTPException(status_code=500, detail="GeoJSON file not found on server")
 
