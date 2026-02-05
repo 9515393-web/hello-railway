@@ -170,20 +170,13 @@
             map.fitBounds(goodBounds, { padding: [200, 200] });
           };
 
-          // Максимально приблизить к "центру масс" участков
+          // Максимально приблизить ВНУТРИ массива участков (без улёта в города)
           btnMaxCenter.onclick = () => {
-            let sumLat = 0;
-            let sumLng = 0;
-            let count = 0;
-
-            layer.eachLayer(l => {
-              if (l.getBounds) {
-                const c = l.getBounds().getCenter();
-                sumLat += c.lat;
-                sumLng += c.lng;
-                count++;
-              }
+            map.fitBounds(goodBounds, {
+              padding: [20, 20],  // меньше — ближе, больше — дальше
+              maxZoom: 17         // подстрой: 16, 17 или 18
             });
+          };
 
             if (count === 0) return;
 
