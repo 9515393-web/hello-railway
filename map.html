@@ -51,6 +51,7 @@
     throw new Error("No token");
   }
 
+  // Создаём карту БЕЗ начального setView
   const map = L.map('map');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -79,7 +80,7 @@
           const sw = b.getSouthWest();
           const ne = b.getNorthEast();
 
-          // Ожидаемый район: примерно 28..35 долгота, 57..62 широта
+          // Ожидаемый район: примерно 28..35E, 57..62N
           if (
             sw.lng > 28 && ne.lng < 35 &&
             sw.lat > 57 && ne.lat < 62
@@ -91,18 +92,56 @@
 
       console.log("Filtered bounds:", goodBounds, "isValid:", goodBounds.isValid());
 
-      if (goodBounds.isValid()) {
-  const center = goodBounds.getCenter();
-  const zoom = 19;   // ← твой уровень зума
-
-  map.setView(center, zoom);
-
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 200);
-} else {
+      if (!goodBounds.isValid()) {
         document.body.innerHTML = "⛔ Не удалось вычислить границы данных";
+        return;
       }
+
+      // ▶ Старт: показываем весь массив участков
+      map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+      setTimeout(() => map.invalidateSize(), 200);
+
+      // 🔘 Кастомный контрол с кнопками
+      const ButtonsControl = L.Control.extend({
+        options: { position: 'topright' },
+
+        onAdd: function () {
+          const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
+
+          const btnFocus = L.DomUtil.create('button', '', container);
+          btnFocus.innerText = '🔍 К участкам';
+
+          const btnOverview = L.DomUtil.create('button', '', container);
+          btnOverview.innerText = '🌍 Обзор';
+
+          const btnMaxCenter = L.DomUtil.create('button', '', container);
+          btnMaxCenter.innerText = '🎯 Макс. к центру';
+
+          // Чтобы клики по кнопкам не дёргали карту
+          L.DomEvent.disableClickPropagation(container);
+
+          // Показать весь массив участков
+          btnFocus.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+          };
+
+          // Обзор — тот же массив, но дальше
+          btnOverview.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [200, 200] });
+          };
+
+          // Максимально приблизить к центру массива
+          btnMaxCenter.onclick = () => {
+            const center = goodBounds.getCenter();
+            const maxZoom = 17; // подстрой под себя: 16–18 обычно хорошо
+            map.setView(center, maxZoom);
+          };
+
+          return container;
+        }
+      });
+
+      map.addControl(new ButtonsControl());
     })
     .catch(err => {
       console.error(err);
