@@ -13,90 +13,47 @@
     margin: 0;
   }
 
+  /* Панель кнопок */
   .leaflet-control.custom-buttons {
-    background: white;
-    padding: 6px;
-    border-radius: 6px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.3);
-    z-index: 1000;            /* 👈 важно: поверх карты */
+    background: rgba(255, 255, 255, 0.85);   /* полупрозрачная */
+    padding: 12px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);              /* красиво на современных браузерах */
   }
 
+  /* Большие кнопки под палец */
   .leaflet-control.custom-buttons button {
-  display: block;
-  width: 320px;        /* было 200px */
-  min-height: 80px;    /* высокая кнопка под палец */
-  margin: 12px 0;      /* больше расстояние между кнопками */
-  padding: 16px 20px;  /* больше внутренние отступы */
-  border: none;
-  border-radius: 12px; /* более "пальцевый" радиус */
-  background: #f2f2f2;
-  cursor: pointer;
-  font-size: 22px;     /* было 13px */
-}
+    display: block;
+    width: 360px;
+    min-height: 96px;
+    margin: 18px 0;
+    padding: 24px 28px;
+    font-size: 28px;
+    border-radius: 18px;
+    border: none;
+    background: rgba(240,240,240,0.9);
+    cursor: pointer;
+  }
 
   .leaflet-control.custom-buttons button:hover {
-    background: #e0e0e0;
+    background: rgba(220,220,220,0.95);
   }
-   /* Поднимаем все контролы Leaflet поверх карты */
-.leaflet-top, .leaflet-bottom {
-  z-index: 1000;
-}
 
-/* На всякий случай: карта не должна перекрывать контролы */
-#map {
-  position: relative;
-}
-/* Мобильная адаптация контролов */
-.leaflet-control.custom-buttons {
-  background: white;
-  padding: 8px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-}
+  /* Чтобы контролы всегда были поверх карты */
+  .leaflet-top, .leaflet-bottom {
+    z-index: 1000;
+  }
 
-/* Большие кнопки под палец */
-.leaflet-control.custom-buttons button {
-  display: block;
-  width: 360px;        /* было ~220 */
-  min-height: 96px;    /* было ~44 */
-  margin: 18px 0;      /* больше расстояние */
-  padding: 24px 28px;  /* больше внутренние отступы */
-  font-size: 28px;     /* было ~16 */
-  border-radius: 18px; /* крупнее скругление */
-}
+  /* Отступ снизу под safe-area (Android / современные браузеры) */
+  .leaflet-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
 
-/* Поднимаем контролы поверх карты */
-.leaflet-top, .leaflet-bottom {
-  z-index: 1000;
-}
-
-/* Располагаем внизу с учётом safe-area (Android/modern browsers) */
-.leaflet-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 12px);
-}
-/* Больше расстояние между кнопками */
-.leaflet-control.custom-buttons button + button {
-  margin-top: 18px;   /* можешь поставить 10px, 12px, 16px — как удобнее */
-}
-
-  /* 🔥 Увеличиваем стандартные кнопки + / - Leaflet в ~5 раз */
-.leaflet-control-zoom a {
-  width: 130px;        /* было ~26px */
-  height: 130px;       /* было ~26px */
-  line-height: 130px;  /* центрируем + и - по вертикали */
-  font-size: 64px;     /* огромный плюс и минус */
-}
-
-/* Больше расстояние между + и - */
-.leaflet-control-zoom a + a {
-  margin-top: 16px;
-}
-
-/* Скругление и аккуратный вид */
-.leaflet-control-zoom {
-  border-radius: 24px;
-  overflow: hidden;
-}
+  /* Дополнительное расстояние между кнопками */
+  .leaflet-control.custom-buttons button + button {
+    margin-top: 18px;
+  }
 </style>
 </head>
 <body>
@@ -111,7 +68,7 @@
     throw new Error("No token");
   }
 
-  const map = L.map('map');
+  const map = L.map('map', { zoomControl: false });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
@@ -156,66 +113,77 @@
         options: { position: 'bottomleft' },
 
         onAdd: function () {
-          const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
+  const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
 
-          const btnFocus = L.DomUtil.create('button', '', container);
-          btnFocus.innerText = '🔍 К участкам';
+  const btnZoomIn = L.DomUtil.create('button', '', container);
+  btnZoomIn.innerText = '➕ Приблизить';
 
-          const btnOverview = L.DomUtil.create('button', '', container);
-          btnOverview.innerText = '🌍 Обзор';
+  const btnZoomOut = L.DomUtil.create('button', '', container);
+  btnZoomOut.innerText = '➖ Отдалить';
 
-          const btnMaxCenter = L.DomUtil.create('button', '', container);
-          btnMaxCenter.innerText = '🎯 Макс. к центру';
+  const btnFocus = L.DomUtil.create('button', '', container);
+  btnFocus.innerText = '🔍 К участкам';
 
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
-          L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
+  const btnOverview = L.DomUtil.create('button', '', container);
+  btnOverview.innerText = '🌍 Обзор';
 
-          btnFocus.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
-          };
+  const btnMaxCenter = L.DomUtil.create('button', '', container);
+  btnMaxCenter.innerText = '🎯 Макс. к центру';
 
-          btnOverview.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
-          };
+  // Чтобы тапы по панели не превращались в жесты карты (Android/WebView)
+  L.DomEvent.disableClickPropagation(container);
+  L.DomEvent.disableScrollPropagation(container);
+  L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
 
-          // 🎯 Макс. — летим к ближайшему участку от "центра масс"
-btnMaxCenter.onclick = () => {
-  const centers = [];
+  // ➕ / ➖ Зум
+  btnZoomIn.onclick = () => map.zoomIn();
+  btnZoomOut.onclick = () => map.zoomOut();
 
-  layer.eachLayer(l => {
-    if (l.getBounds) {
-      const c = l.getBounds().getCenter();
-      centers.push(c);
-    }
-  });
+  // 🔍 К участкам — ближе
+  btnFocus.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+  };
 
-  if (!centers.length) return;
+  // 🌍 Обзор — дальше
+  btnOverview.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+  };
 
-  // 1) Медианная точка
-  const lats = centers.map(c => c.lat).sort((a, b) => a - b);
-  const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
-  const mid = Math.floor(lats.length / 2);
-  const median = L.latLng(lats[mid], lngs[mid]);
+  // 🎯 Макс. — летим к ближайшему участку от медианы
+  btnMaxCenter.onclick = () => {
+    const centers = [];
 
-  // 2) Ищем ближайший участок к медиане
-  let best = centers[0];
-  let bestDist = Infinity;
+    layer.eachLayer(l => {
+      if (l.getBounds) {
+        centers.push(l.getBounds().getCenter());
+      }
+    });
 
-  centers.forEach(c => {
-    const d = median.distanceTo(c);
-    if (d < bestDist) {
-      bestDist = d;
-      best = c;
-    }
-  });
+    if (!centers.length) return;
 
-  // 3) Летим к центру ближайшего участка и сильно зумимся
-  map.flyTo(best, 18, { animate: true, duration: 0.6 });
-};
+    // медианная точка
+    const lats = centers.map(c => c.lat).sort((a,b)=>a-b);
+    const lngs = centers.map(c => c.lng).sort((a,b)=>a-b);
+    const mid = Math.floor(lats.length / 2);
+    const median = L.latLng(lats[mid], lngs[mid]);
 
-          return container;
-        }
+    // ближайший участок к медиане
+    let best = centers[0];
+    let bestDist = Infinity;
+
+    centers.forEach(c => {
+      const d = median.distanceTo(c);
+      if (d < bestDist) {
+        bestDist = d;
+        best = c;
+      }
+    });
+
+    map.flyTo(best, 20, { animate: true, duration: 0.6 });
+  };
+
+  return container;
+}
       });
 
       map.addControl(new ButtonsControl());
