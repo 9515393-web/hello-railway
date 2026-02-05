@@ -150,19 +150,7 @@
       });
 
       map.addControl(new ButtonsControl());
-      // Временный тестовый контрол
-const TestControl = L.Control.extend({
-  options: { position: 'topleft' },
-  onAdd: function () {
-    const d = L.DomUtil.create('div');
-    d.innerText = 'TEST';
-    d.style.background = 'white';
-    d.style.padding = '10px';
-    d.style.zIndex = 1000;
-    return d;
-  }
-});
-map.addControl(new TestControl());
+      
     })
     .catch(err => {
       console.error(err);
