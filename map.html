@@ -92,7 +92,6 @@
     throw new Error("No token");
   }
 
-  // Создаём карту БЕЗ начального setView
   const map = L.map('map');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -101,18 +100,14 @@
 
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => {
-      console.log("HTTP status:", r.status);
       if (!r.ok) throw new Error("Forbidden or not found");
       return r.json();
     })
     .then(data => {
-      console.log("Loaded GeoJSON:", data);
-
       const layer = L.geoJSON(data, {
         style: { color: '#ff0000', weight: 2, fill: false }
       }).addTo(map);
 
-      // 🧹 Считаем bounds только по “нормальным” объектам вокруг Захожья
       const goodBounds = L.latLngBounds([]);
 
       layer.eachLayer(l => {
@@ -121,7 +116,6 @@
           const sw = b.getSouthWest();
           const ne = b.getNorthEast();
 
-          // Ожидаемый район: примерно 28..35E, 57..62N
           if (
             sw.lng > 28 && ne.lng < 35 &&
             sw.lat > 57 && ne.lat < 62
@@ -131,82 +125,68 @@
         }
       });
 
-      console.log("Filtered bounds:", goodBounds, "isValid:", goodBounds.isValid());
-
       if (!goodBounds.isValid()) {
         document.body.innerHTML = "⛔ Не удалось вычислить границы данных";
         return;
       }
 
-      // ▶ Старт: показываем весь массив участков
       map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
       setTimeout(() => map.invalidateSize(), 200);
 
-      // 🔘 Кастомный контрол с кнопками
       const ButtonsControl = L.Control.extend({
         options: { position: 'bottomleft' },
 
         onAdd: function () {
-  const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
+          const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
 
-  const btnFocus = L.DomUtil.create('button', '', container);
-  btnFocus.innerText = '🔍 К участкам';
+          const btnFocus = L.DomUtil.create('button', '', container);
+          btnFocus.innerText = '🔍 К участкам';
 
-  const btnOverview = L.DomUtil.create('button', '', container);
-  btnOverview.innerText = '🌍 Обзор';
+          const btnOverview = L.DomUtil.create('button', '', container);
+          btnOverview.innerText = '🌍 Обзор';
 
-  const btnMaxCenter = L.DomUtil.create('button', '', container);
-  btnMaxCenter.innerText = '🎯 Макс. к центру';
+          const btnMaxCenter = L.DomUtil.create('button', '', container);
+          btnMaxCenter.innerText = '🎯 Макс. к центру';
 
-  // Чтобы тапы по кнопкам НЕ превращались в жесты карты (Android/WebView)
-  L.DomEvent.disableClickPropagation(container);
-  L.DomEvent.disableScrollPropagation(container);
-  L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
 
-  // 🔍 К участкам — ближе
-  btnFocus.onclick = () => {
-    map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
-  };
+          btnFocus.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+          };
 
-  // 🌍 Обзор — дальше
-  btnOverview.onclick = () => {
-    map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
-  };
+          btnOverview.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+          };
 
-  // 🎯 Макс. — медианный центр участков
-  btnMaxCenter.onclick = () => {
-    const centers = [];
+          // 🎯 Макс. — медианный центр участков
+          btnMaxCenter.onclick = () => {
+            const centers = [];
 
-    layer.eachLayer(l => {
-      if (l.getBounds) {
-        const c = l.getBounds().getCenter();
-        centers.push([c.lat, c.lng]);
-      }
-    });
+            layer.eachLayer(l => {
+              if (l.getBounds) {
+                const c = l.getBounds().getCenter();
+                centers.push([c.lat, c.lng]);
+              }
+            });
 
-    if (!centers.length) return;
+            if (!centers.length) return;
 
-    const lats = centers.map(c => c[0]).sort((a, b) => a - b);
-    const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
-    const mid = Math.floor(lats.length / 2);
+            const lats = centers.map(c => c[0]).sort((a, b) => a - b);
+            const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
+            const mid = Math.floor(lats.length / 2);
 
-    const target = L.latLng(lats[mid], lngs[mid]);
+            const target = L.latLng(lats[mid], lngs[mid]);
 
-    map.flyTo(target, 20, { animate: true, duration: 0.6 });
-  };
+            map.flyTo(target, 20, { animate: true, duration: 0.6 });
+          };
 
-  return container;
-}
-
-  // Фолбэк, если вдруг не нашли
-  const target = bestCenter || goodBounds.getCenter();
-
-  // Летим к выбранной точке и сильно зумимся (надёжно для Android/WebView)
-  map.flyTo(target, 20, { animate: true, duration: 0.6 });
-};
+          return container;
+        }
+      });
 
       map.addControl(new ButtonsControl());
-      
     })
     .catch(err => {
       console.error(err);
