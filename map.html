@@ -38,16 +38,19 @@
       return r.json();
     })
     .then(data => {
-      const layer = L.geoJSON(data, {
-        style: {
-          color: '#ff0000',
-          weight: 2,
-          fill: false
-        }
-      }).addTo(map);
+  console.log("Loaded data:", data);
 
-      map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 18 });
-    })
+  const layer = L.geoJSON(data).addTo(map);
+
+  const bounds = layer.getBounds();
+  console.log("Bounds:", bounds, "isValid:", bounds.isValid());
+
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+  } else {
+    alert("❌ Bounds невалидны — геометрия не загрузилась");
+  }
+})
     .catch(err => {
       document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
       console.error(err);
