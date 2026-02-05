@@ -146,49 +146,42 @@
         options: { position: 'bottomleft' },
 
         onAdd: function () {
-          const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
+  const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
 
-          const btnFocus = L.DomUtil.create('button', '', container);
-          btnFocus.innerText = '🔍 К участкам';
+  const btnFocus = L.DomUtil.create('button', '', container);
+  btnFocus.innerText = '🔍 К участкам';
 
-          const btnOverview = L.DomUtil.create('button', '', container);
-          btnOverview.innerText = '🌍 Обзор';
+  const btnOverview = L.DomUtil.create('button', '', container);
+  btnOverview.innerText = '🌍 Обзор';
 
-          const btnMaxCenter = L.DomUtil.create('button', '', container);
-          btnMaxCenter.innerText = '🎯 Макс. к центру';
+  const btnMaxCenter = L.DomUtil.create('button', '', container);
+  btnMaxCenter.innerText = '🎯 Макс. к центру';
 
-          // Чтобы клики по кнопкам не дёргали карту
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
+  // Чтобы клики по кнопкам не дёргали карту
+  L.DomEvent.disableClickPropagation(container);
+  L.DomEvent.disableScrollPropagation(container);
 
-          // Показать весь массив участков
-          btnFocus.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-          };
+  // Показать весь массив участков
+  btnFocus.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+  };
 
-          // Обзор — тот же массив, но дальше
-          btnOverview.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [200, 200] });
-          };
+  // Обзор — тот же массив, но дальше
+  btnOverview.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [200, 200] });
+  };
 
-          // Максимально приблизить ВНУТРИ массива участков (без улёта в города)
-          btnMaxCenter.onclick = () => {
-            map.fitBounds(goodBounds, {
-              padding: [20, 20],  // меньше — ближе, больше — дальше
-              maxZoom: 17
-            });
-          };
+  // Максимально приблизить ВНУТРИ массива участков (без улёта в города)
+  btnMaxCenter.onclick = () => {
+    map.fitBounds(goodBounds, {
+      padding: [20, 20],
+      maxZoom: 17
+    });
+  };
 
-            if (count === 0) return;
+  return container;
+}
 
-            const centerMass = L.latLng(sumLat / count, sumLng / count);
-
-            const maxZoom = 19; // подстрой: 16–18
-            map.setView(centerMass, maxZoom);
-          };
-
-          return container;
-        }
       });
 
       map.addControl(new ButtonsControl());
