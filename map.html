@@ -32,7 +32,7 @@
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  fetch("/Zahozhe_final_2026.geojson?token=...")
+  fetch(`/Zahozhe_final_2026.geojson?token=${token}`)
     .then(r => {
       if (!r.ok) throw new Error("Forbidden");
       return r.json();
