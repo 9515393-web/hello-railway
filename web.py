@@ -8,6 +8,25 @@ app = FastAPI()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+@app.get("/")
+async def index(request: Request, token: str):
+    # проверяем токен
+    conn = await asyncpg.connect(DATABASE_URL)
+    row = await conn.fetchrow(
+        "SELECT admin_id, expires_at FROM admin_sessions WHERE token = $1",
+        token
+    )
+    await conn.close()
+
+    if not row:
+        raise HTTPException(status_code=403, detail="invalid token")
+
+    if row["expires_at"] < datetime.utcnow():
+        raise HTTPException(status_code=403, detail="token expired")
+
+    # если всё ок — отдаём HTML карты
+    return FileResponse("map.html", media_type="text/html")
+
 @app.get("/Zahozhe_final_2026.geojson")
 async def get_geojson(token: str):
     conn = await asyncpg.connect(DATABASE_URL)
