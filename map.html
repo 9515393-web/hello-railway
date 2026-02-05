@@ -173,30 +173,30 @@
     map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
   };
 
-  // 🎯 Макс. — летим к самому "крупному" участку и сильно приближаем
+  // 🎯 Макс. — медианный центр участков (устойчиво к "дальним" объектам)
 btnMaxCenter.onclick = () => {
-  console.log('MAX pressed');
+  const centers = [];
 
-  let bestCenter = null;
-  let bestScore = -Infinity;
-
-  // Ищем слой с наибольшей площадью bounding box (проксимация "крупного участка")
   layer.eachLayer(l => {
     if (l.getBounds) {
-      const b = l.getBounds();
-      const sw = b.getSouthWest();
-      const ne = b.getNorthEast();
-
-      const width = Math.abs(ne.lng - sw.lng);
-      const height = Math.abs(ne.lat - sw.lat);
-      const score = width * height; // площадь bbox
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestCenter = b.getCenter();
-      }
+      const c = l.getBounds().getCenter();
+      centers.push([c.lat, c.lng]);
     }
   });
+
+  if (!centers.length) return;
+
+  // Сортируем и берём медианы по широте и долготе
+  const lats = centers.map(c => c[0]).sort((a,b) => a-b);
+  const lngs = centers.map(c => c[1]).sort((a,b) => a-b);
+  const mid = Math.floor(lats.length / 2);
+
+  const target = L.latLng(lats[mid], lngs[mid]);
+
+  // Летим и сильно приближаем (надёжно для Android/WebView)
+  map.flyTo(target, 20, { animate: true, duration: 0.6 });
+};
+
 
   // Фолбэк, если вдруг не нашли
   const target = bestCenter || goodBounds.getCenter();
