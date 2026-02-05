@@ -158,38 +158,35 @@
   const btnMaxCenter = L.DomUtil.create('button', '', container);
   btnMaxCenter.innerText = '🎯 Макс. к центру';
 
-  // Чтобы клики по кнопкам не дёргали карту
+  // Чтобы тапы по кнопкам НЕ превращались в жесты карты (Android/WebView)
   L.DomEvent.disableClickPropagation(container);
   L.DomEvent.disableScrollPropagation(container);
+  L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
 
- // 🔍 К участкам — ближе
-btnFocus.onclick = () => {
-  map.fitBounds(goodBounds, {
-    padding: [10, 10],   // меньше отступ — ближе
-    maxZoom: 18
-  });
-};
+  // 🔍 К участкам — ближе
+  btnFocus.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+  };
 
-// 🌍 Обзор — дальше
-btnOverview.onclick = () => {
-  map.fitBounds(goodBounds, {
-    padding: [500, 500],
-    maxZoom: 13
-  });
-};
+  // 🌍 Обзор — дальше
+  btnOverview.onclick = () => {
+    map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+  };
 
-// 🎯 Макс. к центру — максимально близко
-btnMaxCenter.onclick = () => {
-  console.log('MAX pressed'); // ← увидим в Console, что кнопка нажалась
+  // 🎯 Макс. к центру — МАКСИМАЛЬНО близко и надёжно на Android
+  btnMaxCenter.onclick = () => {
+    console.log('MAX pressed');
 
-  // Сначала вписываем массив участков
-  map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 20 });
+    // 1) Вписываем массив
+    map.fitBounds(goodBounds, { padding: [0, 0], maxZoom: 20 });
 
-  // Потом принудительно докручиваем зум (мобильные WebView часто требуют задержку)
-  setTimeout(() => {
-    map.setZoom(20, { animate: true });
-  }, 300);
-};
+    // 2) Докручиваем зум (WebView иногда не добивает maxZoom с первого раза)
+    setTimeout(() => {
+      map.setZoom(20, { animate: true });
+      // на всякий случай обновим размер
+      map.invalidateSize();
+    }, 250);
+  };
 
   return container;
 }
