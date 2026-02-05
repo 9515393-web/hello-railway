@@ -138,11 +138,27 @@
             map.fitBounds(goodBounds, { padding: [200, 200] });
           };
 
-          // Максимально приблизить к центру массива
+          // Максимально приблизить к "центру масс" участков
           btnMaxCenter.onclick = () => {
-            const center = goodBounds.getCenter();
-            const maxZoom = 17; // подстрой под себя: 16–18 обычно хорошо
-            map.setView(center, maxZoom);
+            let sumLat = 0;
+            let sumLng = 0;
+            let count = 0;
+
+            layer.eachLayer(l => {
+              if (l.getBounds) {
+                const c = l.getBounds().getCenter();
+                sumLat += c.lat;
+                sumLng += c.lng;
+                count++;
+              }
+            });
+
+            if (count === 0) return;
+
+            const centerMass = L.latLng(sumLat / count, sumLng / count);
+
+            const maxZoom = 17; // подстрой: 16–18
+            map.setView(centerMass, maxZoom);
           };
 
           return container;
