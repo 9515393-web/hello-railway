@@ -22,16 +22,17 @@
   }
 
   .leaflet-control.custom-buttons button {
-    display: block;
-    width: 200px;
-    margin: 4px 0;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
-    background: #f2f2f2;
-    cursor: pointer;
-    font-size: 13px;
-  }
+  display: block;
+  width: 320px;        /* было 200px */
+  min-height: 80px;    /* высокая кнопка под палец */
+  margin: 12px 0;      /* больше расстояние между кнопками */
+  padding: 16px 20px;  /* больше внутренние отступы */
+  border: none;
+  border-radius: 12px; /* более "пальцевый" радиус */
+  background: #f2f2f2;
+  cursor: pointer;
+  font-size: 22px;     /* было 13px */
+}
 
   .leaflet-control.custom-buttons button:hover {
     background: #e0e0e0;
