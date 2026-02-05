@@ -32,29 +32,25 @@
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  fetch(`/Zahozhe_final_2026.geojson?token=${token}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Forbidden");
-      return r.json();
-    })
-    .then(data => {
-  console.log("Loaded data:", data);
+  // 🔴 ТЕСТОВЫЕ ВСТРОЕННЫЕ ДАННЫЕ (без сервера и токена)
+  const testData = {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[[30.8452,59.7340],[30.846,59.7340],[30.846,59.7335],[30.8452,59.7340]]]
+        }
+      }
+    ]
+  };
 
-  const layer = L.geoJSON(data).addTo(map);
+  const layer = L.geoJSON(testData, {
+    style: { color: 'red', weight: 2 }
+  }).addTo(map);
 
-  const bounds = layer.getBounds();
-  console.log("Bounds:", bounds, "isValid:", bounds.isValid());
-
-  if (bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-  } else {
-    alert("❌ Bounds невалидны — геометрия не загрузилась");
-  }
-})
-    .catch(err => {
-      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
-      console.error(err);
-    });
+  map.fitBounds(layer.getBounds());
 </script>
 
 </body>
