@@ -173,20 +173,37 @@
     map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
   };
 
-  // 🎯 Макс. к центру — МАКСИМАЛЬНО близко и надёжно на Android
-  btnMaxCenter.onclick = () => {
-    console.log('MAX pressed');
+  // 🎯 Макс. — летим к самому "крупному" участку и сильно приближаем
+btnMaxCenter.onclick = () => {
+  console.log('MAX pressed');
 
-    // 1) Вписываем массив
-    map.fitBounds(goodBounds, { padding: [0, 0], maxZoom: 20 });
+  let bestCenter = null;
+  let bestScore = -Infinity;
 
-    // 2) Докручиваем зум (WebView иногда не добивает maxZoom с первого раза)
-    setTimeout(() => {
-      map.setZoom(20, { animate: true });
-      // на всякий случай обновим размер
-      map.invalidateSize();
-    }, 250);
-  };
+  // Ищем слой с наибольшей площадью bounding box (проксимация "крупного участка")
+  layer.eachLayer(l => {
+    if (l.getBounds) {
+      const b = l.getBounds();
+      const sw = b.getSouthWest();
+      const ne = b.getNorthEast();
+
+      const width = Math.abs(ne.lng - sw.lng);
+      const height = Math.abs(ne.lat - sw.lat);
+      const score = width * height; // площадь bbox
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCenter = b.getCenter();
+      }
+    }
+  });
+
+  // Фолбэк, если вдруг не нашли
+  const target = bestCenter || goodBounds.getCenter();
+
+  // Летим к выбранной точке и сильно зумимся (надёжно для Android/WebView)
+  map.flyTo(target, 20, { animate: true, duration: 0.6 });
+};
 
   return container;
 }
