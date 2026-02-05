@@ -26,7 +26,7 @@
     throw new Error("No token");
   }
 
-  const map = L.map('map');
+  const map = L.map('map').setView([59.7, 31.0], 12);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
@@ -34,7 +34,7 @@
 
   fetch(`/Zahozhe_final_2026.geojson?token=${token}`)
     .then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!r.ok) throw new Error("Forbidden");
       return r.json();
     })
     .then(data => {
