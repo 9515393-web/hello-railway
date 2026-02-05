@@ -174,11 +174,11 @@
 
   // Максимально приблизить ВНУТРИ массива участков (без улёта в города)
   btnMaxCenter.onclick = () => {
-    map.fitBounds(goodBounds, {
-      padding: [20, 20],
-      maxZoom: 17
-    });
-  };
+  map.fitBounds(goodBounds, {
+    padding: [5, 5],   // очень маленький отступ — ближе к объектам
+    maxZoom: 19        // почти максимум для OSM
+  });
+};
 
   return container;
 }
