@@ -95,10 +95,29 @@
     throw new Error("No token");
   }
 
-  const map = L.map('map', { zoomControl: false });
+  // --- helpers ---
+  function esc(v) {
+    // чтобы никакие спецсимволы не ломали HTML в попапе
+    return String(v ?? "—")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+  function getProp(p, keys) {
+    // на случай если где-то поля в другом регистре/названии
+    for (const k of keys) {
+      if (p && p[k] != null && String(p[k]).trim() !== "") return p[k];
+    }
+    return null;
+  }
+
+  const map = L.map("map", { zoomControl: false });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
   }).addTo(map);
 
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
@@ -107,25 +126,84 @@
       return r.json();
     })
     .then(data => {
+      let selectedLayer = null;
+
+      // слой GeoJSON с интерактивностью
       const layer = L.geoJSON(data, {
-  style: { color: '#ff0000', weight: 2, fillOpacity: 0.25 },
+        style: (feature) => ({
+          color: "#ff0000",
+          weight: 2,
+          fillOpacity: 0.20
+        }),
 
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
+        onEachFeature: (feature, lyr) => {
+          const p = feature.properties || {};
 
-    const html = `
-      <b>Кадастровый №:</b> ${p.cn || "—"}<br>
-      <b>Площадь:</b> ${p.area || "—"} м²<br>
-      <b>Стоимость:</b> ${p.cost || "—"} ₽<br>
-      <b>Тип:</b> ${p.type || "—"}<br>
-      <b>ФИО:</b> ${p.fio || "—"}<br>
-      <b>Адрес:</b> ${p.phone || "—"}<br>
-    `;
+          // ВАЖНО: твой кадастровый номер лежит в "cn"
+          const cn      = getProp(p, ["cn", "CN", "cadnum", "cadastral", "cadastral_number"]);
+          const area    = getProp(p, ["area", "AREA"]);
+          const cost    = getProp(p, ["cost", "COST"]);
+          const type    = getProp(p, ["type", "TYPE"]);
+          const fio     = getProp(p, ["fio", "FIO"]);
+          const phone   = getProp(p, ["phone", "PHONE"]); // у тебя тут часто адрес/описание
+          const region  = getProp(p, ["region", "REGION"]);
+          const district= getProp(p, ["district", "DISTRICT"]);
+          const locality= getProp(p, ["locality", "LOCALITY"]);
+          const name    = getProp(p, ["name", "NAME"]);
 
-    layer.bindPopup(html);
-  }
-}).addTo(map);
+          const html = `
+            <div style="padding:8px;">
+              <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Участок</div>
 
+              <div style="margin:6px 0;"><b>Кадастровый №:</b><br><span style="display:block;">${esc(cn)}</span></div>
+              <div style="margin:6px 0;"><b>Адрес/описание:</b><br><span style="display:block;">${esc(phone)}</span></div>
+
+              <div style="margin:6px 0;"><b>Площадь:</b> ${esc(area)} м²</div>
+              <div style="margin:6px 0;"><b>Стоимость:</b> ${esc(cost)} ₽</div>
+              <div style="margin:6px 0;"><b>Тип:</b> ${esc(type)}</div>
+              <div style="margin:6px 0;"><b>ФИО:</b> ${esc(fio)}</div>
+
+              <hr style="margin:10px 0; opacity:0.3;">
+              <div style="opacity:0.85;">
+                <div><b>Регион:</b> ${esc(region)}</div>
+                <div><b>Район:</b> ${esc(district)}</div>
+                <div><b>НП:</b> ${esc(locality)}</div>
+                <div><b>Имя/метка:</b> ${esc(name)}</div>
+              </div>
+            </div>
+          `;
+
+          // Попап (широкий, чтобы не резало кадастровый)
+          lyr.bindPopup(html, { maxWidth: 9999, autoPan: true, closeButton: true });
+
+          // Подсветка
+          lyr.on("mouseover", () => {
+            if (lyr !== selectedLayer) lyr.setStyle({ weight: 4, fillOpacity: 0.35 });
+          });
+
+          lyr.on("mouseout", () => {
+            if (lyr !== selectedLayer) lyr.setStyle({ weight: 2, fillOpacity: 0.20 });
+          });
+
+          // Выбор по клику
+          lyr.on("click", () => {
+            if (selectedLayer && selectedLayer !== lyr) {
+              selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selectedLayer = lyr;
+            lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+
+            // опционально: приблизить к участку
+            if (lyr.getBounds) {
+              map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 19 });
+            }
+
+            lyr.openPopup();
+          });
+        }
+      }).addTo(map);
+
+      // ---- вычисляем границы (как у тебя было) ----
       const goodBounds = L.latLngBounds([]);
 
       layer.eachLayer(l => {
@@ -134,10 +212,7 @@
           const sw = b.getSouthWest();
           const ne = b.getNorthEast();
 
-          if (
-            sw.lng > 28 && ne.lng < 35 &&
-            sw.lat > 57 && ne.lat < 62
-          ) {
+          if (sw.lng > 28 && ne.lng < 35 && sw.lat > 57 && ne.lat < 62) {
             goodBounds.extend(b);
           }
         }
@@ -151,81 +226,70 @@
       map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
       setTimeout(() => map.invalidateSize(), 200);
 
+      // ---- кнопки (как у тебя было) ----
       const ButtonsControl = L.Control.extend({
-        options: { position: 'bottomleft' },
-
+        options: { position: "bottomleft" },
         onAdd: function () {
-  const container = L.DomUtil.create('div', 'leaflet-control custom-buttons');
+          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
 
-  const btnZoomIn = L.DomUtil.create('button', '', container);
-  btnZoomIn.innerText = '➕ Приблизить';
+          const btnZoomIn = L.DomUtil.create("button", "", container);
+          btnZoomIn.innerText = "➕ Приблизить";
 
-  const btnZoomOut = L.DomUtil.create('button', '', container);
-  btnZoomOut.innerText = '➖ Отдалить';
+          const btnZoomOut = L.DomUtil.create("button", "", container);
+          btnZoomOut.innerText = "➖ Отдалить";
 
-  const btnFocus = L.DomUtil.create('button', '', container);
-  btnFocus.innerText = '🔍 К участкам';
+          const btnFocus = L.DomUtil.create("button", "", container);
+          btnFocus.innerText = "🔍 К участкам";
 
-  const btnOverview = L.DomUtil.create('button', '', container);
-  btnOverview.innerText = '🌍 Обзор';
+          const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.innerText = "🌍 Обзор";
 
-  const btnMaxCenter = L.DomUtil.create('button', '', container);
-  btnMaxCenter.innerText = '🎯 Макс. к центру';
+          const btnMaxCenter = L.DomUtil.create("button", "", container);
+          btnMaxCenter.innerText = "🎯 Макс. к центру";
 
-  // Чтобы тапы по панели не превращались в жесты карты (Android/WebView)
-  L.DomEvent.disableClickPropagation(container);
-  L.DomEvent.disableScrollPropagation(container);
-  L.DomEvent.on(container, 'touchstart mousedown dblclick', L.DomEvent.stopPropagation);
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          L.DomEvent.on(container, "touchstart mousedown dblclick", L.DomEvent.stopPropagation);
 
-  // ➕ / ➖ Зум
-  btnZoomIn.onclick = () => map.zoomIn();
-  btnZoomOut.onclick = () => map.zoomOut();
+          btnZoomIn.onclick = () => map.zoomIn();
+          btnZoomOut.onclick = () => map.zoomOut();
 
-  // 🔍 К участкам — ближе
-  btnFocus.onclick = () => {
-    map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
-  };
+          btnFocus.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+          };
 
-  // 🌍 Обзор — дальше
-  btnOverview.onclick = () => {
-    map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
-  };
+          btnOverview.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+          };
 
-  // 🎯 Макс. — летим к ближайшему участку от медианы
-  btnMaxCenter.onclick = () => {
-    const centers = [];
+          btnMaxCenter.onclick = () => {
+            const centers = [];
+            layer.eachLayer(l => {
+              if (l.getBounds) centers.push(l.getBounds().getCenter());
+            });
+            if (!centers.length) return;
 
-    layer.eachLayer(l => {
-      if (l.getBounds) {
-        centers.push(l.getBounds().getCenter());
-      }
-    });
+            const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+            const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+            const mid = Math.floor(lats.length / 2);
+            const median = L.latLng(lats[mid], lngs[mid]);
 
-    if (!centers.length) return;
+            let best = centers[0];
+            let bestDist = Infinity;
 
-    // медианная точка
-    const lats = centers.map(c => c.lat).sort((a,b)=>a-b);
-    const lngs = centers.map(c => c.lng).sort((a,b)=>a-b);
-    const mid = Math.floor(lats.length / 2);
-    const median = L.latLng(lats[mid], lngs[mid]);
+            centers.forEach(c => {
+              const d = median.distanceTo(c);
+              if (d < bestDist) {
+                bestDist = d;
+                best = c;
+              }
+            });
 
-    // ближайший участок к медиане
-    let best = centers[0];
-    let bestDist = Infinity;
+            map.flyTo(best, 20, { animate: true, duration: 0.6 });
+          };
 
-    centers.forEach(c => {
-      const d = median.distanceTo(c);
-      if (d < bestDist) {
-        bestDist = d;
-        best = c;
-      }
-    });
-
-    map.flyTo(best, 20, { animate: true, duration: 0.6 });
-  };
-
-  return container;
-}
+          return container;
+        }
       });
 
       map.addControl(new ButtonsControl());
