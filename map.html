@@ -67,11 +67,12 @@
       console.log("Filtered bounds:", goodBounds, "isValid:", goodBounds.isValid());
 
       if (goodBounds.isValid()) {
-  map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+  const center = goodBounds.getCenter();
+  const zoom = 13;   // ← твой уровень зума
 
-  // 🔍 Дополнительно приблизим ещё на 2 уровня
+  map.setView(center, zoom);
+
   setTimeout(() => {
-    map.zoomIn(2);      // ← вот это “в 2 раза увеличить”
     map.invalidateSize();
   }, 200);
 } else {
