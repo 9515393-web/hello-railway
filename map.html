@@ -18,21 +18,12 @@
 <div id="map"></div>
 
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-
-  if (!token) {
-    document.body.innerHTML = "⛔ Нет токена доступа";
-    throw new Error("No token");
-  }
-
-  const map = L.map('map').setView([59.7, 31.0], 12);
+  const map = L.map('map');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // 🔴 ТЕСТОВЫЕ ВСТРОЕННЫЕ ДАННЫЕ (без сервера и токена)
   const testData = {
     "type": "FeatureCollection",
     "features": [
@@ -46,11 +37,13 @@
     ]
   };
 
-  const layer = L.geoJSON(testData, {
-    style: { color: 'red', weight: 2 }
-  }).addTo(map);
+  const layer = L.geoJSON(testData).addTo(map);
 
   map.fitBounds(layer.getBounds());
+
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
 </script>
 
 </body>
