@@ -160,27 +160,40 @@
             map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
           };
 
-          // 🎯 Макс. — медианный центр участков
-          btnMaxCenter.onclick = () => {
-            const centers = [];
+          // 🎯 Макс. — летим к ближайшему участку от "центра масс"
+btnMaxCenter.onclick = () => {
+  const centers = [];
 
-            layer.eachLayer(l => {
-              if (l.getBounds) {
-                const c = l.getBounds().getCenter();
-                centers.push([c.lat, c.lng]);
-              }
-            });
+  layer.eachLayer(l => {
+    if (l.getBounds) {
+      const c = l.getBounds().getCenter();
+      centers.push(c);
+    }
+  });
 
-            if (!centers.length) return;
+  if (!centers.length) return;
 
-            const lats = centers.map(c => c[0]).sort((a, b) => a - b);
-            const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
-            const mid = Math.floor(lats.length / 2);
+  // 1) Медианная точка
+  const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+  const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+  const mid = Math.floor(lats.length / 2);
+  const median = L.latLng(lats[mid], lngs[mid]);
 
-            const target = L.latLng(lats[mid], lngs[mid]);
+  // 2) Ищем ближайший участок к медиане
+  let best = centers[0];
+  let bestDist = Infinity;
 
-            map.flyTo(target, 20, { animate: true, duration: 0.6 });
-          };
+  centers.forEach(c => {
+    const d = median.distanceTo(c);
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  });
+
+  // 3) Летим к центру ближайшего участка и сильно зумимся
+  map.flyTo(best, 20, { animate: true, duration: 0.6 });
+};
 
           return container;
         }
