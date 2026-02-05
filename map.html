@@ -36,6 +36,15 @@
   .leaflet-control.custom-buttons button:hover {
     background: #e0e0e0;
   }
+   /* Поднимаем все контролы Leaflet поверх карты */
+.leaflet-top, .leaflet-bottom {
+  z-index: 1000;
+}
+
+/* На всякий случай: карта не должна перекрывать контролы */
+#map {
+  position: relative;
+}
 </style>
 </head>
 <body>
