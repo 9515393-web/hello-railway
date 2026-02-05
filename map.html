@@ -56,12 +56,13 @@
 
 /* Большие кнопки под палец */
 .leaflet-control.custom-buttons button {
-  width: 220px;
-  min-height: 44px;          /* рекомендация для тач-интерфейсов */
-  margin: 6px 0;
-  padding: 10px 14px;
-  font-size: 16px;
-  border-radius: 8px;
+  display: block;
+  width: 360px;        /* было ~220 */
+  min-height: 96px;    /* было ~44 */
+  margin: 18px 0;      /* больше расстояние */
+  padding: 24px 28px;  /* больше внутренние отступы */
+  font-size: 28px;     /* было ~16 */
+  border-radius: 18px; /* крупнее скругление */
 }
 
 /* Поднимаем контролы поверх карты */
