@@ -18,32 +18,55 @@
 <div id="map"></div>
 
 <script>
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  if (!token) {
+    document.body.innerHTML = "⛔ Нет токена доступа";
+    throw new Error("No token");
+  }
+
+  // Создаём карту БЕЗ начального setView
   const map = L.map('map');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  const testData = {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [[[30.8452,59.7340],[30.846,59.7340],[30.846,59.7335],[30.8452,59.7340]]]
+  fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
+    .then(r => {
+      if (!r.ok) throw new Error("Forbidden or not found");
+      return r.json();
+    })
+    .then(data => {
+      console.log("Loaded GeoJSON:", data);
+
+      const layer = L.geoJSON(data, {
+        style: {
+          color: '#ff0000',
+          weight: 2,
+          fill: false
         }
+      }).addTo(map);
+
+      const bounds = layer.getBounds();
+      console.log("Bounds:", bounds, "isValid:", bounds.isValid());
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+
+        // Фикс для WebView / ресайза контейнера
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 200);
+      } else {
+        document.body.innerHTML = "⛔ Данные карты пустые или повреждены";
       }
-    ]
-  };
-
-  const layer = L.geoJSON(testData).addTo(map);
-
-  map.fitBounds(layer.getBounds());
-
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 200);
+    })
+    .catch(err => {
+      console.error(err);
+      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
+    });
 </script>
 
 </body>
