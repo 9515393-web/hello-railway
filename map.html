@@ -180,10 +180,11 @@ btnOverview.onclick = () => {
 
 // 🎯 Макс. к центру — максимально близко
 btnMaxCenter.onclick = () => {
-  map.fitBounds(goodBounds, {
-    padding: [0, 0],     // без отступов
-    maxZoom: 20          // почти максимум
-  });
+  map.fitBounds(goodBounds, { padding: [0, 0], maxZoom: 20 });
+
+  setTimeout(() => {
+    map.setZoom(20);   // принудительно докручиваем зум
+  }, 300);
 };
 
   return container;
