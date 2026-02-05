@@ -15,14 +15,14 @@
 
   /* Панель кнопок */
   .leaflet-control.custom-buttons {
-    background: rgba(255, 255, 255, 0.85);   /* полупрозрачная */
+    background: rgba(255, 255, 255, 0.75);   /* полупрозрачная панель */
     padding: 12px;
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     backdrop-filter: blur(4px);              /* красиво на современных браузерах */
   }
 
-  /* Большие кнопки под палец */
+  /* Большие кнопки под палец с прозрачным фоном */
   .leaflet-control.custom-buttons button {
     display: block;
     width: 360px;
@@ -31,13 +31,16 @@
     padding: 24px 28px;
     font-size: 28px;
     border-radius: 18px;
-    border: none;
-    background: rgba(240,240,240,0.9);
+    border: 2px solid rgba(0, 0, 0, 0.2);     /* лёгкая рамка */
+    background: rgba(255, 255, 255, 0.15);    /* почти прозрачный фон */
+    color: #000;                              /* цвет текста */
     cursor: pointer;
+    backdrop-filter: blur(2px);               /* лёгкое размытие под кнопкой */
   }
 
+  /* Наведение/тап — чуть плотнее фон */
   .leaflet-control.custom-buttons button:hover {
-    background: rgba(220,220,220,0.95);
+    background: rgba(255, 255, 255, 0.3);
   }
 
   /* Чтобы контролы всегда были поверх карты */
