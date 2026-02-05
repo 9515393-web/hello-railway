@@ -15,14 +15,14 @@
 
   /* Панель кнопок */
   .leaflet-control.custom-buttons {
-    background: rgba(255, 255, 255, 0.75);   /* полупрозрачная панель */
+    background: rgba(255, 255, 255, 0.75);
     padding: 12px;
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    backdrop-filter: blur(4px);              /* красиво на современных браузерах */
+    backdrop-filter: blur(4px);
   }
 
-  /* Большие кнопки под палец с прозрачным фоном */
+  /* Большие кнопки под палец с почти прозрачным фоном */
   .leaflet-control.custom-buttons button {
     display: block;
     width: 360px;
@@ -31,29 +31,26 @@
     padding: 24px 28px;
     font-size: 28px;
     border-radius: 18px;
-    border: 2px solid rgba(0, 0, 0, 0.2);     /* лёгкая рамка */
-    background: rgba(255, 255, 255, 0.15);    /* почти прозрачный фон */
-    color: #000;                              /* цвет текста */
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #000;
     cursor: pointer;
-    backdrop-filter: blur(2px);               /* лёгкое размытие под кнопкой */
+    backdrop-filter: blur(2px);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);  /* ← тень текста */
   }
 
-  /* Наведение/тап — чуть плотнее фон */
   .leaflet-control.custom-buttons button:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.18);
   }
 
-  /* Чтобы контролы всегда были поверх карты */
   .leaflet-top, .leaflet-bottom {
     z-index: 1000;
   }
 
-  /* Отступ снизу под safe-area (Android / современные браузеры) */
   .leaflet-bottom {
     padding-bottom: env(safe-area-inset-bottom, 12px);
   }
 
-  /* Дополнительное расстояние между кнопками */
   .leaflet-control.custom-buttons button + button {
     margin-top: 18px;
   }
