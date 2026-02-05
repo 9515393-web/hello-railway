@@ -173,7 +173,7 @@
     map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
   };
 
-  // 🎯 Макс. — медианный центр участков (устойчиво к "дальним" объектам)
+  // 🎯 Макс. — медианный центр участков (устойчиво к "выбросам")
 btnMaxCenter.onclick = () => {
   const centers = [];
 
@@ -186,17 +186,14 @@ btnMaxCenter.onclick = () => {
 
   if (!centers.length) return;
 
-  // Сортируем и берём медианы по широте и долготе
-  const lats = centers.map(c => c[0]).sort((a,b) => a-b);
-  const lngs = centers.map(c => c[1]).sort((a,b) => a-b);
+  const lats = centers.map(c => c[0]).sort((a, b) => a - b);
+  const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
   const mid = Math.floor(lats.length / 2);
 
   const target = L.latLng(lats[mid], lngs[mid]);
 
-  // Летим и сильно приближаем (надёжно для Android/WebView)
   map.flyTo(target, 20, { animate: true, duration: 0.6 });
 };
-
 
   // Фолбэк, если вдруг не нашли
   const target = bestCenter || goodBounds.getCenter();
