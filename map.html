@@ -59,28 +59,27 @@
      POPUP ДЛЯ УЧАСТКОВ (МОБИЛЬНЫЙ)
      =========================== */
 
-  .leaflet-popup-content-wrapper {
-    border-radius: 16px;
-  }
+ .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+}
 
-  .leaflet-popup-content {
-    width: 90vw !important;
-    max-width: 90vw !important;
-    max-height: 60vh;
-    overflow-y: auto;
+.leaflet-popup-content {
+  width: 85vw !important;
+  max-width: 85vw !important;
+  max-height: 40vh;          /* ⬅ было слишком большим */
+  overflow-y: auto;
 
-    font-size: 20px;
-    line-height: 1.35;
+  font-size: 18px;
+  line-height: 1.35;
 
-    /* Перенос длинных строк: кадастровые, адреса и т.п. */
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
-  .leaflet-popup-close-button {
-    font-size: 28px !important;
-  }
+.leaflet-popup-close-button {
+  font-size: 26px !important;
+}
 </style>
 </head>
 <body>
@@ -128,80 +127,68 @@
     .then(data => {
       let selectedLayer = null;
 
-      // слой GeoJSON с интерактивностью
-      const layer = L.geoJSON(data, {
-        style: (feature) => ({
-          color: "#ff0000",
-          weight: 2,
-          fillOpacity: 0.20
-        }),
+const layer = L.geoJSON(data, {
+  style: () => ({
+    color: "#ff0000",
+    weight: 2,
+    fillOpacity: 0.20
+  }),
 
-        onEachFeature: (feature, lyr) => {
-          const p = feature.properties || {};
+  onEachFeature: (feature, lyr) => {
+    const p = feature.properties || {};
 
-          // ВАЖНО: твой кадастровый номер лежит в "cn"
-          const cn      = getProp(p, ["cn", "CN", "cadnum", "cadastral", "cadastral_number"]);
-          const area    = getProp(p, ["area", "AREA"]);
-          const cost    = getProp(p, ["cost", "COST"]);
-          const type    = getProp(p, ["type", "TYPE"]);
-          const fio     = getProp(p, ["fio", "FIO"]);
-          const phone   = getProp(p, ["phone", "PHONE"]); // у тебя тут часто адрес/описание
-          const region  = getProp(p, ["region", "REGION"]);
-          const district= getProp(p, ["district", "DISTRICT"]);
-          const locality= getProp(p, ["locality", "LOCALITY"]);
-          const name    = getProp(p, ["name", "NAME"]);
+    const cn    = p.cn || "—";
+    const area  = p.area || "—";
+    const cost  = p.cost || "—";
+    const type  = p.type || "—";
+    const fio   = p.fio || "—";
+    const addr  = p.phone || "—";  // у тебя тут адрес/описание
 
-          const html = `
-            <div style="padding:8px;">
-              <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Участок</div>
+    const html = `
+      <div style="padding:6px;">
+        <div style="font-size:20px; font-weight:700; margin-bottom:8px;">Участок</div>
 
-              <div style="margin:6px 0;"><b>Кадастровый №:</b><br><span style="display:block;">${esc(cn)}</span></div>
-              <div style="margin:6px 0;"><b>Адрес/описание:</b><br><span style="display:block;">${esc(phone)}</span></div>
+        <div><b>Кадастровый №:</b><br>${cn}</div>
+        <div style="margin-top:6px;"><b>Адрес:</b><br>${addr}</div>
 
-              <div style="margin:6px 0;"><b>Площадь:</b> ${esc(area)} м²</div>
-              <div style="margin:6px 0;"><b>Стоимость:</b> ${esc(cost)} ₽</div>
-              <div style="margin:6px 0;"><b>Тип:</b> ${esc(type)}</div>
-              <div style="margin:6px 0;"><b>ФИО:</b> ${esc(fio)}</div>
+        <hr style="margin:8px 0;">
 
-              <hr style="margin:10px 0; opacity:0.3;">
-              <div style="opacity:0.85;">
-                <div><b>Регион:</b> ${esc(region)}</div>
-                <div><b>Район:</b> ${esc(district)}</div>
-                <div><b>НП:</b> ${esc(locality)}</div>
-                <div><b>Имя/метка:</b> ${esc(name)}</div>
-              </div>
-            </div>
-          `;
+        <div><b>Площадь:</b> ${area} м²</div>
+        <div><b>Стоимость:</b> ${cost} ₽</div>
+        <div><b>Тип:</b> ${type}</div>
+        <div><b>ФИО:</b> ${fio}</div>
+      </div>
+    `;
 
-          // Попап (широкий, чтобы не резало кадастровый)
-          lyr.bindPopup(html, { maxWidth: 9999, autoPan: true, closeButton: true });
+    // попап
+    lyr.bindPopup(html, { maxWidth: 9999, autoPan: true, closeButton: true });
 
-          // Подсветка
-          lyr.on("mouseover", () => {
-            if (lyr !== selectedLayer) lyr.setStyle({ weight: 4, fillOpacity: 0.35 });
-          });
+    // подсветка при наведении
+    lyr.on("mouseover", () => {
+      if (lyr !== selectedLayer) lyr.setStyle({ weight: 4, fillOpacity: 0.35 });
+    });
 
-          lyr.on("mouseout", () => {
-            if (lyr !== selectedLayer) lyr.setStyle({ weight: 2, fillOpacity: 0.20 });
-          });
+    lyr.on("mouseout", () => {
+      if (lyr !== selectedLayer) lyr.setStyle({ weight: 2, fillOpacity: 0.20 });
+    });
 
-          // Выбор по клику
-          lyr.on("click", () => {
-            if (selectedLayer && selectedLayer !== lyr) {
-              selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selectedLayer = lyr;
-            lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+    // клик — выбрать участок
+    lyr.on("click", () => {
+      if (selectedLayer && selectedLayer !== lyr) {
+        selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
 
-            // опционально: приблизить к участку
-            if (lyr.getBounds) {
-              map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 19 });
-            }
+      selectedLayer = lyr;
+      lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
 
-            lyr.openPopup();
-          });
-        }
-      }).addTo(map);
+      if (lyr.getBounds) {
+        map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 19 });
+      }
+
+      lyr.openPopup();
+    });
+  }
+}).addTo(map);
 
       // ---- вычисляем границы (как у тебя было) ----
       const goodBounds = L.latLngBounds([]);
