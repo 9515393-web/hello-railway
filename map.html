@@ -79,24 +79,25 @@
   margin-top: 18px;   /* можешь поставить 10px, 12px, 16px — как удобнее */
 }
 
-   /* Увеличиваем стандартные кнопки + / - Leaflet */
+  /* Увеличиваем стандартные кнопки + / - Leaflet до ~половины больших кнопок */
 .leaflet-control-zoom a {
-  width: 72px;        /* было ~26px */
-  height: 72px;       /* было ~26px */
-  line-height: 72px;  /* чтобы + и - были по центру */
-  font-size: 36px;    /* размер + и - */
+  width: 48px;        /* ~половина от 96px */
+  height: 48px;
+  line-height: 48px;  /* центрируем + и - по вертикали */
+  font-size: 24px;    /* примерно половина от 28px */
 }
 
-/* Чуть больше расстояние между кнопками */
+/* Немного увеличим расстояние между + и - */
 .leaflet-control-zoom a + a {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
-/* Сделаем кнопки более "пальцевыми" */
+/* Чуть скруглим, чтобы выглядело "пальцево" */
 .leaflet-control-zoom {
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
 }
+
 </style>
 </head>
 <body>
