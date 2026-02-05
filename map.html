@@ -67,9 +67,14 @@
       console.log("Filtered bounds:", goodBounds, "isValid:", goodBounds.isValid());
 
       if (goodBounds.isValid()) {
-        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-        setTimeout(() => map.invalidateSize(), 200);
-      } else {
+  map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+
+  // 🔍 Дополнительно приблизим ещё на 2 уровня
+  setTimeout(() => {
+    map.zoomIn(2);      // ← вот это “в 2 раза увеличить”
+    map.invalidateSize();
+  }, 200);
+} else {
         document.body.innerHTML = "⛔ Не удалось вычислить границы данных";
       }
     })
