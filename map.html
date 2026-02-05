@@ -174,26 +174,29 @@
   };
 
   // 🎯 Макс. — медианный центр участков (устойчиво к "выбросам")
-btnMaxCenter.onclick = () => {
-  const centers = [];
+  btnMaxCenter.onclick = () => {
+    const centers = [];
 
-  layer.eachLayer(l => {
-    if (l.getBounds) {
-      const c = l.getBounds().getCenter();
-      centers.push([c.lat, c.lng]);
-    }
-  });
+    layer.eachLayer(l => {
+      if (l.getBounds) {
+        const c = l.getBounds().getCenter();
+        centers.push([c.lat, c.lng]);
+      }
+    });
 
-  if (!centers.length) return;
+    if (!centers.length) return;
 
-  const lats = centers.map(c => c[0]).sort((a, b) => a - b);
-  const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
-  const mid = Math.floor(lats.length / 2);
+    const lats = centers.map(c => c[0]).sort((a, b) => a - b);
+    const lngs = centers.map(c => c[1]).sort((a, b) => a - b);
+    const mid = Math.floor(lats.length / 2);
 
-  const target = L.latLng(lats[mid], lngs[mid]);
+    const target = L.latLng(lats[mid], lngs[mid]);
 
-  map.flyTo(target, 20, { animate: true, duration: 0.6 });
-};
+    map.flyTo(target, 20, { animate: true, duration: 0.6 });
+  };
+
+  return container;
+}
 
   // Фолбэк, если вдруг не нашли
   const target = bestCenter || goodBounds.getCenter();
@@ -201,11 +204,6 @@ btnMaxCenter.onclick = () => {
   // Летим к выбранной точке и сильно зумимся (надёжно для Android/WebView)
   map.flyTo(target, 20, { animate: true, duration: 0.6 });
 };
-
-  return container;
-}
-
-      });
 
       map.addControl(new ButtonsControl());
       
