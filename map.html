@@ -93,12 +93,163 @@
       return r.json();
     })
     .then(data => {
+      let selected = null;
+
+      // Что считаем реальным участком
+      function isRealParcel(feature) {
+        const cn = feature?.properties?.cn;
+        if (!cn) return false;
+
+        const parts = String(cn).split(":");
+        return parts.length === 4 && parts[3] && parts[3].length > 0;
+      }
+
+      // Слой: только участки
+      const parcelsLayer = L.geoJSON(data, {
+        filter: f => isRealParcel(f),
+
+        style: {
+          color: "#ff0000",
+          weight: 2,
+          fillOpacity: 0.20
+        },
+
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+
+          const cn   = p.cn || "—";
+          const area = p.area || "—";
+          const cost = p.cost || "—";
+          const type = p.type || "—";
+          const addr = p.address || p.addr || p.location || "—";
+
+          const html = `
+            <div style="font-size:16px; line-height:1.4;">
+              <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+                Земельный участок
+              </div>
+
+              <table style="width:100%; border-collapse:collapse;">
+                <tr><td style="color:#666; padding:4px 6px;">Кадастровый №</td><td style="padding:4px 6px;"><b>${cn}</b></td></tr>
+                <tr><td style="color:#666; padding:4px 6px;">Адрес</td><td style="padding:4px 6px;">${addr}</td></tr>
+                <tr><td style="color:#666; padding:4px 6px;">Площадь</td><td style="padding:4px 6px;">${area} м²</td></tr>
+                <tr><td style="color:#666; padding:4px 6px;">Кадастровая стоимость</td><td style="padding:4px 6px;"><b>${cost}</b></td></tr>
+                <tr><td style="color:#666; padding:4px 6px;">Тип</td><td style="padding:4px 6px;">${type}</td></tr>
+              </table>
+            </div>
+          `;
+
+          layer.bindPopup(html, {
+            maxWidth: 600,
+            autoPan: true,
+            autoPanPadding: [20, 80]
+          });
+
+          layer.on("click", () => {
+            if (selected && selected !== layer) {
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selected = layer;
+            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+            layer.openPopup();
+          });
+        }
+      }).addTo(map);
+
+      // Границы — только по участкам
+      const goodBounds = L.latLngBounds([]);
+
+      parcelsLayer.eachLayer(l => {
+        if (l.getBounds) {
+          const b = l.getBounds();
+          if (b.isValid()) goodBounds.extend(b);
+        }
+      });
+
+      if (goodBounds.isValid()) {
+        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+      } else {
+        // запасной центр (если вдруг что-то пошло не так)
+        map.setView([59.9, 30.3], 10);
+      }
+
+      setTimeout(() => map.invalidateSize(), 200);
+
+      // -------- КНОПКИ --------
+      const ButtonsControl = L.Control.extend({
+        options: { position: "bottomleft" },
+
+        onAdd: function () {
+          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
+
+          const btnZoomIn = L.DomUtil.create("button", "", container);
+          btnZoomIn.innerText = "➕ Приблизить";
+
+          const btnZoomOut = L.DomUtil.create("button", "", container);
+          btnZoomOut.innerText = "➖ Отдалить";
+
+          const btnFocus = L.DomUtil.create("button", "", container);
+          btnFocus.innerText = "🔍 К участкам";
+
+          const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.innerText = "🌍 Обзор";
+
+          const btnMaxCenter = L.DomUtil.create("button", "", container);
+          btnMaxCenter.innerText = "🎯 Макс. к центру";
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          L.DomEvent.on(container, "touchstart mousedown dblclick", L.DomEvent.stopPropagation);
+
+          btnZoomIn.onclick = () => map.zoomIn();
+          btnZoomOut.onclick = () => map.zoomOut();
+
+          btnFocus.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+          };
+
+          btnOverview.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+          };
+
+          btnMaxCenter.onclick = () => {
+            const centers = [];
+            parcelsLayer.eachLayer(l => {
+              if (l.getBounds) centers.push(l.getBounds().getCenter());
+            });
+            if (!centers.length) return;
+
+            const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+            const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+            const mid = Math.floor(lats.length / 2);
+            const median = L.latLng(lats[mid], lngs[mid]);
+
+            let best = centers[0];
+            let bestDist = Infinity;
+
+            centers.forEach(c => {
+              const d = median.distanceTo(c);
+              if (d < bestDist) {
+                bestDist = d;
+                best = c;
+              }
+            });
+
+            map.flyTo(best, 20, { animate: true, duration: 0.6 });
+          };
+
+          return container;
+        }
+      });
+
+      map.addControl(new ButtonsControl());
     })
     .catch(err => {
       console.error(err);
       document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
     });
 </script>
+
 
 </body>
 </html>
