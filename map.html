@@ -14,7 +14,28 @@ html, body, #map {
   margin: 0;
 }
 
-//* ===== СТИЛИ ПОПАПА ===== */
+/* =========================
+   POPUP — БАЗОВЫЙ (ПК)
+========================= */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+}
+
+.leaflet-popup-content {
+  width: 420px !important;
+  max-width: 420px !important;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  font-size: 16px;
+  line-height: 1.4;
+
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Контент попапа */
 .popup-root {
   font-size: 16px;
   line-height: 1.4;
@@ -26,93 +47,69 @@ html, body, #map {
   margin-bottom: 8px;
 }
 
-.popup-table td {
-  padding: 6px 8px;
-  font-size: 16px;
+/* =========================
+   КНОПКИ — БАЗОВЫЕ (ПК)
+========================= */
+.leaflet-control.custom-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
 }
 
-/* 📱 МОБИЛЬНАЯ ВЕРСИЯ — УМЕРЕННЫЕ РАЗМЕРЫ */
+.leaflet-control.custom-buttons button {
+  min-height: 48px;
+  padding: 10px 14px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+
+/* =========================
+   📱 ТЕЛЕФОН — УМЕНЬШАЕМ
+========================= */
 @media (max-width: 768px) {
+
+  /* ===== POPUP (уменьшаем примерно в 2 раза от того, что было) ===== */
+  .leaflet-popup-content {
+    width: 92vw !important;
+    max-width: 92vw !important;
+    max-height: 60vh !important;
+
+    font-size: 14px !important;   /* было гигантское — делаем нормальным */
+    line-height: 1.35 !important;
+    padding: 12px !important;
+  }
+
   .popup-root {
-    font-size: 18px;
+    font-size: 14px !important;
   }
 
   .popup-title {
-    font-size: 22px;
-  }
-
-  .popup-table td {
-    font-size: 18px;
-    padding: 8px 10px;
-  }
-
-  .leaflet-popup-content {
-    width: 96vw !important;
-    max-width: 96vw !important;
-    max-height: 70vh !important;
+    font-size: 16px !important;
   }
 
   .leaflet-popup-close-button {
-    font-size: 32px !important;
+    font-size: 24px !important;
   }
-}
-  /* ===== КНОПКИ ===== */
+
+  /* ===== КНОПКИ (уменьшаем примерно в 3 раза от текущих) ===== */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
     margin: 12px !important;
   }
 
   .leaflet-control.custom-buttons {
     gap: 12px !important;
-    padding: 16px !important;
-    border-radius: 20px !important;
-  }
-
-  .leaflet-control.custom-buttons button {
-    width: 92vw !important;
-    min-height: 80px !important;     /* удобно для пальца */
-    padding: 16px 20px !important;
-    font-size: 24px !important;      /* читабельно, но не гигант */
-    border-radius: 20px !important;
-  }
-}/* 📱 ТЕЛЕФОН: уменьшаем размеры */
-@media (max-width: 768px) {
-
-  /* ===== POPUP: уменьшаем в 2 раза ===== */
-  .leaflet-popup-content {
-    font-size: 16px !important;     /* было огромное → делаем нормальное */
-    line-height: 1.4 !important;
-    width: 90vw !important;
-    max-width: 90vw !important;
-    max-height: 60vh !important;
     padding: 12px !important;
-  }
-
-  .leaflet-popup-content * {
-    font-size: 16px !important;     /* всё внутри попапа тоже уменьшаем */
-  }
-
-  .leaflet-popup-close-button {
-    font-size: 24px !important;
-    padding: 6px !important;
-  }
-
-  /* ===== КНОПКИ: уменьшаем в 3 раза ===== */
-  .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
-    margin: 16px !important;
-  }
-
-  .leaflet-control.custom-buttons {
-    gap: 12px !important;
-    padding: 16px !important;
-    border-radius: 20px !important;
+    border-radius: 16px !important;
   }
 
   .leaflet-control.custom-buttons button {
     width: 90vw !important;
-    min-height: 80px !important;
-    padding: 16px 20px !important;
-    font-size: 22px !important;
-    border-radius: 20px !important;
+    min-height: 56px !important;
+    padding: 12px 16px !important;
+    font-size: 18px !important;
+    border-radius: 16px !important;
   }
 }
 </style>
@@ -191,7 +188,7 @@ html, body, #map {
   <div class="popup-root">
     <div class="popup-title">Земельный участок</div>
 
-    <table class="popup-table">
+    <table style="width:100%; border-collapse:collapse;">
       <tr><td>Кадастровый №</td><td><b>${cn}</b></td></tr>
       <tr><td>Адрес</td><td>${addr}</td></tr>
       <tr><td>Площадь</td><td>${area} м²</td></tr>
@@ -200,6 +197,7 @@ html, body, #map {
     </table>
   </div>
 `;
+
 
 
 
