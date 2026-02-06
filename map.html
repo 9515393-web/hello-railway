@@ -104,7 +104,23 @@
         return parts.length === 4 && parts[3] && parts[3].length > 0;
       }
 
-      // Слой: только участки
+      // === СЛОЙ КАДАСТРОВЫХ КВАРТАЛОВ (например 47:26:0414001) ===
+      const quartersLayer = L.geoJSON(data, {
+        filter: f => {
+          const cn = f?.properties?.cn;
+          if (!cn) return false;
+
+          const parts = String(cn).split(":");
+          // квартал = 3 части: 47:26:0414001
+          return parts.length === 3;
+        },
+        style: {
+          color: "#ff0000",   // такой же цвет, как у участков
+          weight: 2,
+          fill: false
+        }
+      }).addTo(map);
+
       const parcelsLayer = L.geoJSON(data, {
         filter: f => isRealParcel(f),
 
