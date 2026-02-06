@@ -8,12 +8,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-  html, body, #map {
-    height: 100%;
-    margin: 0;
-  }
+html, body, #map {
+  height: 100%;
+  margin: 0;
+}
 
- /* POPUP аккуратный и читабельный */
+/* ===== POPUP базовый (ПК и общие) ===== */
 .leaflet-popup-content-wrapper {
   border-radius: 14px;
 }
@@ -28,20 +28,35 @@
   line-height: 1.4;
 
   white-space: normal !important;
-  word-break: normal;          /* ❗ не ломаем слова по буквам */
+  word-break: normal;          /* не ломаем слова по буквам */
   overflow-wrap: break-word;   /* переносим только длинные слова/номера */
 }
 
-/* 📱 СМАРТФОН: СТРОГО ×4 ОТ ТЕКУЩИХ РАЗМЕРОВ */
+/* ===== СТИЛИ КОНТЕНТА ПОПАПА (вместо inline font-size) ===== */
+.popup-root {
+  font-size: inherit;
+  line-height: 1.4;
+}
+
+.popup-root table td {
+  font-size: inherit;
+}
+
+.popup-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* ===== 📱 СМАРТФОН: СТРОГО ×4 ОТ ТЕКУЩИХ РАЗМЕРОВ ===== */
 @media (max-width: 768px) {
 
   /* ===== POPUP ×4 ===== */
   .leaflet-popup-content {
     font-size: 72px;          /* 18px ×4 */
     line-height: 1.2;
-    width: 98vw !important;   /* упираемся в экран */
+    width: 98vw !important;
     max-width: 98vw !important;
-    max-height: 98vh;         /* упираемся в экран */
+    max-height: 98vh;
     overflow-y: auto;
     padding: 24px;
   }
@@ -65,7 +80,7 @@
   }
 
   .leaflet-control.custom-buttons button {
-    width: 98vw;              /* упираемся в экран */
+    width: 98vw;
     min-height: 360px;        /* 90px ×4 */
     margin: 0;
     padding: 80px 96px;       /* 20/24 ×4 */
