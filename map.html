@@ -162,20 +162,19 @@ html, body, #map {
           const addr = p.address || p.addr || p.location || "—";
 
           const html = `
-            <div style="font-size:64px; line-height:1.4;">
-              <div style="font-size:72px; font-weight:700; margin-bottom:24px;">
-                Земельный участок
-              </div>
+  <div class="popup-root">
+    <div class="popup-title">Земельный участок</div>
 
-    <table style="width:100%; border-collapse:collapse;">
-      <tr><td style="color:#666; padding:16px 24px;">Кадастровый №</td><td style="padding:16px 24px;"><b>${cn}</b></td></tr>
-      <tr><td style="color:#666; padding:16px 24px;">Адрес</td><td style="padding:16px 24px;">${addr}</td></tr>
-      <tr><td style="color:#666; padding:16px 24px;">Площадь</td><td style="padding:16px 24px;">${area} м²</td></tr>
-      <tr><td style="color:#666; padding:16px 24px;">Кадастровая стоимость</td><td style="padding:16px 24px;"><b>${cost}</b></td></tr>
-      <tr><td style="color:#666; padding:16px 24px;">Тип</td><td style="padding:16px 24px;">${type}</td></tr>
+    <table class="popup-table">
+      <tr><td>Кадастровый №</td><td><b>${cn}</b></td></tr>
+      <tr><td>Адрес</td><td>${addr}</td></tr>
+      <tr><td>Площадь</td><td>${area} м²</td></tr>
+      <tr><td>Кадастровая стоимость</td><td><b>${cost}</b></td></tr>
+      <tr><td>Тип</td><td>${type}</td></tr>
     </table>
   </div>
 `;
+
 
 
           layer.bindPopup(html, {
