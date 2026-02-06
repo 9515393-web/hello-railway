@@ -135,30 +135,62 @@ const layer = L.geoJSON(data, {
   }),
 
   onEachFeature: (feature, lyr) => {
-    const p = feature.properties || {};
+  const p = feature.properties || {};
 
-    const cn    = p.cn || "—";
-    const area  = p.area || "—";
-    const cost  = p.cost || "—";
-    const type  = p.type || "—";
-    const fio   = p.fio || "—";
-    const addr  = p.phone || "—";  // у тебя тут адрес/описание
+  const cn       = p.cn || "—";        // кадастровый номер
+  const addr     = p.phone || "—";     // адрес/описание (у тебя это поле)
+  const area     = p.area || "—";      // площадь
+  const category = p.category || p.cat || "—";   // категория земель (если есть)
+  const vri      = p.vri || p.use || "—";         // вид разрешённого использования
+  const purpose  = p.purpose || "—";   // назначение
+  const cost     = p.cost || "—";      // кадастровая стоимость
+  const type     = p.type || "—";      // вид объекта
 
-    const html = `
-      <div style="padding:6px;">
-        <div style="font-size:20px; font-weight:700; margin-bottom:8px;">Участок</div>
-
-        <div><b>Кадастровый №:</b><br>${cn}</div>
-        <div style="margin-top:6px;"><b>Адрес:</b><br>${addr}</div>
-
-        <hr style="margin:8px 0;">
-
-        <div><b>Площадь:</b> ${area} м²</div>
-        <div><b>Стоимость:</b> ${cost} ₽</div>
-        <div><b>Тип:</b> ${type}</div>
-        <div><b>ФИО:</b> ${fio}</div>
+  const html = `
+    <div style="padding:8px; font-size:16px;">
+      <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+        Земельный участок
       </div>
-    `;
+
+      <table style="width:100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Кадастровый номер</td>
+          <td style="padding:4px 6px;"><b>${cn}</b></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Адрес</td>
+          <td style="padding:4px 6px;">${addr}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Площадь</td>
+          <td style="padding:4px 6px;">${area} м²</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Категория земель</td>
+          <td style="padding:4px 6px;">${category}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">ВРИ</td>
+          <td style="padding:4px 6px;">${vri}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Назначение</td>
+          <td style="padding:4px 6px;">${purpose}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px; color:#555;">Кадастровая стоимость</td>
+          <td style="padding:4px 6px;"><b>${cost}</b> ₽</td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  lyr.bindPopup(html, {
+    maxWidth: 420,
+    autoPan: true,
+    autoPanPadding: [20, 80]
+  });
+}
 
     // попап
     lyr.bindPopup(html, { maxWidth: 9999, autoPan: true, closeButton: true });
