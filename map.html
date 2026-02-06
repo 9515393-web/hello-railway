@@ -86,6 +86,14 @@
     })
     .then(data => {
       let selected = null;
+      function isRealParcel(feature) {
+        const cn = feature?.properties?.cn;
+        if (!cn) return false;
+
+        const parts = String(cn).split(":");
+        // У нормального участка 4 части: 47:26:0414001:XXX
+        return parts.length === 4 && parts[3] && parts[3].length > 0;
+      }
 
       const parcelsLayer = L.geoJSON(data, {
   style: {
