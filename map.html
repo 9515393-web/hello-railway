@@ -172,22 +172,39 @@
         }
       }).addTo(map);
 
-      // Границы — только по участкам
-      const goodBounds = L.latLngBounds([]);
+      // Границы — ТОЛЬКО по участкам и только адекватные
+const goodBounds = L.latLngBounds([]);
+let parcelsCount = 0;
 
-      parcelsLayer.eachLayer(l => {
-        if (l.getBounds) {
-          const b = l.getBounds();
-          if (b.isValid()) goodBounds.extend(b);
-        }
-      });
+parcelsLayer.eachLayer(l => {
+  try {
+    if (!l.getBounds) return;
 
-      if (goodBounds.isValid()) {
-        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-      } else {
-        // запасной центр (если вдруг что-то пошло не так)
-        map.setView([59.9, 30.3], 10);
-      }
+    const b = l.getBounds();
+    if (!b.isValid()) return;
+
+    const sw = b.getSouthWest();
+    const ne = b.getNorthEast();
+
+    // Фильтр по региону (чтобы зоны/кривые объекты не рвали масштаб)
+    if (
+      sw.lng > 20 && ne.lng < 50 &&
+      sw.lat > 50 && ne.lat < 70
+    ) {
+      goodBounds.extend(b);
+      parcelsCount++;
+    }
+  } catch (e) {
+    // просто пропускаем битые объекты
+  }
+});
+
+if (goodBounds.isValid() && parcelsCount > 0) {
+  map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+} else {
+  console.warn("⚠️ Не удалось вычислить границы по участкам, ставим запасной вид");
+  map.setView([59.9, 30.3], 12); // ← подстрой под свой район
+}
 
       setTimeout(() => map.invalidateSize(), 200);
 
