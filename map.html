@@ -35,36 +35,38 @@
 /* Чуть крупнее на телефоне */
 @media (max-width: 768px) {
   .leaflet-popup-content {
-    font-size: 18px;
-    max-height: 70vh;
+    font-size: 22px;        /* БОЛЬШЕ текст */
+    max-height: 85vh;       /* ВЫШЕ попап */
+    width: 96vw !important; /* ШИРЕ попап */
+    max-width: 96vw !important;
+    line-height: 1.5;
   }
 
   .leaflet-popup-close-button {
-    font-size: 28px !important;
+    font-size: 34px !important; /* БОЛЬШАЯ кнопка закрытия */
   }
 }
 
  /* 📱 Мобильная версия: большие кнопки в столбик снизу слева */
 @media (max-width: 768px) {
-  /* Панель внизу слева */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
     margin: 12px;
   }
 
   .leaflet-control.custom-buttons {
     display: flex;
-    flex-direction: column;   /* СТОЛБИКОМ */
-    gap: 12px;                /* расстояние между кнопками */
-    padding: 16px;
-    border-radius: 20px;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 26px;
   }
 
   .leaflet-control.custom-buttons button {
-    width: 90vw;        /* почти на всю ширину экрана */
-    min-height: 90px;   /* ещё выше под палец */
-    padding: 20px 24px;
-    font-size: 26px;    /* крупный текст */
-    border-radius: 20px;
+    width: 94vw;        /* почти вся ширина экрана */
+    min-height: 120px;  /* ОЧЕНЬ высокая под палец */
+    padding: 28px 32px;
+    font-size: 32px;    /* ОЧЕНЬ крупный текст */
+    border-radius: 26px;
   }
 }
 </style>
