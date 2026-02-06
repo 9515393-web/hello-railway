@@ -7,80 +7,33 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
- <style>
-  html, body, #map {
-    height: 100%;
-    margin: 0;
-  }
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
 
-  /* Панель кнопок */
-  .leaflet-control.custom-buttons {
-    background: rgba(255, 255, 255, 0.75);
-    padding: 12px;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    backdrop-filter: blur(4px);
-  }
+    /* POPUP аккуратный */
+    .leaflet-popup-content-wrapper { border-radius: 14px; }
 
-  /* Большие кнопки под палец */
-  .leaflet-control.custom-buttons button {
-    display: block;
-    width: 360px;
-    min-height: 96px;
-    margin: 18px 0;
-    padding: 24px 28px;
-    font-size: 28px;
-    border-radius: 18px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    background: rgba(255, 255, 255, 0.08);
-    color: #000;
-    cursor: pointer;
-    backdrop-filter: blur(2px);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
-  }
+    .leaflet-popup-content {
+      max-width: 420px !important;
+      max-height: 40vh;
+      overflow-y: auto;
+      font-size: 16px;
+      line-height: 1.35;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
 
-  .leaflet-control.custom-buttons button:hover {
-    background: rgba(255, 255, 255, 0.18);
-  }
-
-  .leaflet-top, .leaflet-bottom {
-    z-index: 1000;
-  }
-
-  .leaflet-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 12px);
-  }
-
-  .leaflet-control.custom-buttons button + button {
-    margin-top: 18px;
-  }
-
-  /* ===========================
-     POPUP ДЛЯ УЧАСТКОВ (МОБИЛЬНЫЙ)
-     =========================== */
-
- .leaflet-popup-content-wrapper {
-  border-radius: 14px;
-}
-
-.leaflet-popup-content {
-  width: 85vw !important;
-  max-width: 85vw !important;
-  max-height: 40vh;          /* ⬅ было слишком большим */
-  overflow-y: auto;
-
-  font-size: 18px;
-  line-height: 1.35;
-
-  white-space: normal !important;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.leaflet-popup-close-button {
-  font-size: 26px !important;
-}
-</style>
+    @media (max-width: 600px) {
+      .leaflet-popup-content {
+        max-width: 92vw !important;
+        max-height: 35vh;
+      }
+    }
+  </style>
 </head>
 <body>
 <div id="map"></div>
@@ -94,7 +47,7 @@
     throw new Error("No token");
   }
 
-  const map = L.map("map", { zoomControl: false });
+  const map = L.map("map", { zoomControl: true });
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -106,9 +59,8 @@
       return r.json();
     })
     .then(data => {
-      let selectedLayer = null;
+      let selected = null;
 
-      // определяем: это реальный участок, а не зона/КПТ
       function isParcel(f) {
         const cn = f?.properties?.cn;
         if (!cn) return false;
@@ -116,15 +68,15 @@
         return parts.length >= 4 && parts[3] && parts[3].length > 0;
       }
 
-      const parcelsLayer = L.geoJSON(data, {
+      const parcels = L.geoJSON(data, {
         filter: f => isParcel(f),
         style: {
           color: "#ff0000",
           weight: 2,
-          fillOpacity: 0.20
+          fillOpacity: 0.2
         },
 
-        onEachFeature: (feature, lyr) => {
+        onEachFeature: (feature, layer) => {
           const p = feature.properties || {};
 
           const cn   = p.cn || "—";
@@ -135,54 +87,46 @@
           const addr = p.phone || "—";
 
           const html = `
-            <div style="padding:8px; font-size:16px;">
-              <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+            <div>
+              <div style="font-weight:700; font-size:18px; margin-bottom:6px;">
                 Земельный участок
               </div>
-
               <table style="width:100%; border-collapse: collapse;">
-                <tr><td style="color:#555;">Кадастровый номер</td><td><b>${cn}</b></td></tr>
-                <tr><td style="color:#555;">Адрес</td><td>${addr}</td></tr>
-                <tr><td style="color:#555;">Площадь</td><td>${area} м²</td></tr>
-                <tr><td style="color:#555;">Кадастровая стоимость</td><td><b>${cost}</b> ₽</td></tr>
-                <tr><td style="color:#555;">Тип</td><td>${type}</td></tr>
-                <tr><td style="color:#555;">ФИО</td><td>${fio}</td></tr>
+                <tr><td>Кадастровый номер</td><td><b>${cn}</b></td></tr>
+                <tr><td>Адрес</td><td>${addr}</td></tr>
+                <tr><td>Площадь</td><td>${area} м²</td></tr>
+                <tr><td>Стоимость</td><td><b>${cost}</b> ₽</td></tr>
+                <tr><td>Тип</td><td>${type}</td></tr>
+                <tr><td>ФИО</td><td>${fio}</td></tr>
               </table>
             </div>
           `;
 
-          lyr.bindPopup(html, {
-            maxWidth: 420,
-            autoPan: true,
-            autoPanPadding: [20, 80]
-          });
+          layer.bindPopup(html, { maxWidth: 420 });
 
-          lyr.on("click", () => {
-            if (selectedLayer && selectedLayer !== lyr) {
-              selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+          layer.on("click", () => {
+            if (selected && selected !== layer) {
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.2 });
             }
-            selectedLayer = lyr;
-            lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-            lyr.openPopup();
+            selected = layer;
+            layer.setStyle({ color: "#ffff00", weight: 4, fillOpacity: 0.35 });
+            layer.openPopup();
           });
         }
       }).addTo(map);
 
-      // считаем границы по участкам
-      const goodBounds = L.latLngBounds([]);
-      parcelsLayer.eachLayer(l => {
-        if (l.getBounds) goodBounds.extend(l.getBounds());
+      const bounds = L.latLngBounds([]);
+      parcels.eachLayer(l => {
+        if (l.getBounds) bounds.extend(l.getBounds());
       });
 
-      if (goodBounds.isValid()) {
-        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40] });
       }
-
-      setTimeout(() => map.invalidateSize(), 200);
     })
     .catch(err => {
       console.error(err);
-      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
+      document.body.innerHTML = "⛔ Ошибка загрузки данных";
     });
 </script>
 
