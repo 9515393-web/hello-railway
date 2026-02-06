@@ -13,28 +13,36 @@
     margin: 0;
   }
 
-  /* POPUP аккуратный */
-  .leaflet-popup-content-wrapper { 
-    border-radius: 14px; 
-  }
+ /* POPUP аккуратный и читабельный */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+}
 
+.leaflet-popup-content {
+  width: 420px !important;     /* нормальная ширина на ПК */
+  max-width: 92vw !important;  /* почти во всю ширину экрана на телефоне */
+  max-height: 60vh;            /* не на весь экран, но достаточно высокий */
+  overflow-y: auto;
+
+  font-size: 16px;
+  line-height: 1.4;
+
+  white-space: normal !important;
+  word-break: normal;          /* ❗ не ломаем слова по буквам */
+  overflow-wrap: break-word;   /* переносим только длинные слова/номера */
+}
+
+/* Чуть крупнее на телефоне */
+@media (max-width: 768px) {
   .leaflet-popup-content {
-    max-width: 420px !important;
-    max-height: 40vh;
-    overflow-y: auto;
-    font-size: 16px;
-    line-height: 1.35;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    font-size: 18px;
+    max-height: 70vh;
   }
 
-  @media (max-width: 600px) {
-    .leaflet-popup-content {
-      max-width: 92vw !important;
-      max-height: 35vh;
-    }
+  .leaflet-popup-close-button {
+    font-size: 28px !important;
   }
+}
 
  /* 📱 Мобильная версия: большие кнопки в столбик снизу слева */
 @media (max-width: 768px) {
@@ -153,7 +161,12 @@ const html = `
   </div>
 `;
 
-layer.bindPopup(html, { maxWidth: 420, autoPan: true });
+layer.bindPopup(html, {
+  maxWidth: 600,          // разрешаем быть шире
+  autoPan: true,
+  autoPanPadding: [20, 80]
+});
+
 
     layer.on("click", () => {
       layer.openPopup();
