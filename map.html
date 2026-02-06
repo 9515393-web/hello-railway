@@ -36,28 +36,29 @@
     }
   }
 
-  /* 📱 Мобильная версия: большие кнопки снизу слева */
-  @media (max-width: 768px) {
-    /* Переносим панель вниз */
-    .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
-      margin-bottom: 12px;
-      margin-left: 12px;
-    }
-
-    .leaflet-control.custom-buttons {
-      padding: 16px;
-      border-radius: 20px;
-    }
-
-    .leaflet-control.custom-buttons button {
-      width: 90vw;        /* почти на всю ширину экрана */
-      min-height: 80px;   /* высокая под палец */
-      margin: 12px 0;
-      padding: 20px 24px;
-      font-size: 24px;    /* крупный текст */
-      border-radius: 20px;
-    }
+ /* 📱 Мобильная версия: большие кнопки в столбик снизу слева */
+@media (max-width: 768px) {
+  /* Панель внизу слева */
+  .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
+    margin: 12px;
   }
+
+  .leaflet-control.custom-buttons {
+    display: flex;
+    flex-direction: column;   /* СТОЛБИКОМ */
+    gap: 12px;                /* расстояние между кнопками */
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .leaflet-control.custom-buttons button {
+    width: 90vw;        /* почти на всю ширину экрана */
+    min-height: 90px;   /* ещё выше под палец */
+    padding: 20px 24px;
+    font-size: 26px;    /* крупный текст */
+    border-radius: 20px;
+  }
+}
 </style>
 </head>
 <body>
