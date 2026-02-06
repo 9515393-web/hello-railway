@@ -74,6 +74,46 @@ html, body, #map {
     font-size: 24px !important;      /* читабельно, но не гигант */
     border-radius: 20px !important;
   }
+}/* 📱 ТЕЛЕФОН: уменьшаем размеры */
+@media (max-width: 768px) {
+
+  /* ===== POPUP: уменьшаем в 2 раза ===== */
+  .leaflet-popup-content {
+    font-size: 16px !important;     /* было огромное → делаем нормальное */
+    line-height: 1.4 !important;
+    width: 90vw !important;
+    max-width: 90vw !important;
+    max-height: 60vh !important;
+    padding: 12px !important;
+  }
+
+  .leaflet-popup-content * {
+    font-size: 16px !important;     /* всё внутри попапа тоже уменьшаем */
+  }
+
+  .leaflet-popup-close-button {
+    font-size: 24px !important;
+    padding: 6px !important;
+  }
+
+  /* ===== КНОПКИ: уменьшаем в 3 раза ===== */
+  .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
+    margin: 16px !important;
+  }
+
+  .leaflet-control.custom-buttons {
+    gap: 12px !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .leaflet-control.custom-buttons button {
+    width: 90vw !important;
+    min-height: 80px !important;
+    padding: 16px 20px !important;
+    font-size: 22px !important;
+    border-radius: 20px !important;
+  }
 }
 </style>
 </head>
