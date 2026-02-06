@@ -109,15 +109,39 @@
 }).addTo(map);
 
 
-      // границы по участкам
-      const goodBounds = L.latLngBounds([]);
-      parcelsLayer.eachLayer(l => {
-        if (l.getBounds) goodBounds.extend(l.getBounds());
-      });
+      // границы — только по адекватным полигонам
+const goodBounds = L.latLngBounds([]);
 
-      if (goodBounds.isValid()) {
-        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-      }
+parcelsLayer.eachLayer(l => {
+  try {
+    if (!l.getBounds) return;
+
+    const b = l.getBounds();
+
+    // защита от битых/космических bounds
+    if (!b.isValid()) return;
+
+    const sw = b.getSouthWest();
+    const ne = b.getNorthEast();
+
+    // фильтр по твоему региону (Ленобласть / СПб — подстрой при необходимости)
+    if (
+      sw.lng > 20 && ne.lng < 50 &&
+      sw.lat > 50 && ne.lat < 70
+    ) {
+      goodBounds.extend(b);
+    }
+  } catch (e) {
+    // просто пропускаем кривые объекты
+  }
+});
+
+if (goodBounds.isValid()) {
+  map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+} else {
+  console.warn("⚠️ Не удалось вычислить корректные границы, ставим запасной зум");
+  map.setView([59.9, 30.3], 10); // запасной центр (СПб), поменяй если нужно
+}
 
       setTimeout(() => map.invalidateSize(), 200);
 
