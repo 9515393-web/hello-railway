@@ -8,32 +8,57 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    html, body, #map {
-      height: 100%;
-      margin: 0;
-    }
+  html, body, #map {
+    height: 100%;
+    margin: 0;
+  }
 
-    /* POPUP аккуратный */
-    .leaflet-popup-content-wrapper { border-radius: 14px; }
+  /* POPUP аккуратный */
+  .leaflet-popup-content-wrapper { 
+    border-radius: 14px; 
+  }
 
+  .leaflet-popup-content {
+    max-width: 420px !important;
+    max-height: 40vh;
+    overflow-y: auto;
+    font-size: 16px;
+    line-height: 1.35;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  @media (max-width: 600px) {
     .leaflet-popup-content {
-      max-width: 420px !important;
-      max-height: 40vh;
-      overflow-y: auto;
-      font-size: 16px;
-      line-height: 1.35;
-      white-space: normal !important;
-      overflow-wrap: anywhere;
-      word-break: break-word;
+      max-width: 92vw !important;
+      max-height: 35vh;
+    }
+  }
+
+  /* 📱 Мобильная версия: большие кнопки снизу слева */
+  @media (max-width: 768px) {
+    /* Переносим панель вниз */
+    .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
+      margin-bottom: 12px;
+      margin-left: 12px;
     }
 
-    @media (max-width: 600px) {
-      .leaflet-popup-content {
-        max-width: 92vw !important;
-        max-height: 35vh;
-      }
+    .leaflet-control.custom-buttons {
+      padding: 16px;
+      border-radius: 20px;
     }
-  </style>
+
+    .leaflet-control.custom-buttons button {
+      width: 90vw;        /* почти на всю ширину экрана */
+      min-height: 80px;   /* высокая под палец */
+      margin: 12px 0;
+      padding: 20px 24px;
+      font-size: 24px;    /* крупный текст */
+      border-radius: 20px;
+    }
+  }
+</style>
 </head>
 <body>
 <div id="map"></div>
