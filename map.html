@@ -127,96 +127,79 @@
     .then(data => {
       let selectedLayer = null;
 
-const layer = L.geoJSON(data, {
-  style: () => ({
+let selectedLayer = null;
+
+const parcelsLayer = L.geoJSON(data, {
+  filter: f => {
+    const cn = f?.properties?.cn;
+    if (!cn) return false;
+    const parts = String(cn).split(":");
+    return parts.length >= 4 && parts[3] && parts[3].length > 0;
+  },
+
+  style: {
     color: "#ff0000",
     weight: 2,
     fillOpacity: 0.20
-  }),
+  },
 
   onEachFeature: (feature, lyr) => {
-  const p = feature.properties || {};
+    const p = feature.properties || {};
 
-  const cn       = p.cn || "—";        // кадастровый номер
-  const addr     = p.phone || "—";     // адрес/описание (у тебя это поле)
-  const area     = p.area || "—";      // площадь
-  const category = p.category || p.cat || "—";   // категория земель (если есть)
-  const vri      = p.vri || p.use || "—";         // вид разрешённого использования
-  const purpose  = p.purpose || "—";   // назначение
-  const cost     = p.cost || "—";      // кадастровая стоимость
-  const type     = p.type || "—";      // вид объекта
+    const cn   = p.cn || "—";
+    const area = p.area || "—";
+    const cost = p.cost || "—";
+    const type = p.type || "—";
+    const fio  = p.fio || "—";
+    const addr = p.phone || "—";
 
-  const html = `
-    <div style="padding:8px; font-size:16px;">
-      <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
-        Земельный участок
+    const html = `
+      <div style="padding:8px; font-size:16px;">
+        <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+          Земельный участок
+        </div>
+
+        <table style="width:100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding:4px 6px; color:#555;">Кадастровый номер</td>
+            <td style="padding:4px 6px;"><b>${cn}</b></td>
+          </tr>
+          <tr>
+            <td style="padding:4px 6px; color:#555;">Адрес</td>
+            <td style="padding:4px 6px;">${addr}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 6px; color:#555;">Площадь</td>
+            <td style="padding:4px 6px;">${area} м²</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 6px; color:#555;">Кадастровая стоимость</td>
+            <td style="padding:4px 6px;"><b>${cost}</b> ₽</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 6px; color:#555;">Тип</td>
+            <td style="padding:4px 6px;">${type}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 6px; color:#555;">ФИО</td>
+            <td style="padding:4px 6px;">${fio}</td>
+          </tr>
+        </table>
       </div>
+    `;
 
-      <table style="width:100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Кадастровый номер</td>
-          <td style="padding:4px 6px;"><b>${cn}</b></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Адрес</td>
-          <td style="padding:4px 6px;">${addr}</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Площадь</td>
-          <td style="padding:4px 6px;">${area} м²</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Категория земель</td>
-          <td style="padding:4px 6px;">${category}</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">ВРИ</td>
-          <td style="padding:4px 6px;">${vri}</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Назначение</td>
-          <td style="padding:4px 6px;">${purpose}</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px; color:#555;">Кадастровая стоимость</td>
-          <td style="padding:4px 6px;"><b>${cost}</b> ₽</td>
-        </tr>
-      </table>
-    </div>
-  `;
-
-  lyr.bindPopup(html, {
-    maxWidth: 420,
-    autoPan: true,
-    autoPanPadding: [20, 80]
-  });
-}
-
-    // попап
-    lyr.bindPopup(html, { maxWidth: 9999, autoPan: true, closeButton: true });
-
-    // подсветка при наведении
-    lyr.on("mouseover", () => {
-      if (lyr !== selectedLayer) lyr.setStyle({ weight: 4, fillOpacity: 0.35 });
+    lyr.bindPopup(html, {
+      maxWidth: 420,
+      autoPan: true,
+      autoPanPadding: [20, 80]
     });
 
-    lyr.on("mouseout", () => {
-      if (lyr !== selectedLayer) lyr.setStyle({ weight: 2, fillOpacity: 0.20 });
-    });
-
-    // клик — выбрать участок
     lyr.on("click", () => {
       if (selectedLayer && selectedLayer !== lyr) {
         selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
       }
-
       selectedLayer = lyr;
       lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-
-      if (lyr.getBounds) {
-        map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 19 });
-      }
-
       lyr.openPopup();
     });
   }
