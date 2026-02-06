@@ -47,7 +47,7 @@
     throw new Error("No token");
   }
 
-  const map = L.map("map", { zoomControl: true });
+  const map = L.map("map", { zoomControl: false });
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -68,12 +68,13 @@
         return parts.length >= 4 && parts[3] && parts[3].length > 0;
       }
 
-      const parcels = L.geoJSON(data, {
+      // слой участков
+      const parcelsLayer = L.geoJSON(data, {
         filter: f => isParcel(f),
         style: {
           color: "#ff0000",
           weight: 2,
-          fillOpacity: 0.2
+          fillOpacity: 0.20
         },
 
         onEachFeature: (feature, layer) => {
@@ -87,8 +88,8 @@
           const addr = p.phone || "—";
 
           const html = `
-            <div>
-              <div style="font-weight:700; font-size:18px; margin-bottom:6px;">
+            <div style="padding:6px; font-size:16px;">
+              <div style="font-size:18px; font-weight:700; margin-bottom:6px;">
                 Земельный участок
               </div>
               <table style="width:100%; border-collapse: collapse;">
@@ -102,31 +103,107 @@
             </div>
           `;
 
-          layer.bindPopup(html, { maxWidth: 420 });
+          layer.bindPopup(html, {
+            maxWidth: 420,
+            autoPan: true,
+            autoPanPadding: [20, 80]
+          });
 
           layer.on("click", () => {
             if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.2 });
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
             }
             selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 4, fillOpacity: 0.35 });
+            layer.setStyle({ color: "#ffff00", weight: 4, fillOpacity: 0.40 });
             layer.openPopup();
           });
         }
       }).addTo(map);
 
-      const bounds = L.latLngBounds([]);
-      parcels.eachLayer(l => {
-        if (l.getBounds) bounds.extend(l.getBounds());
+      // границы по участкам
+      const goodBounds = L.latLngBounds([]);
+      parcelsLayer.eachLayer(l => {
+        if (l.getBounds) goodBounds.extend(l.getBounds());
       });
 
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [40, 40] });
+      if (goodBounds.isValid()) {
+        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
       }
+
+      setTimeout(() => map.invalidateSize(), 200);
+
+      // -------- КНОПКИ --------
+      const ButtonsControl = L.Control.extend({
+        options: { position: "bottomleft" },
+
+        onAdd: function () {
+          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
+
+          const btnZoomIn = L.DomUtil.create("button", "", container);
+          btnZoomIn.innerText = "➕ Приблизить";
+
+          const btnZoomOut = L.DomUtil.create("button", "", container);
+          btnZoomOut.innerText = "➖ Отдалить";
+
+          const btnFocus = L.DomUtil.create("button", "", container);
+          btnFocus.innerText = "🔍 К участкам";
+
+          const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.innerText = "🌍 Обзор";
+
+          const btnMaxCenter = L.DomUtil.create("button", "", container);
+          btnMaxCenter.innerText = "🎯 Макс. к центру";
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          L.DomEvent.on(container, "touchstart mousedown dblclick", L.DomEvent.stopPropagation);
+
+          btnZoomIn.onclick = () => map.zoomIn();
+          btnZoomOut.onclick = () => map.zoomOut();
+
+          btnFocus.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+          };
+
+          btnOverview.onclick = () => {
+            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+          };
+
+          btnMaxCenter.onclick = () => {
+            const centers = [];
+            parcelsLayer.eachLayer(l => {
+              if (l.getBounds) centers.push(l.getBounds().getCenter());
+            });
+            if (!centers.length) return;
+
+            const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+            const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+            const mid = Math.floor(lats.length / 2);
+            const median = L.latLng(lats[mid], lngs[mid]);
+
+            let best = centers[0];
+            let bestDist = Infinity;
+
+            centers.forEach(c => {
+              const d = median.distanceTo(c);
+              if (d < bestDist) {
+                bestDist = d;
+                best = c;
+              }
+            });
+
+            map.flyTo(best, 20, { animate: true, duration: 0.6 });
+          };
+
+          return container;
+        }
+      });
+
+      map.addControl(new ButtonsControl());
     })
     .catch(err => {
       console.error(err);
-      document.body.innerHTML = "⛔ Ошибка загрузки данных";
+      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
     });
 </script>
 
