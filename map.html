@@ -94,25 +94,6 @@
     throw new Error("No token");
   }
 
-  // --- helpers ---
-  function esc(v) {
-    // чтобы никакие спецсимволы не ломали HTML в попапе
-    return String(v ?? "—")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function getProp(p, keys) {
-    // на случай если где-то поля в другом регистре/названии
-    for (const k of keys) {
-      if (p && p[k] != null && String(p[k]).trim() !== "") return p[k];
-    }
-    return null;
-  }
-
   const map = L.map("map", { zoomControl: false });
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -120,192 +101,89 @@
   }).addTo(map);
 
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-  .then(r => {
-    if (!r.ok) throw new Error("Forbidden or not found");
-    return r.json();
-  })
-  .then(data => {
-    let selectedLayer = null;
+    .then(r => {
+      if (!r.ok) throw new Error("Forbidden or not found");
+      return r.json();
+    })
+    .then(data => {
+      let selectedLayer = null;
 
-    // определяем: это реальный участок или зона/КПТ
-    function isParcel(f) {
-      const cn = f?.properties?.cn;
-      if (!cn) return false;
-      const parts = String(cn).split(":");
-      return parts.length >= 4 && parts[3] && parts[3].length > 0;
-    }
+      // определяем: это реальный участок, а не зона/КПТ
+      function isParcel(f) {
+        const cn = f?.properties?.cn;
+        if (!cn) return false;
+        const parts = String(cn).split(":");
+        return parts.length >= 4 && parts[3] && parts[3].length > 0;
+      }
 
-    // слой участков (только они кликабельны)
-    const parcelsLayer = L.geoJSON(data, {
-      filter: f => isParcel(f),
-      style: {
-        color: "#ff0000",
-        weight: 2,
-        fillOpacity: 0.20
-      },
+      const parcelsLayer = L.geoJSON(data, {
+        filter: f => isParcel(f),
+        style: {
+          color: "#ff0000",
+          weight: 2,
+          fillOpacity: 0.20
+        },
 
-      onEachFeature: (feature, lyr) => {
-        const p = feature.properties || {};
+        onEachFeature: (feature, lyr) => {
+          const p = feature.properties || {};
 
-        const cn   = p.cn || "—";
-        const area = p.area || "—";
-        const cost = p.cost || "—";
-        const type = p.type || "—";
-        const fio  = p.fio || "—";
-        const addr = p.phone || "—";
+          const cn   = p.cn || "—";
+          const area = p.area || "—";
+          const cost = p.cost || "—";
+          const type = p.type || "—";
+          const fio  = p.fio || "—";
+          const addr = p.phone || "—";
 
-        const html = `
-          <div style="padding:8px; font-size:16px;">
-            <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
-              Земельный участок
+          const html = `
+            <div style="padding:8px; font-size:16px;">
+              <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+                Земельный участок
+              </div>
+
+              <table style="width:100%; border-collapse: collapse;">
+                <tr><td style="color:#555;">Кадастровый номер</td><td><b>${cn}</b></td></tr>
+                <tr><td style="color:#555;">Адрес</td><td>${addr}</td></tr>
+                <tr><td style="color:#555;">Площадь</td><td>${area} м²</td></tr>
+                <tr><td style="color:#555;">Кадастровая стоимость</td><td><b>${cost}</b> ₽</td></tr>
+                <tr><td style="color:#555;">Тип</td><td>${type}</td></tr>
+                <tr><td style="color:#555;">ФИО</td><td>${fio}</td></tr>
+              </table>
             </div>
+          `;
 
-            <table style="width:100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding:4px 6px; color:#555;">Кадастровый номер</td>
-                <td style="padding:4px 6px;"><b>${cn}</b></td>
-              </tr>
-              <tr>
-                <td style="padding:4px 6px; color:#555;">Адрес</td>
-                <td style="padding:4px 6px;">${addr}</td>
-              </tr>
-              <tr>
-                <td style="padding:4px 6px; color:#555;">Площадь</td>
-                <td style="padding:4px 6px;">${area} м²</td>
-              </tr>
-              <tr>
-                <td style="padding:4px 6px; color:#555;">Кадастровая стоимость</td>
-                <td style="padding:4px 6px;"><b>${cost}</b> ₽</td>
-              </tr>
-              <tr>
-                <td style="padding:4px 6px; color:#555;">Тип</td>
-                <td style="padding:4px 6px;">${type}</td>
-              </tr>
-              <tr>
-                <td style="padding:4px 6px; color:#555;">ФИО</td>
-                <td style="padding:4px 6px;">${fio}</td>
-              </tr>
-            </table>
-          </div>
-        `;
+          lyr.bindPopup(html, {
+            maxWidth: 420,
+            autoPan: true,
+            autoPanPadding: [20, 80]
+          });
 
-        lyr.bindPopup(html, {
-          maxWidth: 420,
-          autoPan: true,
-          autoPanPadding: [20, 80]
-        });
+          lyr.on("click", () => {
+            if (selectedLayer && selectedLayer !== lyr) {
+              selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selectedLayer = lyr;
+            lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+            lyr.openPopup();
+          });
+        }
+      }).addTo(map);
 
-        lyr.on("click", () => {
-          if (selectedLayer && selectedLayer !== lyr) {
-            selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-          }
-          selectedLayer = lyr;
-          lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-          lyr.openPopup();
-        });
+      // считаем границы по участкам
+      const goodBounds = L.latLngBounds([]);
+      parcelsLayer.eachLayer(l => {
+        if (l.getBounds) goodBounds.extend(l.getBounds());
+      });
+
+      if (goodBounds.isValid()) {
+        map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
       }
-    }).addTo(map);
 
-    // вычисляем границы по участкам
-    const goodBounds = L.latLngBounds([]);
-    parcelsLayer.eachLayer(l => {
-      if (l.getBounds) {
-        goodBounds.extend(l.getBounds());
-      }
+      setTimeout(() => map.invalidateSize(), 200);
+    })
+    .catch(err => {
+      console.error(err);
+      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
     });
-
-    if (goodBounds.isValid()) {
-      map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-    }
-
-    setTimeout(() => map.invalidateSize(), 200);
-
-    // ⚠️ ВАЖНО: ниже твои кнопки должны использовать parcelsLayer, а не layer
-    // В кнопке "🎯 Макс. к центру" тоже используй parcelsLayer.eachLayer(...)
-  })
-  .catch(err => {
-    console.error(err);
-    document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
-  });
-      fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-  .then(r => {
-    if (!r.ok) throw new Error("Forbidden or not found");
-    return r.json();
-  })
-  .then(data => {
-    let selectedLayer = null;
-
-    function isParcel(f) {
-      const cn = f?.properties?.cn;
-      if (!cn) return false;
-      const parts = String(cn).split(":");
-      return parts.length >= 4 && parts[3] && parts[3].length > 0;
-    }
-
-    const parcelsLayer = L.geoJSON(data, {
-      filter: f => isParcel(f),
-      style: {
-        color: "#ff0000",
-        weight: 2,
-        fillOpacity: 0.20
-      },
-
-      onEachFeature: (feature, lyr) => {
-        const p = feature.properties || {};
-
-        const cn   = p.cn || "—";
-        const area = p.area || "—";
-        const cost = p.cost || "—";
-        const type = p.type || "—";
-        const fio  = p.fio || "—";
-        const addr = p.phone || "—";
-
-        const html = `
-          <div style="padding:8px; font-size:16px;">
-            <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
-              Земельный участок
-            </div>
-
-            <table style="width:100%; border-collapse: collapse;">
-              <tr><td style="color:#555;">Кадастровый номер</td><td><b>${cn}</b></td></tr>
-              <tr><td style="color:#555;">Адрес</td><td>${addr}</td></tr>
-              <tr><td style="color:#555;">Площадь</td><td>${area} м²</td></tr>
-              <tr><td style="color:#555;">Кадастровая стоимость</td><td><b>${cost}</b> ₽</td></tr>
-              <tr><td style="color:#555;">Тип</td><td>${type}</td></tr>
-              <tr><td style="color:#555;">ФИО</td><td>${fio}</td></tr>
-            </table>
-          </div>
-        `;
-
-        lyr.bindPopup(html, { maxWidth: 420, autoPan: true, autoPanPadding: [20, 80] });
-
-        lyr.on("click", () => {
-          if (selectedLayer && selectedLayer !== lyr) {
-            selectedLayer.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-          }
-          selectedLayer = lyr;
-          lyr.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-          lyr.openPopup();
-        });
-      }
-    }).addTo(map);
-
-    // границы по участкам
-    const goodBounds = L.latLngBounds([]);
-    parcelsLayer.eachLayer(l => {
-      if (l.getBounds) goodBounds.extend(l.getBounds());
-    });
-
-    if (goodBounds.isValid()) {
-      map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
-    }
-
-    setTimeout(() => map.invalidateSize(), 200);
-  })
-  .catch(err => {
-    console.error(err);
-    document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
-  });
 </script>
 
 </body>
