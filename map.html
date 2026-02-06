@@ -127,8 +127,6 @@
     .then(data => {
       let selectedLayer = null;
 
-let selectedLayer = null;
-
 const parcelsLayer = L.geoJSON(data, {
   filter: f => {
     const cn = f?.properties?.cn;
