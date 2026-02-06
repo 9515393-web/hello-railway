@@ -14,62 +14,48 @@ html, body, #map {
   margin: 0;
 }
 
-/* ===== POPUP базовый (ПК и общие) ===== */
-.leaflet-popup-content-wrapper {
-  border-radius: 14px;
-}
-
-.leaflet-popup-content {
-  width: 420px !important;     /* нормальная ширина на ПК */
-  max-width: 92vw !important;  /* почти во всю ширину экрана на телефоне */
-  max-height: 60vh;            /* не на весь экран, но достаточно высокий */
-  overflow-y: auto;
-
+//* ===== СТИЛИ ПОПАПА ===== */
+.popup-root {
   font-size: 16px;
   line-height: 1.4;
-
-  white-space: normal !important;
-  word-break: normal;          /* не ломаем слова по буквам */
-  overflow-wrap: break-word;   /* переносим только длинные слова/номера */
-}
-
-/* ===== СТИЛИ КОНТЕНТА ПОПАПА (вместо inline font-size) ===== */
-.popup-root {
-  font-size: inherit;
-  line-height: 1.4;
-}
-
-.popup-root table td {
-  font-size: inherit;
 }
 
 .popup-title {
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 8px;
 }
 
-/* 📱 МОБИЛЬНАЯ ВЕРСИЯ: нормальные размеры (уменьшаем в ~4 раза) */
-@media (max-width: 768px) {
+.popup-table td {
+  padding: 6px 8px;
+  font-size: 16px;
+}
 
-  /* ===== POPUP ===== */
-  .leaflet-popup-content,
-  .leaflet-popup-content * {
-    font-size: 18px !important;   /* было ~72px → стало нормально */
-    line-height: 1.4 !important;
+/* 📱 МОБИЛЬНАЯ ВЕРСИЯ — УМЕРЕННЫЕ РАЗМЕРЫ */
+@media (max-width: 768px) {
+  .popup-root {
+    font-size: 18px;
+  }
+
+  .popup-title {
+    font-size: 22px;
+  }
+
+  .popup-table td {
+    font-size: 18px;
+    padding: 8px 10px;
   }
 
   .leaflet-popup-content {
     width: 96vw !important;
     max-width: 96vw !important;
     max-height: 70vh !important;
-    padding: 12px !important;
   }
 
   .leaflet-popup-close-button {
-    font-size: 32px !important;  /* нормальный размер крестика */
-    padding: 6px !important;
+    font-size: 32px !important;
   }
-
+}
   /* ===== КНОПКИ ===== */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
     margin: 12px !important;
