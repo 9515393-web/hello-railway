@@ -106,9 +106,54 @@
     const p = feature.properties || {};
 
     // ВРЕМЕННО: покажем все поля, как они реально есть
-    const html = `<pre style="font-size:12px; white-space:pre-wrap;">${JSON.stringify(p, null, 2)}</pre>`;
+    const cn    = p.cn || "—";
+const area  = p.area || "—";
+const cost  = p.cost || "—";
+const type  = p.type || "—";
+const addr  = p.address || p.addr || p.location || "—"; // подстрахуемся
+const cat   = p.category || "—";
+const use   = p.use || p.vri || "—";
 
-    layer.bindPopup(html, { maxWidth: 420 });
+const html = `
+  <div style="font-size:16px; line-height:1.4;">
+    <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+      Земельный участок
+    </div>
+
+    <table style="width:100%; border-collapse:collapse;">
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Кадастровый №</td>
+        <td style="padding:4px 6px;"><b>${cn}</b></td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Адрес</td>
+        <td style="padding:4px 6px;">${addr}</td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Площадь</td>
+        <td style="padding:4px 6px;">${area} м²</td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Категория</td>
+        <td style="padding:4px 6px;">${cat}</td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">ВРИ</td>
+        <td style="padding:4px 6px;">${use}</td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Кадастровая стоимость</td>
+        <td style="padding:4px 6px;"><b>${cost}</b></td>
+      </tr>
+      <tr>
+        <td style="color:#666; padding:4px 6px;">Тип</td>
+        <td style="padding:4px 6px;">${type}</td>
+      </tr>
+    </table>
+  </div>
+`;
+
+layer.bindPopup(html, { maxWidth: 420, autoPan: true });
 
     layer.on("click", () => {
       layer.openPopup();
