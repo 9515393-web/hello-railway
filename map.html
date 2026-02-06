@@ -61,64 +61,27 @@
     .then(data => {
       let selected = null;
 
-      function isParcel(f) {
-        const cn = f?.properties?.cn;
-        if (!cn) return false;
-        const parts = String(cn).split(":");
-        return parts.length >= 4 && parts[3] && parts[3].length > 0;
-      }
-
-      // слой участков
       const parcelsLayer = L.geoJSON(data, {
-        filter: f => isParcel(f),
-        style: {
-          color: "#ff0000",
-          weight: 2,
-          fillOpacity: 0.20
-        },
+  style: {
+    color: "#ff0000",
+    weight: 2,
+    fillOpacity: 0.20
+  },
 
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
 
-          const cn   = p.cn || "—";
-          const area = p.area || "—";
-          const cost = p.cost || "—";
-          const type = p.type || "—";
-          const fio  = p.fio || "—";
-          const addr = p.phone || "—";
+    // ВРЕМЕННО: покажем все поля, как они реально есть
+    const html = `<pre style="font-size:12px; white-space:pre-wrap;">${JSON.stringify(p, null, 2)}</pre>`;
 
-          const html = `
-            <div style="padding:6px; font-size:16px;">
-              <div style="font-size:18px; font-weight:700; margin-bottom:6px;">
-                Земельный участок
-              </div>
-              <table style="width:100%; border-collapse: collapse;">
-                <tr><td>Кадастровый номер</td><td><b>${cn}</b></td></tr>
-                <tr><td>Адрес</td><td>${addr}</td></tr>
-                <tr><td>Площадь</td><td>${area} м²</td></tr>
-                <tr><td>Стоимость</td><td><b>${cost}</b> ₽</td></tr>
-                <tr><td>Тип</td><td>${type}</td></tr>
-                <tr><td>ФИО</td><td>${fio}</td></tr>
-              </table>
-            </div>
-          `;
+    layer.bindPopup(html, { maxWidth: 420 });
 
-          layer.bindPopup(html, {
-            maxWidth: 420,
-            autoPan: true,
-            autoPanPadding: [20, 80]
-          });
+    layer.on("click", () => {
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
 
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 4, fillOpacity: 0.40 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
 
       // границы по участкам
       const goodBounds = L.latLngBounds([]);
