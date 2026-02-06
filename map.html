@@ -206,7 +206,7 @@ const parcelsLayer = L.geoJSON(data, {
       // ---- вычисляем границы (как у тебя было) ----
       const goodBounds = L.latLngBounds([]);
 
-      layer.eachLayer(l => {
+      parcelsLayer.eachLayer(l => {
         if (l.getBounds) {
           const b = l.getBounds();
           const sw = b.getSouthWest();
@@ -264,7 +264,7 @@ const parcelsLayer = L.geoJSON(data, {
 
           btnMaxCenter.onclick = () => {
             const centers = [];
-            layer.eachLayer(l => {
+            parcelsLayer.eachLayer(l => {
               if (l.getBounds) centers.push(l.getBounds().getCenter());
             });
             if (!centers.length) return;
