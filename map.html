@@ -47,45 +47,45 @@ html, body, #map {
   margin-bottom: 8px;
 }
 
-/* ===== 📱 СМАРТФОН: СТРОГО ×4 ОТ ТЕКУЩИХ РАЗМЕРОВ ===== */
+/* 📱 ЖЁСТКО ПЕРЕБИВАЕМ ВСЕ INLINE СТИЛИ НА ТЕЛЕФОНЕ */
 @media (max-width: 768px) {
 
-  /* ===== POPUP ×4 ===== */
+  /* POPUP: увеличиваем ВСЁ внутри в 4 раза */
+  .leaflet-popup-content,
+  .leaflet-popup-content * {
+    font-size: 72px !important;   /* 18px ×4 */
+    line-height: 1.2 !important;
+  }
+
   .leaflet-popup-content {
-    font-size: 72px;          /* 18px ×4 */
-    line-height: 1.2;
     width: 98vw !important;
     max-width: 98vw !important;
-    max-height: 98vh;
-    overflow-y: auto;
-    padding: 24px;
+    max-height: 98vh !important;
+    padding: 24px !important;
   }
 
   .leaflet-popup-close-button {
-    font-size: 112px !important; /* 28px ×4 */
+    font-size: 112px !important;  /* 28px ×4 */
     padding: 12px !important;
   }
 
-  /* ===== КНОПКИ ×4 ===== */
+  /* КНОПКИ ×4 */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
-    margin: 48px;             /* 12px ×4 */
+    margin: 48px !important;
   }
 
   .leaflet-control.custom-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 48px;                /* 12px ×4 */
-    padding: 64px;            /* 16px ×4 */
-    border-radius: 80px;      /* 20px ×4 */
+    gap: 48px !important;
+    padding: 64px !important;
+    border-radius: 80px !important;
   }
 
   .leaflet-control.custom-buttons button {
-    width: 98vw;
-    min-height: 360px;        /* 90px ×4 */
-    margin: 0;
-    padding: 80px 96px;       /* 20/24 ×4 */
-    font-size: 104px;         /* 26px ×4 */
-    border-radius: 80px;      /* 20px ×4 */
+    width: 98vw !important;
+    min-height: 360px !important;
+    padding: 80px 96px !important;
+    font-size: 104px !important;
+    border-radius: 80px !important;
   }
 }
 </style>
