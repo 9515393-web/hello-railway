@@ -48,45 +48,45 @@ html, body, #map {
   margin-bottom: 8px;
 }
 
-/* 📱 ЖЁСТКО ПЕРЕБИВАЕМ ВСЕ INLINE СТИЛИ НА ТЕЛЕФОНЕ */
+/* 📱 МОБИЛЬНАЯ ВЕРСИЯ: нормальные размеры (уменьшаем в ~4 раза) */
 @media (max-width: 768px) {
 
-  /* POPUP: увеличиваем ВСЁ внутри в 4 раза */
+  /* ===== POPUP ===== */
   .leaflet-popup-content,
   .leaflet-popup-content * {
-    font-size: 72px !important;   /* 18px ×4 */
-    line-height: 1.2 !important;
+    font-size: 18px !important;   /* было ~72px → стало нормально */
+    line-height: 1.4 !important;
   }
 
   .leaflet-popup-content {
-    width: 98vw !important;
-    max-width: 98vw !important;
-    max-height: 98vh !important;
-    padding: 24px !important;
-  }
-
-  .leaflet-popup-close-button {
-    font-size: 112px !important;  /* 28px ×4 */
+    width: 96vw !important;
+    max-width: 96vw !important;
+    max-height: 70vh !important;
     padding: 12px !important;
   }
 
-  /* КНОПКИ ×4 */
+  .leaflet-popup-close-button {
+    font-size: 32px !important;  /* нормальный размер крестика */
+    padding: 6px !important;
+  }
+
+  /* ===== КНОПКИ ===== */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
-    margin: 48px !important;
+    margin: 12px !important;
   }
 
   .leaflet-control.custom-buttons {
-    gap: 48px !important;
-    padding: 64px !important;
-    border-radius: 80px !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
   }
 
   .leaflet-control.custom-buttons button {
-    width: 98vw !important;
-    min-height: 360px !important;
-    padding: 80px 96px !important;
-    font-size: 104px !important;
-    border-radius: 80px !important;
+    width: 92vw !important;
+    min-height: 80px !important;     /* удобно для пальца */
+    padding: 16px 20px !important;
+    font-size: 24px !important;      /* читабельно, но не гигант */
+    border-radius: 20px !important;
   }
 }
 </style>
