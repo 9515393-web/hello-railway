@@ -126,6 +126,7 @@ html, body, #map {
   }
 
   let focusCenter = L.latLng(59.9, 30.3); // запасной центр (твой регион)
+  const map = L.map("map", { zoomControl: false });
 
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -281,19 +282,16 @@ if (safeBounds.isValid() && safeCount > 0) {
           btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
-          // 🔍 К участкам — жёстко в центр и близко
-          btnFocus.onclick = () => {
-            if (!safeBounds.isValid() || safeCount === 0) return;
-            const c = safeBounds.getCenter();
-            map.flyTo(c, 18, { animate: true, duration: 0.5 }); // 18 = близко к участкам
-          };
+          // 🔍 К участкам — всегда в сохранённый центр и близко
+         btnFocus.onclick = () => {
+  map.flyTo(focusCenter, 18, { animate: true, duration: 0.5 });
+};
 
-          // 🌍 Обзор — тот же центр, но дальше
-          btnOverview.onclick = () => {
-            if (!safeBounds.isValid() || safeCount === 0) return;
-            const c = safeBounds.getCenter();
-            map.flyTo(c, 14, { animate: true, duration: 0.5 }); // 14 = обзор района, не весь мир
-          };
+// 🌍 Обзор — тот же центр, но дальше
+btnOverview.onclick = () => {
+  map.flyTo(focusCenter, 14, { animate: true, duration: 0.5 });
+};
+
 
           btnMaxCenter.onclick = () => {
             const centers = [];
