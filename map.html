@@ -215,40 +215,36 @@ html, body, #map {
         }
       }).addTo(map);
 
-      const parcelsBounds = parcelsLayer.getBounds();
-
-      // Границы — ТОЛЬКО по участкам и только адекватные
-const goodBounds = L.latLngBounds([]);
-let parcelsCount = 0;
+      // ✅ Безопасные границы: отбрасываем кривые/далёкие объекты
+const safeBounds = L.latLngBounds([]);
+let safeCount = 0;
 
 parcelsLayer.eachLayer(l => {
-  try {
-    if (!l.getBounds) return;
+  if (!l.getBounds) return;
 
-    const b = l.getBounds();
-    if (!b.isValid()) return;
+  const b = l.getBounds();
+  if (!b.isValid()) return;
 
-    const sw = b.getSouthWest();
-    const ne = b.getNorthEast();
+  const sw = b.getSouthWest();
+  const ne = b.getNorthEast();
 
-    // Фильтр по региону (чтобы зоны/кривые объекты не рвали масштаб)
-    if (
-      sw.lng > 20 && ne.lng < 50 &&
-      sw.lat > 50 && ne.lat < 70
-    ) {
-      goodBounds.extend(b);
-      parcelsCount++;
-    }
-  } catch (e) {
-    // просто пропускаем битые объекты
+  // фильтр по региону (как у тебя было)
+  if (
+    sw.lng > 20 && ne.lng < 50 &&
+    sw.lat > 50 && ne.lat < 70
+  ) {
+    safeBounds.extend(b);
+    safeCount++;
   }
 });
 
-if (goodBounds.isValid() && parcelsCount > 0) {
-  map.fitBounds(goodBounds, { padding: [50, 50], maxZoom: 18 });
+
+     // ✅ Стартовый вид карты — по безопасным границам
+if (safeBounds.isValid() && safeCount > 0) {
+  map.fitBounds(safeBounds, { padding: [50, 50], maxZoom: 18 });
 } else {
-  console.warn("⚠️ Не удалось вычислить границы по участкам, ставим запасной вид");
-  map.setView([59.9, 30.3], 12); // ← подстрой под свой район
+  console.warn("⚠️ safeBounds пустой — ставим запасной вид");
+  map.setView([59.9, 30.3], 12);
 }
 
       setTimeout(() => map.invalidateSize(), 200);
@@ -282,18 +278,17 @@ if (goodBounds.isValid() && parcelsCount > 0) {
           btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
-          // 🔍 К участкам — реально к участкам и ближе
+          // 🔍 К участкам — по безопасным границам
           btnFocus.onclick = () => {
-            if (!parcelsBounds.isValid()) return;
-            map.fitBounds(parcelsBounds, { padding: [20, 20] });
-            setTimeout(() => map.zoomIn(1), 300); // чуть “дожимаем” зум
+            if (!safeBounds.isValid() || safeCount === 0) return;
+            map.fitBounds(safeBounds, { padding: [20, 20] });
+            setTimeout(() => map.zoomIn(1), 250);
           };
 
-          // 🌍 Обзор — дальше и шире
+          // 🌍 Обзор — дальше и шире, но в том же районе
           btnOverview.onclick = () => {
-            if (!parcelsBounds.isValid()) return;
-            const padded = parcelsBounds.pad(0.7); // +70% вокруг
-            map.fitBounds(padded, { padding: [20, 20], maxZoom: 14 });
+            if (!safeBounds.isValid() || safeCount === 0) return;
+            map.fitBounds(safeBounds.pad(0.7), { padding: [20, 20], maxZoom: 14 });
           };
 
           btnMaxCenter.onclick = () => {
