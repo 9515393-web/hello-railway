@@ -288,7 +288,9 @@ if (goodBounds.isValid() && parcelsCount > 0) {
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
           btnFocus.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
+            if (!goodBounds.isValid()) return;
+            const center = goodBounds.getCenter();
+            map.flyTo(center, 19, { animate: true, duration: 0.5 });
           };
 
           btnOverview.onclick = () => {
