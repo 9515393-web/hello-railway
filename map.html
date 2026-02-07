@@ -278,17 +278,18 @@ if (safeBounds.isValid() && safeCount > 0) {
           btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
-          // 🔍 К участкам — по безопасным границам
+          // 🔍 К участкам — жёстко в центр и близко
           btnFocus.onclick = () => {
             if (!safeBounds.isValid() || safeCount === 0) return;
-            map.fitBounds(safeBounds, { padding: [20, 20] });
-            setTimeout(() => map.zoomIn(1), 250);
+            const c = safeBounds.getCenter();
+            map.flyTo(c, 18, { animate: true, duration: 0.5 }); // 18 = близко к участкам
           };
 
-          // 🌍 Обзор — дальше и шире, но в том же районе
+          // 🌍 Обзор — тот же центр, но дальше
           btnOverview.onclick = () => {
             if (!safeBounds.isValid() || safeCount === 0) return;
-            map.fitBounds(safeBounds.pad(0.7), { padding: [20, 20], maxZoom: 14 });
+            const c = safeBounds.getCenter();
+            map.flyTo(c, 14, { animate: true, duration: 0.5 }); // 14 = обзор района, не весь мир
           };
 
           btnMaxCenter.onclick = () => {
