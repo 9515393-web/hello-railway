@@ -117,246 +117,150 @@ html, body, #map {
 <div id="map"></div>
 
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
 
-  if (!token) {
-    document.body.innerHTML = "⛔ Нет токена доступа";
-    throw new Error("No token");
-  }
-
-  let focusCenter = L.latLng(59.9, 30.3); // запасной центр (твой регион)
-  const map = L.map("map", { zoomControl: false });
-
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap"
-  }).addTo(map);
-// ===============================
-// ✅ НАДЁЖНЫЙ ЦЕНТР ПО УЧАСТКАМ
-// ===============================
-const centers = [];
-
-parcelsLayer.eachLayer(l => {
-  if (l.getBounds && l.getBounds().isValid()) {
-    centers.push(l.getBounds().getCenter());
-  }
-});
-
-if (centers.length > 0) {
-  const lats = centers.map(c => c.lat).sort((a, b) => a - b);
-  const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
-  const mid = Math.floor(centers.length / 2);
-
-  focusCenter = L.latLng(lats[mid], lngs[mid]);   // 🎯 центр массива участков
-  map.setView(focusCenter, 17);                   // стартуем сразу на участках
-} else {
-  console.warn("❌ Не нашли ни одного участка, используем запасной центр");
-  focusCenter = L.latLng(59.9, 30.3);              // запасной центр (твой регион)
-  map.setView(focusCenter, 12);
+if (!token) {
+  document.body.innerHTML = "⛔ Нет токена доступа";
+  throw new Error("No token");
 }
-  fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Forbidden or not found");
-      return r.json();
-    })
-    .then(data => {
-      let selected = null;
 
-      // Что считаем реальным участком
-      function isRealParcel(feature) {
-        const cn = feature?.properties?.cn;
+let focusCenter = L.latLng(59.9, 30.3); // запасной центр
+const map = L.map("map", { zoomControl: false });
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap"
+}).addTo(map);
+
+fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
+  .then(r => {
+    if (!r.ok) throw new Error("Forbidden or not found");
+    return r.json();
+  })
+  .then(data => {
+    let selected = null;
+
+    function isRealParcel(feature) {
+      const cn = feature?.properties?.cn;
+      if (!cn) return false;
+      const parts = String(cn).split(":");
+      return parts.length === 4 && parts[3] && parts[3].length > 0;
+    }
+
+    // Кварталы (опционально)
+    L.geoJSON(data, {
+      filter: f => {
+        const cn = f?.properties?.cn;
         if (!cn) return false;
-
         const parts = String(cn).split(":");
-        return parts.length === 4 && parts[3] && parts[3].length > 0;
+        return parts.length === 3;
+      },
+      style: { color: "#ff0000", weight: 2, fill: false }
+    }).addTo(map);
+
+    // Участки
+    const parcelsLayer = L.geoJSON(data, {
+      filter: f => isRealParcel(f),
+      style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties || {};
+        const html = `
+          <div class="popup-root">
+            <div class="popup-title">Земельный участок</div>
+            <table style="width:100%; border-collapse:collapse;">
+              <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
+              <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
+              <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
+              <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
+              <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
+            </table>
+          </div>
+        `;
+
+        layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+
+        layer.on("click", () => {
+          if (selected && selected !== layer) {
+            selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+          }
+          selected = layer;
+          layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+          layer.openPopup();
+
+          if (layer.getBounds && layer.getBounds().isValid()) {
+            focusCenter = layer.getBounds().getCenter(); // центр выбранного участка
+          }
+        });
       }
+    }).addTo(map);
 
-      // === СЛОЙ КАДАСТРОВЫХ КВАРТАЛОВ (например 47:26:0414001) ===
-      const quartersLayer = L.geoJSON(data, {
-        filter: f => {
-          const cn = f?.properties?.cn;
-          if (!cn) return false;
+    // ===============================
+    // ✅ СЧИТАЕМ ЦЕНТР ПО ВСЕМ УЧАСТКАМ
+    // ===============================
+    const centers = [];
 
-          const parts = String(cn).split(":");
-          // квартал = 3 части: 47:26:0414001
-          return parts.length === 3;
-        },
-        style: {
-          color: "#ff0000",   // такой же цвет, как у участков
-          weight: 2,
-          fill: false
-        }
-      }).addTo(map);
-
-      const parcelsLayer = L.geoJSON(data, {
-        filter: f => isRealParcel(f),
-
-        style: {
-          color: "#ff0000",
-          weight: 2,
-          fillOpacity: 0.20
-        },
-
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
-
-          const cn   = p.cn || "—";
-          const area = p.area || "—";
-          const cost = p.cost || "—";
-          const type = p.type || "—";
-          const addr = p.address || p.addr || p.location || "—";
-
-          const html = `
-  <div class="popup-root">
-    <div class="popup-title">Земельный участок</div>
-
-    <table style="width:100%; border-collapse:collapse;">
-      <tr><td>Кадастровый №</td><td><b>${cn}</b></td></tr>
-      <tr><td>Адрес</td><td>${addr}</td></tr>
-      <tr><td>Площадь</td><td>${area} м²</td></tr>
-      <tr><td>Кадастровая стоимость</td><td><b>${cost}</b></td></tr>
-      <tr><td>Тип</td><td>${type}</td></tr>
-    </table>
-  </div>
-`;
-
-          layer.bindPopup(html, {
-            maxWidth: 9999,   // убираем ограничение Leaflet
-            autoPan: true,
-            autoPanPadding: [20, 80]
-          });
-
-
-          layer.on("click", () => {
-  if (selected && selected !== layer) {
-    selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-  }
-  selected = layer;
-  layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-  layer.openPopup();
-
-  // ✅ ЖЁСТКО запоминаем центр выбранного участка
-  if (layer.getBounds && layer.getBounds().isValid()) {
-    focusCenter = layer.getBounds().getCenter();
-  }
-});
-
-        }
-      }).addTo(map);
-
-      // ✅ Безопасные границы: отбрасываем кривые/далёкие объекты
-const safeBounds = L.latLngBounds([]);
-let safeCount = 0;
-
-parcelsLayer.eachLayer(l => {
-  if (!l.getBounds) return;
-
-  const b = l.getBounds();
-  if (!b.isValid()) return;
-
-  const sw = b.getSouthWest();
-  const ne = b.getNorthEast();
-
-  // фильтр по региону (как у тебя было)
-  if (
-    sw.lng > 20 && ne.lng < 50 &&
-    sw.lat > 50 && ne.lat < 70
-  ) {
-    safeBounds.extend(b);
-    safeCount++;
-  }
-});
-
-
-     // ✅ Стартовый вид карты — по безопасным границам
-if (safeBounds.isValid() && safeCount > 0) {
-  map.fitBounds(safeBounds, { padding: [50, 50], maxZoom: 18 });
-  // ❗ НЕ ТРОГАЕМ focusCenter тут вообще
-} else {
-  console.warn("⚠️ safeBounds пустой — ставим запасной вид");
-  focusCenter = L.latLng(59.9, 30.3);
-  map.setView(focusCenter, 12);
-}
-
-      setTimeout(() => map.invalidateSize(), 200);
-
-      // -------- КНОПКИ --------
-      const ButtonsControl = L.Control.extend({
-        options: { position: "bottomleft" },
-
-        onAdd: function () {
-          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
-
-          const btnZoomIn = L.DomUtil.create("button", "", container);
-          btnZoomIn.innerText = "➕ Приблизить";
-
-          const btnZoomOut = L.DomUtil.create("button", "", container);
-          btnZoomOut.innerText = "➖ Отдалить";
-
-          const btnFocus = L.DomUtil.create("button", "", container);
-          btnFocus.innerText = "🔍 К участкам";
-
-          const btnOverview = L.DomUtil.create("button", "", container);
-          btnOverview.innerText = "🌍 Обзор";
-
-          const btnMaxCenter = L.DomUtil.create("button", "", container);
-          btnMaxCenter.innerText = "🎯 Макс. к центру";
-
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
-          L.DomEvent.on(container, "touchstart mousedown dblclick", L.DomEvent.stopPropagation);
-
-          btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
-          btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
-
-          // 🔍 К участкам — всегда в сохранённый центр и близко
-         btnFocus.onclick = () => {
-  map.flyTo(focusCenter, 18, { animate: true, duration: 0.5 });
-};
-
-// 🌍 Обзор — тот же центр, но дальше
-btnOverview.onclick = () => {
-  map.flyTo(focusCenter, 14, { animate: true, duration: 0.5 });
-};
-
-
-          btnMaxCenter.onclick = () => {
-            const centers = [];
-            parcelsLayer.eachLayer(l => {
-              if (l.getBounds) centers.push(l.getBounds().getCenter());
-            });
-            if (!centers.length) return;
-
-            const lats = centers.map(c => c.lat).sort((a, b) => a - b);
-            const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
-            const mid = Math.floor(lats.length / 2);
-            const median = L.latLng(lats[mid], lngs[mid]);
-
-            let best = centers[0];
-            let bestDist = Infinity;
-
-            centers.forEach(c => {
-              const d = median.distanceTo(c);
-              if (d < bestDist) {
-                bestDist = d;
-                best = c;
-              }
-            });
-
-            map.flyTo(best, 20, { animate: true, duration: 0.6 });
-          };
-
-          return container;
-        }
-      });
-
-      map.addControl(new ButtonsControl());
-    })
-    .catch(err => {
-      console.error(err);
-      document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
+    parcelsLayer.eachLayer(l => {
+      if (l.getBounds && l.getBounds().isValid()) {
+        centers.push(l.getBounds().getCenter());
+      }
     });
+
+    if (centers.length > 0) {
+      const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+      const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+      const mid = Math.floor(centers.length / 2);
+
+      focusCenter = L.latLng(lats[mid], lngs[mid]);
+      map.setView(focusCenter, 17);   // старт на участках
+    } else {
+      map.setView(focusCenter, 12);   // запасной вариант
+    }
+
+    // ===============================
+    // КНОПКИ
+    // ===============================
+    const ButtonsControl = L.Control.extend({
+      options: { position: "bottomleft" },
+      onAdd: function () {
+        const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
+
+        const btnZoomIn = L.DomUtil.create("button", "", container);
+        btnZoomIn.innerText = "➕ Приблизить";
+
+        const btnZoomOut = L.DomUtil.create("button", "", container);
+        btnZoomOut.innerText = "➖ Отдалить";
+
+        const btnFocus = L.DomUtil.create("button", "", container);
+        btnFocus.innerText = "🔍 К участкам";
+
+        const btnOverview = L.DomUtil.create("button", "", container);
+        btnOverview.innerText = "🌍 Обзор";
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
+        btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
+
+        btnFocus.onclick = () => {
+          map.flyTo(focusCenter, 18, { animate: true, duration: 0.5 });
+        };
+
+        btnOverview.onclick = () => {
+          map.flyTo(focusCenter, 14, { animate: true, duration: 0.5 });
+        };
+
+        return container;
+      }
+    });
+
+    map.addControl(new ButtonsControl());
+  })
+  .catch(err => {
+    console.error(err);
+    document.body.innerHTML = "⛔ Доступ запрещён или ссылка устарела";
+  });
 </script>
 
 
