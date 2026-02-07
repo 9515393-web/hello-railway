@@ -284,8 +284,8 @@ if (goodBounds.isValid() && parcelsCount > 0) {
           L.DomEvent.disableScrollPropagation(container);
           L.DomEvent.on(container, "touchstart mousedown dblclick", L.DomEvent.stopPropagation);
 
-          btnZoomIn.onclick = () => map.zoomIn();
-          btnZoomOut.onclick = () => map.zoomOut();
+          btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
+          btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
           btnFocus.onclick = () => {
             map.fitBounds(goodBounds, { padding: [10, 10], maxZoom: 18 });
