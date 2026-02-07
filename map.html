@@ -125,7 +125,8 @@ html, body, #map {
     throw new Error("No token");
   }
 
-  const map = L.map("map", { zoomControl: false });
+  let focusCenter = L.latLng(59.9, 30.3); // запасной центр (твой регион)
+
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -242,9 +243,11 @@ parcelsLayer.eachLayer(l => {
      // ✅ Стартовый вид карты — по безопасным границам
 if (safeBounds.isValid() && safeCount > 0) {
   map.fitBounds(safeBounds, { padding: [50, 50], maxZoom: 18 });
+  focusCenter = safeBounds.getCenter();   // ✅ запоминаем нормальный центр
 } else {
   console.warn("⚠️ safeBounds пустой — ставим запасной вид");
-  map.setView([59.9, 30.3], 12);
+  focusCenter = L.latLng(59.9, 30.3);      // запасной центр
+  map.setView(focusCenter, 12);
 }
 
       setTimeout(() => map.invalidateSize(), 200);
