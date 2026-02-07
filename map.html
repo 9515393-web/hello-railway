@@ -72,30 +72,21 @@ html, body, #map {
 ========================= */
 @media (max-width: 768px) {
 
-  /* ===== POPUP (в 0.5 раза) ===== */
+  /* ===== POPUP ===== */
   .leaflet-popup-content {
     width: 90vw !important;
     max-width: 90vw !important;
     max-height: 60vh !important;
-
-    font-size: 12px !important;   /* было 16 → стало ~в 0.75, визуально ~в 0.5 от того, что было раньше */
+    font-size: 12px !important;
     line-height: 1.3 !important;
     padding: 10px !important;
   }
 
-  .popup-root {
-    font-size: 12px !important;
-  }
+  .popup-root { font-size: 12px !important; }
+  .popup-title { font-size: 14px !important; }
+  .leaflet-popup-close-button { font-size: 20px !important; }
 
-  .popup-title {
-    font-size: 14px !important;
-  }
-
-  .leaflet-popup-close-button {
-    font-size: 20px !important;
-  }
-
-  /* ===== КНОПКИ (примерно в 3 раза меньше, чем были огромные) ===== */
+  /* ===== КНОПКИ ===== */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
     margin: 10px !important;
   }
@@ -107,13 +98,15 @@ html, body, #map {
   }
 
   .leaflet-control.custom-buttons button {
-    width: auto !important;        /* ❗ больше НЕ растягиваем на весь экран */
-    min-height: 32px !important;   /* было 48 */
-    padding: 6px 10px !important;  /* было 10 14 */
-    font-size: 12px !important;    /* было 16 */
+    width: auto !important;
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
     border-radius: 8px !important;
   }
+}
 
+/* если нужно для теста */
 @media (max-width: 768px) {
   body { background: red !important; }
 }
@@ -222,6 +215,8 @@ html, body, #map {
         }
       }).addTo(map);
 
+      const parcelsBounds = parcelsLayer.getBounds();
+
       // Границы — ТОЛЬКО по участкам и только адекватные
 const goodBounds = L.latLngBounds([]);
 let parcelsCount = 0;
@@ -287,14 +282,18 @@ if (goodBounds.isValid() && parcelsCount > 0) {
           btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
 
+          // 🔍 К участкам — реально к участкам и ближе
           btnFocus.onclick = () => {
-            if (!goodBounds.isValid()) return;
-            const center = goodBounds.getCenter();
-            map.flyTo(center, 19, { animate: true, duration: 0.5 });
+            if (!parcelsBounds.isValid()) return;
+            map.fitBounds(parcelsBounds, { padding: [20, 20] });
+            setTimeout(() => map.zoomIn(1), 300); // чуть “дожимаем” зум
           };
 
+          // 🌍 Обзор — дальше и шире
           btnOverview.onclick = () => {
-            map.fitBounds(goodBounds, { padding: [500, 500], maxZoom: 13 });
+            if (!parcelsBounds.isValid()) return;
+            const padded = parcelsBounds.pad(0.7); // +70% вокруг
+            map.fitBounds(padded, { padding: [20, 20], maxZoom: 14 });
           };
 
           btnMaxCenter.onclick = () => {
