@@ -207,13 +207,19 @@ html, body, #map {
 
 
           layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-            layer.openPopup();
-          });
+  if (selected && selected !== layer) {
+    selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+  }
+  selected = layer;
+  layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+  layer.openPopup();
+
+  // ✅ ЖЁСТКО запоминаем центр выбранного участка
+  if (layer.getBounds && layer.getBounds().isValid()) {
+    focusCenter = layer.getBounds().getCenter();
+  }
+});
+
         }
       }).addTo(map);
 
@@ -244,10 +250,10 @@ parcelsLayer.eachLayer(l => {
      // ✅ Стартовый вид карты — по безопасным границам
 if (safeBounds.isValid() && safeCount > 0) {
   map.fitBounds(safeBounds, { padding: [50, 50], maxZoom: 18 });
-  focusCenter = safeBounds.getCenter();   // ✅ запоминаем нормальный центр
+  // ❗ НЕ ТРОГАЕМ focusCenter тут вообще
 } else {
   console.warn("⚠️ safeBounds пустой — ставим запасной вид");
-  focusCenter = L.latLng(59.9, 30.3);      // запасной центр
+  focusCenter = L.latLng(59.9, 30.3);
   map.setView(focusCenter, 12);
 }
 
