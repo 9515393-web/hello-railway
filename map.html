@@ -101,19 +101,18 @@ html, body, #map {
   }
 
   .leaflet-control.custom-buttons {
-    gap: 8px !important;
-    padding: 10px !important;
-    border-radius: 14px !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    border-radius: 10px !important;
   }
 
   .leaflet-control.custom-buttons button {
-    width: 90vw !important;
-    min-height: 48px !important;
-    padding: 10px 14px !important;
-    font-size: 16px !important;
-    border-radius: 14px !important;
+    width: auto !important;        /* ❗ больше НЕ растягиваем на весь экран */
+    min-height: 32px !important;   /* было 48 */
+    padding: 6px 10px !important;  /* было 10 14 */
+    font-size: 12px !important;    /* было 16 */
+    border-radius: 8px !important;
   }
-}
 
 @media (max-width: 768px) {
   body { background: red !important; }
