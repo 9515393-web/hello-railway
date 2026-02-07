@@ -132,7 +132,29 @@ html, body, #map {
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
   }).addTo(map);
+// ===============================
+// ✅ НАДЁЖНЫЙ ЦЕНТР ПО УЧАСТКАМ
+// ===============================
+const centers = [];
 
+parcelsLayer.eachLayer(l => {
+  if (l.getBounds && l.getBounds().isValid()) {
+    centers.push(l.getBounds().getCenter());
+  }
+});
+
+if (centers.length > 0) {
+  const lats = centers.map(c => c.lat).sort((a, b) => a - b);
+  const lngs = centers.map(c => c.lng).sort((a, b) => a - b);
+  const mid = Math.floor(centers.length / 2);
+
+  focusCenter = L.latLng(lats[mid], lngs[mid]);   // 🎯 центр массива участков
+  map.setView(focusCenter, 17);                   // стартуем сразу на участках
+} else {
+  console.warn("❌ Не нашли ни одного участка, используем запасной центр");
+  focusCenter = L.latLng(59.9, 30.3);              // запасной центр (твой регион)
+  map.setView(focusCenter, 12);
+}
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => {
       if (!r.ok) throw new Error("Forbidden or not found");
