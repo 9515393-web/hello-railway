@@ -144,7 +144,6 @@ html, body, #map {
   const map = L.map("map", { zoomControl: false });
 
   // ✅ СРАЗУ задаём вид, чтобы тайлы показались даже если fetch упадёт
-  map.setView(focusCenter, 12);
 
   const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
