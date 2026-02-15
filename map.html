@@ -117,35 +117,34 @@ html, body, #map {
 <div id="map"></div>
 
 <script>
-
+(function () {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
 
   if (!token) {
-    status.textContent = "⛔ Нет токена доступа";
-    return;
+    alert("⛔ Нет токена доступа");
+    throw new Error("No token");
   }
 
-  let focusCenter = L.latLng(59.9, 30.3);
-  status.textContent = "Leaflet map...";
-  const map = L.map("map", { zoomControl: false });
+  // Инициализация карты (временный центр, потом будет fitBounds)
+  const map = L.map("map", {
+    zoomControl: false,
+    center: [59.9, 30.3],
+    zoom: 12
+  });
 
-  // ✅ СРАЗУ задаём вид, чтобы тайлы показались даже если fetch упадёт
-
-  const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // Тайлы
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  status.textContent = "fetch geojson...";
-
+  // Загрузка GeoJSON
   fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     })
     .then(data => {
-      status.textContent = "geojson loaded, rendering...";
-
       let selected = null;
 
       function isRealParcel(feature) {
@@ -194,25 +193,14 @@ html, body, #map {
             selected = layer;
             layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
             layer.openPopup();
-
-            if (layer.getBounds && layer.getBounds().isValid()) {
-              focusCenter = layer.getBounds().getCenter();
-            }
           });
         }
       }).addTo(map);
 
-      // ✅ Центр по участкам (после создания parcelsLayer)
-      const centers = [];
-      parcelsLayer.eachLayer(l => {
-        if (l.getBounds && l.getBounds().isValid()) centers.push(l.getBounds().getCenter());
-      });
-
-      if (centers.length) {
-        const lats = centers.map(c => c.lat).sort((a,b)=>a-b);
-        const lngs = centers.map(c => c.lng).sort((a,b)=>a-b);
-        focusCenter = L.latLng(lats[Math.floor(lats.length/2)], lngs[Math.floor(lngs.length/2)]);
-        map.setView(focusCenter, 17);
+      // 👉 Фокус по всем участкам сразу (без прыжков)
+      const bounds = parcelsLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] });
       }
 
       // Кнопки
@@ -238,22 +226,29 @@ html, body, #map {
 
           btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
           btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
-          btnFocus.onclick = () => map.flyTo(focusCenter, 18, { animate: true, duration: 0.5 });
-          btnOverview.onclick = () => map.flyTo(focusCenter, 14, { animate: true, duration: 0.5 });
+
+          btnFocus.onclick = () => {
+            const b = parcelsLayer.getBounds();
+            if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
+          };
+
+          btnOverview.onclick = () => {
+            const b = parcelsLayer.getBounds();
+            if (b.isValid()) map.fitBounds(b, { padding: [100, 100] });
+          };
 
           return container;
         }
       });
-      map.addControl(new ButtonsControl());
 
-      status.textContent = "✅ ready";
+      map.addControl(new ButtonsControl());
     })
     .catch(err => {
-      status.textContent = "❌ fetch/parse error: " + (err && err.message ? err.message : String(err));
+      console.error("Ошибка загрузки карты:", err);
+      alert("Ошибка загрузки карты. Проверь соединение или токен.");
     });
 })();
 </script>
-
 
 </body>
 </html>
