@@ -220,10 +220,25 @@ html, body, #map {
           btnOverview.innerText = "🌍 Обзор";
 
           L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
+L.DomEvent.disableScrollPropagation(container);
 
-          btnZoomIn.onclick = () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 });
-          btnZoomOut.onclick = () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 });
+function bind(btn, handler) {
+  L.DomEvent.on(btn, "click", L.DomEvent.stop)
+            .on(btn, "click", handler);
+}
+
+bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
+bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
+
+bind(btnFocus, () => {
+  const b = parcelsLayer.getBounds();
+  if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
+});
+
+bind(btnOverview, () => {
+  const b = parcelsLayer.getBounds();
+  if (b.isValid()) map.fitBounds(b, { padding: [100, 100] });
+});
 
           btnFocus.onclick = () => {
             const b = parcelsLayer.getBounds();
