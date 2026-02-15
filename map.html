@@ -198,16 +198,20 @@ console.log("MAP SCRIPT LOADED");
       console.log("Parcels bounds:", bounds);
 
       if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20] });
-      } else {
-        // запасной вариант: летим к первому объекту
-        parcelsLayer.eachLayer(l => {
-          if (l.getBounds && l.getBounds().isValid()) {
-            map.fitBounds(l.getBounds(), { padding: [20, 20] });
-            return false;
-          }
-        });
-      }
+  map.fitBounds(bounds, { padding: [20, 20] });
+} else {
+  parcelsLayer.eachLayer(l => {
+    if (l.getBounds && l.getBounds().isValid()) {
+      map.fitBounds(l.getBounds(), { padding: [20, 20] });
+      return false;
+    }
+  });
+}
+
+// 🔧 ВАЖНО: заставляем Leaflet пересчитать размер контейнера
+setTimeout(() => {
+  map.invalidateSize();
+}, 100);
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
