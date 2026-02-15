@@ -27,6 +27,7 @@ async def index(request: Request, token: str):
     # если всё ок — отдаём HTML карты
     return FileResponse("map.html", media_type="text/html")
 
+
 @app.get("/Zahozhe_final_2026.geojson")
 async def get_geojson(token: str):
     conn = await asyncpg.connect(DATABASE_URL)
@@ -56,3 +57,22 @@ async def get_geojson(token: str):
         media_type="application/geo+json",
         filename="Zahozhe_final_2026.geojson"
     )
+
+
+# ⚠️ ВРЕМЕННО! УДАЛИТЬ после использования!
+@app.get("/_dev_extend_token")
+async def _dev_extend_token(token: str):
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    result = await conn.execute(
+        """
+        UPDATE admin_sessions
+        SET expires_at = NOW() + INTERVAL '7 days'
+        WHERE token = $1
+        """,
+        token
+    )
+
+    await conn.close()
+
+    return {"status": "ok", "result": result}
