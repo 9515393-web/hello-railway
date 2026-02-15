@@ -115,6 +115,8 @@ html, body, #map {
 <div id="map"></div>
 
 <script>
+console.log("MAP SCRIPT LOADED");
+
 (function () {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
@@ -124,11 +126,9 @@ html, body, #map {
     throw new Error("No token");
   }
 
-  // Инициализация карты (временный центр, потом будет fitBounds)
+  // Создаём карту БЕЗ центра — зададим после загрузки данных
   const map = L.map("map", {
-    zoomControl: false,
-    center: [59.9, 30.3],
-    zoom: 12
+    zoomControl: false
   });
 
   // Тайлы
@@ -136,8 +136,8 @@ html, body, #map {
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  // Загрузка GeoJSON
-  fetch(`/Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
+  // Загружаем GeoJSON
+  fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
@@ -166,7 +166,6 @@ html, body, #map {
       const parcelsLayer = L.geoJSON(data, {
         filter: f => isRealParcel(f),
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-
         onEachFeature: (feature, layer) => {
           const p = feature.properties || {};
           const html = `
@@ -181,7 +180,6 @@ html, body, #map {
               </table>
             </div>
           `;
-
           layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
           layer.on("click", () => {
@@ -195,10 +193,20 @@ html, body, #map {
         }
       }).addTo(map);
 
-      // 👉 Фокус по всем участкам сразу (без прыжков)
+      // 🔥 ЖЕЛЕЗОБЕТОННЫЙ ФОКУС НА УЧАСТКИ
       const bounds = parcelsLayer.getBounds();
-      if (bounds.isValid()) {
+      console.log("Parcels bounds:", bounds);
+
+      if (bounds && bounds.isValid()) {
         map.fitBounds(bounds, { padding: [20, 20] });
+      } else {
+        // запасной вариант: летим к первому объекту
+        parcelsLayer.eachLayer(l => {
+          if (l.getBounds && l.getBounds().isValid()) {
+            map.fitBounds(l.getBounds(), { padding: [20, 20] });
+            return false;
+          }
+        });
       }
 
       // Кнопки
@@ -220,35 +228,25 @@ html, body, #map {
           btnOverview.innerText = "🌍 Обзор";
 
           L.DomEvent.disableClickPropagation(container);
-L.DomEvent.disableScrollPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
 
-function bind(btn, handler) {
-  L.DomEvent.on(btn, "click", L.DomEvent.stop)
-            .on(btn, "click", handler);
-}
+          function bind(btn, handler) {
+            L.DomEvent.on(btn, "click", L.DomEvent.stop)
+              .on(btn, "click", handler);
+          }
 
-bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
-bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
+          bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
+          bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
-bind(btnFocus, () => {
-  const b = parcelsLayer.getBounds();
-  if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
-});
-
-bind(btnOverview, () => {
-  const b = parcelsLayer.getBounds();
-  if (b.isValid()) map.fitBounds(b, { padding: [100, 100] });
-});
-
-          btnFocus.onclick = () => {
+          bind(btnFocus, () => {
             const b = parcelsLayer.getBounds();
             if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
-          };
+          });
 
-          btnOverview.onclick = () => {
+          bind(btnOverview, () => {
             const b = parcelsLayer.getBounds();
             if (b.isValid()) map.fitBounds(b, { padding: [100, 100] });
-          };
+          });
 
           return container;
         }
