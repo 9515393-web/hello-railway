@@ -193,33 +193,44 @@ console.log("MAP SCRIPT LOADED");
         }
       }).addTo(map);
 
-      // 🔥 Фокус на участки (жёсткий и надёжный способ)
-const bounds = parcelsLayer.getBounds();
-console.log("Parcels bounds:", bounds);
+      // ===============================
+// Вычисляем и сохраняем границы участков
+// ===============================
+let parcelsBounds = null;
+let parcelsCenter = null;
 
-// Сначала пробуем fitBounds
-if (bounds && bounds.isValid()) {
-  map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
+// Пробуем взять общие bounds
+const b = parcelsLayer.getBounds();
+if (b && b.isValid()) {
+  parcelsBounds = b;
+  parcelsCenter = b.getCenter();
+} else {
+  // Запасной вариант — берём первый валидный участок
+  parcelsLayer.eachLayer(l => {
+    if (!parcelsBounds && l.getBounds && l.getBounds().isValid()) {
+      parcelsBounds = l.getBounds();
+      parcelsCenter = parcelsBounds.getCenter();
+    }
+  });
 }
 
-// Если вдруг Leaflet всё равно остался на мире — летим к первой геометрии
-let forced = false;
-parcelsLayer.eachLayer(l => {
-  if (forced) return;
-  if (l.getBounds && l.getBounds().isValid()) {
-    const b = l.getBounds();
-    const center = b.getCenter();
-    console.log("Forcing center to:", center);
-    map.setView(center, 17);
-    forced = true;
-  }
-});
+console.log("Saved parcelsBounds:", parcelsBounds);
+console.log("Saved parcelsCenter:", parcelsCenter);
 
-// Перерисовываем карту после установки вида
-setTimeout(() => {
-  map.invalidateSize();
-}, 100);
 
+      // 🔥 Фокус на участки (жёсткий и надёжный способ)
+// ===============================
+// Стартовый фокус на участки
+// ===============================
+if (parcelsBounds && parcelsCenter) {
+  map.setView(parcelsCenter, 17);
+  setTimeout(() => {
+    map.fitBounds(parcelsBounds, { padding: [20, 20], maxZoom: 18 });
+    map.invalidateSize();
+  }, 100);
+} else {
+  console.log("❌ Не удалось определить границы участков");
+}
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
@@ -251,13 +262,15 @@ setTimeout(() => {
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
           bind(btnFocus, () => {
-            const b = parcelsLayer.getBounds();
-            if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
+            if (parcelsCenter) {
+              map.setView(parcelsCenter, 18);
+            }
           });
 
           bind(btnOverview, () => {
-            const b = parcelsLayer.getBounds();
-            if (b.isValid()) map.fitBounds(b, { padding: [100, 100] });
+            if (parcelsBounds) {
+              map.fitBounds(parcelsBounds, { padding: [100, 100] });
+            }
           });
 
           return container;
