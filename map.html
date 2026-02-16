@@ -148,56 +148,67 @@ console.log("MAP SCRIPT LOADED");
       }
 
       // Кварталы
-      L.geoJSON(data, {
-        filter: f => {
-          const cn = f?.properties?.cn;
-          if (!cn) return false;
-          return String(cn).split(":").length === 3;
-        },
-        style: { color: "#ff0000", weight: 2, fill: false }
-      }).addTo(map);
+L.geoJSON(data, {
+  coordsToLatLng: function (coords) {
+    // В файле координаты в формате [lat, lng]
+    return L.latLng(coords[1], coords[0]);
+  },
+  filter: f => {
+    const cn = f?.properties?.cn;
+    if (!cn) return false;
+    return String(cn).split(":").length === 3;
+  },
+  style: { color: "#ff0000", weight: 2, fill: false }
+}).addTo(map);
 
-      // Участки
-      const parcelsLayer = L.geoJSON(data, {
-        filter: f => isRealParcel(f),
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
-          const html = `
-            <div class="popup-root">
-              <div class="popup-title">Земельный участок</div>
-              <table style="width:100%; border-collapse:collapse;">
-                <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
-                <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
-                <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
-                <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
-                <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
-              </table>
-            </div>
-          `;
+// Участки
+const parcelsLayer = L.geoJSON(data, {
+  coordsToLatLng: function (coords) {
+    // В GeoJSON координаты: [lon, lat]
+    return L.latLng(coords[1], coords[0]); // ← МЕНЯЕМ МЕСТАМИ
+  },
+  filter: f => isRealParcel(f),
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
+    const html = `
+      <div class="popup-root">
+        <div class="popup-title">Земельный участок</div>
+        <table style="width:100%; border-collapse:collapse;">
+          <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
+          <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
+          <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
+          <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
+          <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
+        </table>
+      </div>
+    `;
 
-          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
-
-      const parcelsBounds = parcelsLayer.getBounds();
-
-      if (!parcelsBounds || !parcelsBounds.isValid()) {
-        alert("❌ Не удалось определить границы участков");
-        return;
+    layer.on("click", () => {
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
       }
+      selected = layer;
+      layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
 
-      // Стартовый фокус
-      map.fitBounds(parcelsBounds, { padding: [20, 20] });
+
+// Границы участков
+const parcelsBounds = parcelsLayer.getBounds();
+
+if (!parcelsBounds || !parcelsBounds.isValid()) {
+  alert("❌ Не удалось определить границы участков");
+  return;
+}
+
+// Стартовый фокус
+map.fitBounds(parcelsBounds, { padding: [20, 20] });
+
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
