@@ -154,19 +154,26 @@ console.log("MAP SCRIPT LOADED");
 
       // Кварталы
       L.geoJSON(data, {
-        filter: f => {
-          const cn = f?.properties?.cn;
-          if (!cn) return false;
-          return String(cn).split(":").length === 3;
-        },
-        style: { color: "#ff0000", weight: 2, fill: false }
-      }).addTo(map);
+  filter: function (coords) {
+    return L.latLng(coords[1], coords[0]); // 👈 МЕНЯЕМ МЕСТАМИ
+  },
+  filter: f => {
+    const cn = f?.properties?.cn;
+    if (!cn) return false;
+    return String(cn).split(":").length === 3;
+  },
+  style: { color: "#ff0000", weight: 2, fill: false }
+}).addTo(map);
+
 
       // Участки
       const parcelsLayer = L.geoJSON(data, {
-        filter: f => isRealParcel(f),
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => {
+        filter: function (coords) {
+          return L.latLng(coords[1], coords[0]); // 👈 МЕНЯЕМ МЕСТАМИ
+       },
+       filter: f => isRealParcel(f),
+       style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+       onEachFeature: (feature, layer) => {
           const p = feature.properties || {};
           const html = `
             <div class="popup-root">
@@ -227,21 +234,10 @@ function goToParcels(padding = [20, 20]) {
 
   console.log("➡️ goToParcels called", { padding });
 
-  // Сначала жёстко чиним размер
-  map.invalidateSize(true);
-
-  // Ждём кадр браузера и ТОЛЬКО ПОТОМ двигаем карту
-  requestAnimationFrame(() => {
-    map.fitBounds(parcelsBounds, {
-      padding: padding,
-      maxZoom: 18,
-      animate: false
-    });
-
-    // И ещё раз пинаем resize для надёжности
-    setTimeout(() => {
-      map.invalidateSize(true);
-    }, 50);
+  map.fitBounds(parcelsBounds, {
+    padding: padding,
+    maxZoom: 18,
+    animate: false
   });
 }
 
@@ -295,14 +291,13 @@ if (parcelsBounds && parcelsCenter) {
 
           bind(btnFocus, () => {
             console.log("Focus clicked");
-            goToParcels([20, 20], 18);
+            goToParcels([20, 20]);
           });
 
           bind(btnOverview, () => {
             console.log("Overview clicked");
-            goToParcels([100, 100], 16);
+            goToParcels([100, 100]);
           });
-
 
           return container;
         }
