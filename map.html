@@ -268,12 +268,12 @@ if (parcelsBounds && parcelsCenter) {
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
           bind(btnFocus, () => {
-            console.log("Focus clicked");
-            if (parcelsCenter) {
-              map.setView(parcelsCenter, 18);
-              map.invalidateSize();
-            }
+            console.log("Focus clicked - FORCED TEST");
+            // ЖЁСТКО летим в район твоих участков
+            map.setView([59.734, 30.845], 17);
+            map.invalidateSize();
           });
+
 
           bind(btnOverview, () => {
             console.log("Overview clicked");
