@@ -193,25 +193,33 @@ console.log("MAP SCRIPT LOADED");
         }
       }).addTo(map);
 
-      // 🔥 ЖЕЛЕЗОБЕТОННЫЙ ФОКУС НА УЧАСТКИ
-      const bounds = parcelsLayer.getBounds();
-      console.log("Parcels bounds:", bounds);
+      // 🔥 Фокус на участки (жёсткий и надёжный способ)
+const bounds = parcelsLayer.getBounds();
+console.log("Parcels bounds:", bounds);
 
-      if (bounds && bounds.isValid()) {
-  map.fitBounds(bounds, { padding: [20, 20] });
-} else {
-  parcelsLayer.eachLayer(l => {
-    if (l.getBounds && l.getBounds().isValid()) {
-      map.fitBounds(l.getBounds(), { padding: [20, 20] });
-      return false;
-    }
-  });
+// Сначала пробуем fitBounds
+if (bounds && bounds.isValid()) {
+  map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
 }
 
-// 🔧 ВАЖНО: заставляем Leaflet пересчитать размер контейнера
+// Если вдруг Leaflet всё равно остался на мире — летим к первой геометрии
+let forced = false;
+parcelsLayer.eachLayer(l => {
+  if (forced) return;
+  if (l.getBounds && l.getBounds().isValid()) {
+    const b = l.getBounds();
+    const center = b.getCenter();
+    console.log("Forcing center to:", center);
+    map.setView(center, 17);
+    forced = true;
+  }
+});
+
+// Перерисовываем карту после установки вида
 setTimeout(() => {
   map.invalidateSize();
 }, 100);
+
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
