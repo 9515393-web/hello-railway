@@ -149,9 +149,6 @@ console.log("MAP SCRIPT LOADED");
 
       // Кварталы
 L.geoJSON(data, {
-  coordsToLatLng: function (coords) {
-    return L.latLng(coords[0], coords[1]); // В файле [lat, lng]
-  },
   filter: f => {
     const cn = f?.properties?.cn;
     if (!cn) return false;
@@ -163,9 +160,6 @@ L.geoJSON(data, {
 
 // Участки
 const parcelsLayer = L.geoJSON(data, {
-  coordsToLatLng: function (coords) {
-    return L.latLng(coords[0], coords[1]); // В файле [lat, lng]
-  },
   filter: f => isRealParcel(f),
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
   onEachFeature: (feature, layer) => {
@@ -195,8 +189,7 @@ const parcelsLayer = L.geoJSON(data, {
     });
   }
 }).addTo(map);
-
-
+    
 
 // Границы участков
 const parcelsBounds = parcelsLayer.getBounds();
@@ -248,6 +241,7 @@ map.fitBounds(parcelsBounds, { padding: [20, 20] });
           bind(btnOverview, () => {
             map.fitBounds(parcelsBounds, { padding: [100, 100] });
           });
+
 
           return container;
         }
