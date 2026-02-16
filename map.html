@@ -126,17 +126,12 @@ console.log("MAP SCRIPT LOADED");
     throw new Error("No token");
   }
 
-  // Создаём карту БЕЗ центра — зададим после загрузки данных
-  const map = L.map("map", {
-    zoomControl: false
-  });
+  const map = L.map("map", { zoomControl: false });
 
-  // Тайлы
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  // Загружаем GeoJSON
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => {
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -154,104 +149,55 @@ console.log("MAP SCRIPT LOADED");
 
       // Кварталы
       L.geoJSON(data, {
-  filter: f => {
-    const cn = f?.properties?.cn;
-    if (!cn) return false;
-    return String(cn).split(":").length === 3;
-  },
-  style: { color: "#ff0000", weight: 2, fill: false }
-}).addTo(map);
-
+        filter: f => {
+          const cn = f?.properties?.cn;
+          if (!cn) return false;
+          return String(cn).split(":").length === 3;
+        },
+        style: { color: "#ff0000", weight: 2, fill: false }
+      }).addTo(map);
 
       // Участки
       const parcelsLayer = L.geoJSON(data, {
-  filter: f => isRealParcel(f),
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
-    const html = `
-      <div class="popup-root">
-        <div class="popup-title">Земельный участок</div>
-        <table style="width:100%; border-collapse:collapse;">
-          <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
-          <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
-          <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
-          <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
-          <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
-        </table>
-      </div>
-    `;
+        filter: f => isRealParcel(f),
+        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          const html = `
+            <div class="popup-root">
+              <div class="popup-title">Земельный участок</div>
+              <table style="width:100%; border-collapse:collapse;">
+                <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
+                <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
+                <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
+                <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
+                <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
+              </table>
+            </div>
+          `;
 
-    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-    layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+          layer.on("click", () => {
+            if (selected && selected !== layer) {
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selected = layer;
+            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+            layer.openPopup();
+          });
+        }
+      }).addTo(map);
+
+      const parcelsBounds = parcelsLayer.getBounds();
+
+      if (!parcelsBounds || !parcelsBounds.isValid()) {
+        alert("❌ Не удалось определить границы участков");
+        return;
       }
-      selected = layer;
-      layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-      layer.openPopup();
-    });
-  }
-}).addTo(map);
 
-
-      // ===============================
-// Вычисляем и сохраняем границы участков
-// ===============================
-let parcelsBounds = null;
-let parcelsCenter = null;
-
-// Пробуем взять общие bounds
-const b = parcelsLayer.getBounds();
-if (b && b.isValid()) {
-  parcelsBounds = b;
-  parcelsCenter = b.getCenter();
-} else {
-  // Запасной вариант — берём первый валидный участок
-  parcelsLayer.eachLayer(l => {
-    if (!parcelsBounds && l.getBounds && l.getBounds().isValid()) {
-      parcelsBounds = l.getBounds();
-      parcelsCenter = parcelsBounds.getCenter();
-    }
-  });
-}
-
-console.log("Saved parcelsBounds:", parcelsBounds);
-console.log("Saved parcelsCenter:", parcelsCenter);
-// ===============================
-// Универсальная функция перехода к участкам
-// ===============================
-function goToParcels(padding = [20, 20]) {
-  if (!parcelsBounds) {
-    console.log("❌ No parcelsBounds");
-    return;
-  }
-
-  console.log("➡️ goToParcels called", { padding });
-
-  map.fitBounds(parcelsBounds, {
-    padding: padding,
-    maxZoom: 18,
-    animate: false
-  });
-}
-
-
-if (parcelsCenter) {
-  console.log("Center lat:", parcelsCenter.lat, "lng:", parcelsCenter.lng);
-}
-
-
-      // 🔥 Фокус на участки (жёсткий и надёжный способ)
-// ===============================
-// Стартовый фокус на участки
-// ===============================
-if (parcelsBounds && parcelsCenter) {
-  goToParcels([20, 20], 17);
-} else {
-  console.log("❌ Не удалось определить границы участков");
-}
+      // Стартовый фокус
+      map.fitBounds(parcelsBounds, { padding: [20, 20] });
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
@@ -281,18 +227,15 @@ if (parcelsBounds && parcelsCenter) {
             });
           }
 
-
           bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
           bind(btnFocus, () => {
-            console.log("Focus clicked");
-            goToParcels([20, 20]);
+            map.fitBounds(parcelsBounds, { padding: [20, 20], maxZoom: 18 });
           });
 
           bind(btnOverview, () => {
-            console.log("Overview clicked");
-            goToParcels([100, 100]);
+            map.fitBounds(parcelsBounds, { padding: [100, 100] });
           });
 
           return container;
@@ -307,6 +250,7 @@ if (parcelsBounds && parcelsCenter) {
     });
 })();
 </script>
+
 
 </body>
 </html>
