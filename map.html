@@ -254,22 +254,29 @@ if (parcelsBounds && parcelsCenter) {
           L.DomEvent.disableScrollPropagation(container);
 
           function bind(btn, handler) {
-            L.DomEvent.on(btn, "click", L.DomEvent.stop)
-              .on(btn, "click", handler);
+            L.DomEvent.on(btn, "click", function (e) {
+              L.DomEvent.stop(e);
+              handler();
+            });
           }
+
 
           bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
           bind(btnFocus, () => {
+            console.log("Focus clicked");
             if (parcelsCenter) {
               map.setView(parcelsCenter, 18);
+              map.invalidateSize();
             }
           });
 
           bind(btnOverview, () => {
+            console.log("Overview clicked");
             if (parcelsBounds) {
               map.fitBounds(parcelsBounds, { padding: [100, 100] });
+              map.invalidateSize();
             }
           });
 
