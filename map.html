@@ -127,6 +127,9 @@ console.log("MAP SCRIPT LOADED");
   }
 
   const map = L.map("map", { zoomControl: false });
+  setTimeout(() => {
+    map.invalidateSize(true);
+  }, 0);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -200,7 +203,10 @@ if (!parcelsBounds || !parcelsBounds.isValid()) {
 }
 
 // Стартовый фокус
-map.fitBounds(parcelsBounds, { padding: [20, 20] });
+setTimeout(() => {
+  map.invalidateSize(true);
+  map.fitBounds(parcelsBounds, { padding: [20, 20] });
+}, 100);
 
 
       // Кнопки
@@ -234,14 +240,15 @@ map.fitBounds(parcelsBounds, { padding: [20, 20] });
           bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
-          bind(btnFocus, () => {
-            map.fitBounds(parcelsBounds, { padding: [20, 20], maxZoom: 18 });
-          });
+         bind(btnFocus, () => {
+           map.invalidateSize(true);
+           map.fitBounds(parcelsBounds, { padding: [20, 20], maxZoom: 18 });
+         });
 
-          bind(btnOverview, () => {
-            map.fitBounds(parcelsBounds, { padding: [100, 100] });
-          });
-
+         bind(btnOverview, () => {
+           map.invalidateSize(true);
+           map.fitBounds(parcelsBounds, { padding: [100, 100] });
+         });
 
           return container;
         }
