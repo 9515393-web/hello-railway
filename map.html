@@ -8,6 +8,26 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  .parcel-label{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #111 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+}
+
+.leaflet-control.custom-buttons{
+  background: rgba(255,255,255,0.9);
+  pointer-events: auto;
+  z-index: 1000;
+}
+.leaflet-control.custom-buttons button{
+  pointer-events: auto;
+  cursor: pointer;
+}
+
   <style>
 html, body, #map {
   height: 100%;
@@ -147,7 +167,7 @@ console.log("MAP SCRIPT LOADED");
 // ===== 1) Подложка: все границы (КПТ + участки без номера + прочее) =====
 const baseLayer = L.geoJSON(data, {
   interactive: false,
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0 }
+  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
 }).addTo(map);
 
 // ===== 2) Номерные участки (uch_num не пустой) =====
@@ -186,20 +206,6 @@ const parcelsLayer = L.geoJSON(data, {
   }
 }).addTo(map);
 
-// Стиль подписей номера
-const styleEl = document.createElement("style");
-styleEl.textContent = `
-  .parcel-label{
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    color: #111;
-    font-weight: 700;
-    font-size: 12px;
-    text-shadow: 0 0 2px #fff, 0 0 2px #fff;
-  }
-`;
-document.head.appendChild(styleEl);
 
 // ===== 3) Границы для фокуса/кнопок =====
 const parcelsBounds = parcelsLayer.getBounds();
@@ -223,16 +229,21 @@ map.fitBounds(focusBounds, { padding: [20, 20] });
           const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
 
           const btnZoomIn = L.DomUtil.create("button", "", container);
+          btnZoomIn.type = "button";
           btnZoomIn.innerText = "➕ Приблизить";
 
           const btnZoomOut = L.DomUtil.create("button", "", container);
+          btnZoomOut.type = "button";
           btnZoomOut.innerText = "➖ Отдалить";
 
           const btnFocus = L.DomUtil.create("button", "", container);
+          btnFocus.type = "button";
           btnFocus.innerText = "🔍 К участкам";
 
           const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.type = "button";
           btnOverview.innerText = "🌍 Обзор";
+
 
           L.DomEvent.disableClickPropagation(container);
           L.DomEvent.disableScrollPropagation(container);
