@@ -8,26 +8,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  .parcel-label{
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #111 !important;
-  font-weight: 700 !important;
-  font-size: 12px !important;
-  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
-}
-
-.leaflet-control.custom-buttons{
-  background: rgba(255,255,255,0.9);
-  pointer-events: auto;
-  z-index: 1000;
-}
-.leaflet-control.custom-buttons button{
-  pointer-events: auto;
-  cursor: pointer;
-}
-
   <style>
 html, body, #map {
   height: 100%;
@@ -76,6 +56,10 @@ html, body, #map {
   gap: 12px;
   padding: 12px;
   border-radius: 16px;
+
+  background: rgba(255,255,255,0.9);
+  pointer-events: auto;
+  z-index: 1000;
 }
 
 .leaflet-control.custom-buttons button {
@@ -83,12 +67,13 @@ html, body, #map {
   padding: 10px 14px;
   font-size: 16px;
   border-radius: 12px;
+
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /* =========================
    📱 ТЕЛЕФОН
-   Попап: уменьшаем ~в 0.5 раза
-   Кнопки: уменьшаем ~в 3 раза
 ========================= */
 @media (max-width: 768px) {
 
@@ -126,8 +111,18 @@ html, body, #map {
   }
 }
 
-/* если нужно для теста */
-
+/* =========================
+   ПОДПИСИ НОМЕРОВ УЧАСТКОВ
+========================= */
+.parcel-label{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #111 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+}
 </style>
 
 </head>
@@ -165,15 +160,45 @@ console.log("MAP SCRIPT LOADED");
 
 
 // ===== 1) Подложка: все границы (КПТ + участки без номера + прочее) =====
-const baseLayer = L.geoJSON(data, {
-  interactive: false,
-  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+const parcelsLayer = L.geoJSON(data, {
+  coordsToLatLng: function (coords) {
+    return L.latLng(coords[1], coords[0]);
+  },
+  filter: f => String(f?.properties?.uch_num || "").trim() !== "",
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
+    const uch = String(p.uch_num || "").trim();
+
+    const body = String(p.card_final || "").trim();
+    const html = `
+      <div class="popup-root">
+        <div class="popup-title">Участок № ${uch}</div>
+        <div>${body || ""}</div>
+      </div>
+    `;
+    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+
+    layer.bindTooltip(uch, {
+      permanent: true,
+      direction: "center",
+      className: "parcel-label"
+    });
+
+    layer.on("click", () => {
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
+      selected = layer;
+      layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+      layer.openPopup();
+    });
+  }
 }).addTo(map);
+
 
 // ===== 2) Номерные участки (uch_num не пустой) =====
 const parcelsLayer = L.geoJSON(data, {
   filter: f => String(f?.properties?.uch_num || "").trim() !== "",
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
     const uch = String(p.uch_num || "").trim();
