@@ -143,13 +143,6 @@ console.log("MAP SCRIPT LOADED");
     .then(data => {
       let selected = null;
 
-      function isRealParcel(feature) {
-        const cn = feature?.properties?.cn;
-        if (!cn) return false;
-        const parts = String(cn).split(":");
-        return parts.length === 4 && parts[3] && parts[3].length > 0;
-      }
-
       // Кварталы
 L.geoJSON(data, {
   filter: f => {
@@ -163,20 +156,23 @@ L.geoJSON(data, {
 
 // Участки
 const parcelsLayer = L.geoJSON(data, {
-  filter: f => isRealParcel(f),
+  filter: f => {
+    const uch = String(f?.properties?.uch_num || "").trim();
+    return uch !== ""; // участки = только там, где есть номер
+  },
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
+
+    const title = p.uch_num ? `Участок № ${p.uch_num}` : "Объект";
+    const body = (p.card_final || "").trim();
+
     const html = `
       <div class="popup-root">
-        <div class="popup-title">Земельный участок</div>
-        <table style="width:100%; border-collapse:collapse;">
-          <tr><td>Кадастровый №</td><td><b>${p.cn || "—"}</b></td></tr>
-          <tr><td>Адрес</td><td>${p.address || p.addr || p.location || "—"}</td></tr>
-          <tr><td>Площадь</td><td>${p.area || "—"} м²</td></tr>
-          <tr><td>Кадастровая стоимость</td><td><b>${p.cost || "—"}</b></td></tr>
-          <tr><td>Тип</td><td>${p.type || "—"}</td></tr>
-        </table>
+        <div class="popup-title">${title}</div>
+        <div>
+          ${body || "<i>Карточка пока не заполнена</i>"}
+        </div>
       </div>
     `;
 
@@ -192,6 +188,7 @@ const parcelsLayer = L.geoJSON(data, {
     });
   }
 }).addTo(map);
+
     
 
 // Границы участков
