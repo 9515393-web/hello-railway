@@ -216,6 +216,36 @@ if (b && b.isValid()) {
 
 console.log("Saved parcelsBounds:", parcelsBounds);
 console.log("Saved parcelsCenter:", parcelsCenter);
+// ===============================
+// Универсальная функция перехода к участкам
+// ===============================
+function goToParcels(padding = [20, 20]) {
+  if (!parcelsBounds) {
+    console.log("❌ No parcelsBounds");
+    return;
+  }
+
+  console.log("➡️ goToParcels called", { padding });
+
+  // Сначала жёстко чиним размер
+  map.invalidateSize(true);
+
+  // Ждём кадр браузера и ТОЛЬКО ПОТОМ двигаем карту
+  requestAnimationFrame(() => {
+    map.fitBounds(parcelsBounds, {
+      padding: padding,
+      maxZoom: 18,
+      animate: false
+    });
+
+    // И ещё раз пинаем resize для надёжности
+    setTimeout(() => {
+      map.invalidateSize(true);
+    }, 50);
+  });
+}
+
+
 if (parcelsCenter) {
   console.log("Center lat:", parcelsCenter.lat, "lng:", parcelsCenter.lng);
 }
@@ -226,11 +256,7 @@ if (parcelsCenter) {
 // Стартовый фокус на участки
 // ===============================
 if (parcelsBounds && parcelsCenter) {
-  map.setView(parcelsCenter, 17);
-  setTimeout(() => {
-    map.fitBounds(parcelsBounds, { padding: [20, 20], maxZoom: 18 });
-    map.invalidateSize();
-  }, 100);
+  goToParcels([20, 20], 17);
 } else {
   console.log("❌ Не удалось определить границы участков");
 }
@@ -268,20 +294,15 @@ if (parcelsBounds && parcelsCenter) {
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
 
           bind(btnFocus, () => {
-            console.log("Focus clicked - FORCED TEST");
-            // ЖЁСТКО летим в район твоих участков
-            map.setView([59.734, 30.845], 17);
-            map.invalidateSize();
+            console.log("Focus clicked");
+            goToParcels([20, 20], 18);
           });
-
 
           bind(btnOverview, () => {
             console.log("Overview clicked");
-            if (parcelsBounds) {
-              map.fitBounds(parcelsBounds, { padding: [100, 100] });
-              map.invalidateSize();
-            }
+            goToParcels([100, 100], 16);
           });
+
 
           return container;
         }
