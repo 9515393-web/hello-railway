@@ -202,11 +202,8 @@ if (!parcelsBounds || !parcelsBounds.isValid()) {
   return;
 }
 
-// Стартовый фокус
-setTimeout(() => {
-  map.invalidateSize(true);
-  map.fitBounds(parcelsBounds, { padding: [20, 20] });
-}, 100);
+// Стартовый фокус на участки
+map.fitBounds(parcelsBounds, { padding: [20, 20] });
 
 
       // Кнопки
