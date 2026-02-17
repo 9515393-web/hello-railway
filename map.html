@@ -14,70 +14,46 @@ html, body, #map {
   margin: 0;
 }
 
-/* =========================
-   POPUP — БАЗОВЫЙ (ПК)
-========================= */
+/* POPUP */
 .leaflet-popup-content-wrapper {
   border-radius: 14px;
 }
-
 .leaflet-popup-content {
   width: 420px !important;
   max-width: 420px !important;
   max-height: 60vh;
   overflow-y: auto;
-
   font-size: 16px;
   line-height: 1.4;
-
   white-space: normal !important;
   word-break: normal;
   overflow-wrap: break-word;
 }
+.popup-root { font-size: 16px; line-height: 1.4; }
+.popup-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 
-/* Контент попапа */
-.popup-root {
-  font-size: 16px;
-  line-height: 1.4;
-}
-
-.popup-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-/* =========================
-   КНОПКИ — БАЗОВЫЕ (ПК)
-========================= */
+/* BUTTONS */
 .leaflet-control.custom-buttons {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px;
   border-radius: 16px;
-
   background: rgba(255,255,255,0.9);
   pointer-events: auto;
   z-index: 1000;
 }
-
 .leaflet-control.custom-buttons button {
   min-height: 48px;
   padding: 10px 14px;
   font-size: 16px;
   border-radius: 12px;
-
   pointer-events: auto;
   cursor: pointer;
 }
 
-/* =========================
-   📱 ТЕЛЕФОН
-========================= */
+/* MOBILE */
 @media (max-width: 768px) {
-
-  /* ===== POPUP ===== */
   .leaflet-popup-content {
     width: 90vw !important;
     max-width: 90vw !important;
@@ -86,24 +62,19 @@ html, body, #map {
     line-height: 1.3 !important;
     padding: 10px !important;
   }
-
   .popup-root { font-size: 12px !important; }
   .popup-title { font-size: 14px !important; }
   .leaflet-popup-close-button { font-size: 20px !important; }
 
-  /* ===== КНОПКИ ===== */
   .leaflet-bottom.leaflet-left .leaflet-control.custom-buttons {
     margin: 10px !important;
   }
-
   .leaflet-control.custom-buttons {
     gap: 6px !important;
     padding: 6px !important;
     border-radius: 10px !important;
   }
-
   .leaflet-control.custom-buttons button {
-    width: auto !important;
     min-height: 32px !important;
     padding: 6px 10px !important;
     font-size: 12px !important;
@@ -111,9 +82,7 @@ html, body, #map {
   }
 }
 
-/* =========================
-   ПОДПИСИ НОМЕРОВ УЧАСТКОВ
-========================= */
+/* LABELS */
 .parcel-label{
   background: transparent !important;
   border: none !important;
@@ -124,14 +93,13 @@ html, body, #map {
   text-shadow: 0 0 2px #fff, 0 0 2px #fff;
 }
 </style>
-
 </head>
 <body>
 <div id="map"></div>
 
 <script>
 console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION 2026-02-16 20:55");
+console.log("SCRIPT VERSION 2026-02-17 FIXED");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -143,9 +111,7 @@ console.log("SCRIPT VERSION 2026-02-16 20:55");
   }
 
   const map = L.map("map", { zoomControl: false });
-  setTimeout(() => {
-    map.invalidateSize(true);
-  }, 0);
+  setTimeout(() => map.invalidateSize(true), 0);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -159,86 +125,79 @@ console.log("SCRIPT VERSION 2026-02-16 20:55");
     .then(data => {
       let selected = null;
 
+      // Подложка: все границы
+      const baseLayer = L.geoJSON(data, {
+        interactive: false,
+        style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+      }).addTo(map);
 
-// ===== 1) Подложка: все границы (КПТ + участки без номера + прочее) =====
-const baseLayer = L.geoJSON(data, {
-  coordsToLatLng: function (coords) {
-    return L.latLng(coords[1], coords[0]);
-  },
-  interactive: false,
-  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
-}).addTo(map);
-
-// ===== 2) Номерные участки (uch_num не пустой) =====
-function hasValidGeometry(feature) {
-  if (!feature || !feature.geometry) return false;
-  const g = feature.geometry;
-  if (!g.coordinates) return false;
-  return JSON.stringify(g.coordinates).length > 10;
-}
-
-const parcelsLayer = L.geoJSON(data, {
-  filter: f => {
-    const hasNum = String(f?.properties?.uch_num || "").trim() !== "";
-    return hasNum && hasValidGeometry(f);
-  },
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
-    const uch = String(p.uch_num || "").trim();
-    const body = String(p.card_final || "").trim();
-
-    const html = `
-      <div class="popup-root">
-        <div class="popup-title">Участок № ${uch}</div>
-        <div>${body || ""}</div>
-      </div>
-    `;
-    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
-
-    // ✅ ВАЖНО: подписываем ТОЛЬКО если геометрия реально валидна
-    try {
-      if (
-        body &&
-        layer.getBounds &&
-        layer.getBounds().isValid()
-      ) {
-        layer.bindTooltip(uch, {
-          permanent: true,
-          direction: "center",
-          className: "parcel-label"
-        });
+      function hasValidGeometry(feature) {
+        if (!feature || !feature.geometry || !feature.geometry.coordinates) return false;
+        try {
+          return JSON.stringify(feature.geometry.coordinates).length > 10;
+        } catch (e) {
+          return false;
+        }
       }
-    } catch (e) {
-      // молча пропускаем битые объекты
-      console.warn("Пропущен битый участок:", uch);
-    }
 
-    layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      // Участки с номерами
+      const parcelsLayer = L.geoJSON(data, {
+        filter: f => {
+          const hasNum = String(f?.properties?.uch_num || "").trim() !== "";
+          return hasNum && hasValidGeometry(f);
+        },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          const uch = String(p.uch_num || "").trim();
+
+          const body = String(p.card_final || "")
+            .trim()
+            .replace(/\n/g, "<br>");
+
+          const html = `
+            <div class="popup-root">
+              <div class="popup-title">Участок № ${uch}</div>
+              <div>${body || "Нет данных"}</div>
+            </div>
+          `;
+
+          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+
+          // Подпись только если есть данные и валидная геометрия
+          try {
+            if (body && layer.getBounds && layer.getBounds().isValid()) {
+              layer.bindTooltip(uch, {
+                permanent: true,
+                direction: "center",
+                className: "parcel-label"
+              });
+            }
+          } catch (e) {
+            console.warn("Пропущен битый участок:", uch);
+          }
+
+          layer.on("click", () => {
+            if (selected && selected !== layer) {
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selected = layer;
+            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+            layer.openPopup();
+          });
+        }
+      }).addTo(map);
+
+      // Фокус
+      const parcelsBounds = parcelsLayer.getBounds();
+      const baseBounds = baseLayer.getBounds();
+      const focusBounds = (parcelsBounds && parcelsBounds.isValid()) ? parcelsBounds : baseBounds;
+
+      if (!focusBounds || !focusBounds.isValid()) {
+        alert("❌ Не удалось определить границы");
+        return;
       }
-      selected = layer;
-      layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-      layer.openPopup();
-    });
-  }
-}).addTo(map);
 
-
-// ===== 3) Границы для фокуса/кнопок =====
-const parcelsBounds = parcelsLayer.getBounds();
-const baseBounds = baseLayer.getBounds();
-const focusBounds = (parcelsBounds && parcelsBounds.isValid()) ? parcelsBounds : baseBounds;
-
-if (!focusBounds || !focusBounds.isValid()) {
-  alert("❌ Не удалось определить границы");
-  return;
-}
-
-// Стартовый фокус
-map.fitBounds(focusBounds, { padding: [20, 20] });
-
-
+      map.fitBounds(focusBounds, { padding: [20, 20] });
 
       // Кнопки
       const ButtonsControl = L.Control.extend({
@@ -262,7 +221,6 @@ map.fitBounds(focusBounds, { padding: [20, 20] });
           btnOverview.type = "button";
           btnOverview.innerText = "🌍 Обзор";
 
-
           L.DomEvent.disableClickPropagation(container);
           L.DomEvent.disableScrollPropagation(container);
 
@@ -275,17 +233,14 @@ map.fitBounds(focusBounds, { padding: [20, 20] });
 
           bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
           bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
-
-         bind(btnFocus, () => {
-           map.invalidateSize(true);
-           map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 });
-         });
-
-         bind(btnOverview, () => {
-           map.invalidateSize(true);
-           map.fitBounds(focusBounds, { padding: [100, 100] });
-         });
-
+          bind(btnFocus, () => {
+            map.invalidateSize(true);
+            map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 });
+          });
+          bind(btnOverview, () => {
+            map.invalidateSize(true);
+            map.fitBounds(focusBounds, { padding: [100, 100] });
+          });
 
           return container;
         }
@@ -299,7 +254,5 @@ map.fitBounds(focusBounds, { padding: [20, 20] });
     });
 })();
 </script>
-
-
 </body>
 </html>
