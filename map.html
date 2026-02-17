@@ -160,6 +160,15 @@ console.log("MAP SCRIPT LOADED");
 
 
 // ===== 1) Подложка: все границы (КПТ + участки без номера + прочее) =====
+const baseLayer = L.geoJSON(data, {
+  coordsToLatLng: function (coords) {
+    return L.latLng(coords[1], coords[0]);
+  },
+  interactive: false,
+  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+}).addTo(map);
+
+// ===== 2) Номерные участки (uch_num не пустой) =====
 const parcelsLayer = L.geoJSON(data, {
   coordsToLatLng: function (coords) {
     return L.latLng(coords[1], coords[0]);
