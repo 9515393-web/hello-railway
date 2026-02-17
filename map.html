@@ -172,4 +172,44 @@ console.log("SCRIPT VERSION CLEAN CARD_FINAL ONLY");
 
           const btnFocus = L.DomUtil.create("button", "", container);
           btnFocus.type = "button";
-          btn
+          btnFocus.innerText = "🔍 К участкам";
+
+          const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.type = "button";
+          btnOverview.innerText = "🌍 Обзор";
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+
+          function bind(btn, handler) {
+            L.DomEvent.on(btn, "click", function (e) {
+              L.DomEvent.stop(e);
+              handler();
+            });
+          }
+
+          bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
+          bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
+          bind(btnFocus, () => {
+            map.invalidateSize(true);
+            map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 });
+          });
+          bind(btnOverview, () => {
+            map.invalidateSize(true);
+            map.fitBounds(focusBounds, { padding: [100, 100] });
+          });
+
+          return container;
+        }
+      });
+
+      map.addControl(new ButtonsControl());
+    })
+    .catch(err => {
+      console.error("Ошибка загрузки карты:", err);
+      alert("Ошибка загрузки карты. Проверь соединение или токен.");
+    });
+})();
+</script>
+</body>
+</html>
