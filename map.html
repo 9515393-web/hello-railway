@@ -166,11 +166,14 @@ console.log("SCRIPT VERSION 2026-02-17 FIXED");
           // Подпись только если есть данные и валидная геометрия
           try {
             if (body && layer.getBounds && layer.getBounds().isValid()) {
-              layer.bindTooltip(uch, {
-                permanent: true,
-                direction: "center",
-                className: "parcel-label"
-              });
+              /*
+layer.bindTooltip(uch, {
+  permanent: true,
+  direction: "center",
+  className: "parcel-label"
+});
+*/
+
             }
           } catch (e) {
             console.warn("Пропущен битый участок:", uch);
