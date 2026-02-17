@@ -88,7 +88,7 @@
 
 <script>
 console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY STRICT");
+console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -129,10 +129,7 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY STRICT");
       // 2) Участки: попапы ТОЛЬКО из card_final, подписи ТОЛЬКО из card_final
       const parcelsLayer = L.geoJSON(data, {
         filter: (feature) => {
-          // чтобы не трогать линии/точки и не ловить ошибки по latlngs
           if (!isPolygonLikeGeometry(feature)) return false;
-          // card_final может быть пустым — тогда попап будет пустой, но это ок;
-          // подписи всё равно НЕ будет (num не найдётся).
           return true;
         },
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
@@ -140,29 +137,31 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY STRICT");
           const p = feature.properties || {};
           const rawCard = String(p.card_final || "").trim();
 
-// строго показываем card_final
-const bodyHtml = rawCard.replace(/\n/g, "<br>");
+          // строго показываем card_final
+          const bodyHtml = rawCard.replace(/\n/g, "<br>");
 
-// проверка: есть ли ПОЛНЫЙ кадастровый номер вида 47:26:0413001:137
-const hasFullCad = /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(rawCard);
+          // проверка: есть ли ПОЛНЫЙ кадастровый номер вида 47:26:0413001:137
+          const hasFullCad = /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(rawCard);
 
-// если нет полного кадастра — показываем предупреждение
-const warningHtml = !hasFullCad
-  ? `<div style="margin-bottom:8px; padding:8px 10px; border-radius:8px; background:#fff3cd; color:#664d03; font-weight:700;">
-       ⚠️ Данные требуют проверки
-     </div>`
-  : "";
+          // если нет полного кадастра — показываем предупреждение (данные не меняем)
+          const warningHtml = !hasFullCad
+            ? `<div style="margin-bottom:8px; padding:8px 10px; border-radius:8px; background:#fff3cd; color:#664d03; font-weight:700;">
+                 ⚠️ Данные требуют проверки
+               </div>`
+            : "";
 
-const html = `
-  <div
-
+          const html = `
+            <div class="popup-root">
+              ${warningHtml}
+              <div>${bodyHtml}</div>
+            </div>
+          `;
+          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
           // Подпись — строго из card_final (уч. 278 / участок 278)
           const num = extractPlotNumberFromCard(rawCard);
 
-          // Если номера нет — ничего не пишем (47 тоже не появится)
           if (num) {
-            // защита от битой геометрии (latlngs not passed)
             try {
               if (layer.getBounds && layer.getBounds().isValid()) {
                 layer.bindTooltip(num, {
@@ -171,9 +170,7 @@ const html = `
                   className: "parcel-label"
                 });
               }
-            } catch (e) {
-              // молча не подписываем
-            }
+            } catch (e) {}
           }
 
           // Клик: выделение — ТОЛЬКО красный (просто толще), без смены цвета
