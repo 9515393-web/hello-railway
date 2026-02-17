@@ -141,32 +141,52 @@ console.log("SCRIPT VERSION 2026-02-17 FIXED");
       }
 
       // Участки с номерами
-      const parcelsLayer = L.geoJSON(data, {
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
+     onEachFeature: (feature, layer) => {
+  const p = feature.properties || {};
 
-    // Берём ТОЛЬКО card_final
-    const body = String(p.card_final || "")
-      .trim()
-      .replace(/\n/g, "<br>");
+  // 1) Номер на плане — ТОЛЬКО из uch_num
+  const uch = String(p.uch_num || "").trim();
 
-    // Если card_final пустой — вообще ничего не показываем
-    if (!body) return;
+  // 2) Карточка — ТОЛЬКО из card_final
+  const body = String(p.card_final || "")
+    .trim()
+    .replace(/\n/g, "<br>");
 
-    const html = `
-      <div class="popup-root">
-        <div class="popup-title">Земельный участок</div>
-        <div>${body}</div>
-      </div>
-    `;
+  // 3) POPUP: показываем только card_final
+  const html = `
+    <div class="popup-root">
+      <div class="popup-title">Участок № ${uch}</div>
+      <div>${body}</div>
+    </div>
+  `;
+  layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
-
-    layer.on("click", () => {
-      layer.openPopup();
-    });
+  // 4) Подпись номера на плане — ТОЛЬКО uch_num
+  // (ничего больше)
+  try {
+    if (layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(uch, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
+  } catch (e) {
+    // если геометрия битая — просто не подписываем, но данные не трогаем
+    console.warn("Битая геометрия, подпись не поставлена для участка:", uch);
   }
-}).addTo(map);
+
+  // 5) Подсветка + открытие попапа
+  layer.on("click", () => {
+    if (selected && selected !== layer) {
+      selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+    }
+    selected = layer;
+    layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+    layer.openPopup();
+  });
+}
+
 
       // Фокус
       const parcelsBounds = parcelsLayer.getBounds();
