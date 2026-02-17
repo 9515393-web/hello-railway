@@ -137,26 +137,16 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
           const p = feature.properties || {};
           const rawCard = String(p.card_final || "").trim();
 
-          // строго показываем card_final
-          const bodyHtml = rawCard.replace(/\n/g, "<br>");
+         // строго показываем card_final
+const bodyHtml = rawCard.replace(/\n/g, "<br>");
 
-          // проверка: есть ли ПОЛНЫЙ кадастровый номер вида 47:26:0413001:137
-          const hasFullCad = /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(rawCard);
+const html = `
+  <div class="popup-root">
+    <div>${bodyHtml}</div>
+  </div>
+`;
+layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-          // если нет полного кадастра — показываем предупреждение (данные не меняем)
-          const warningHtml = !hasFullCad
-            ? `<div style="margin-bottom:8px; padding:8px 10px; border-radius:8px; background:#fff3cd; color:#664d03; font-weight:700;">
-                 ⚠️ Данные требуют проверки
-               </div>`
-            : "";
-
-          const html = `
-            <div class="popup-root">
-              ${warningHtml}
-              <div>${bodyHtml}</div>
-            </div>
-          `;
-          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
           // Подпись — строго из card_final (уч. 278 / участок 278)
           const num = extractPlotNumberFromCard(rawCard);
