@@ -9,207 +9,202 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-html, body, #map { height: 100%; margin: 0; }
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100vh; width: 100vw; }
 
-/* POPUP */
-.leaflet-popup-content-wrapper { border-radius: 14px; }
-.leaflet-popup-content {
-  width: 420px !important;
-  max-width: 420px !important;
-  max-height: 60vh;
-  overflow-y: auto;
-  font-size: 16px;
-  line-height: 1.4;
-  white-space: normal !important;
-  word-break: normal;
-  overflow-wrap: break-word;
-}
-.popup-root { font-size: 16px; line-height: 1.4; }
-.popup-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    /* POPUP */
+    .leaflet-popup-content-wrapper { border-radius: 14px; }
+    .leaflet-popup-content {
+      width: 420px !important;
+      max-width: 420px !important;
+      max-height: 60vh;
+      overflow-y: auto;
+      font-size: 16px;
+      line-height: 1.4;
+      white-space: normal !important;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+    .popup-root { font-size: 16px; line-height: 1.4; }
 
-/* BUTTONS */
-.leaflet-control.custom-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.9);
-  pointer-events: auto;
-  z-index: 1000;
-}
-.leaflet-control.custom-buttons button {
-  min-height: 48px;
-  padding: 10px 14px;
-  font-size: 16px;
-  border-radius: 12px;
-  pointer-events: auto;
-  cursor: pointer;
-}
+    /* BUTTONS */
+    .leaflet-control.custom-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.9);
+      pointer-events: auto;
+      z-index: 1000;
+    }
+    .leaflet-control.custom-buttons button {
+      min-height: 48px;
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 12px;
+      pointer-events: auto;
+      cursor: pointer;
+    }
 
-/* LABELS */
-.parcel-label{
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #111 !important;
-  font-weight: 700 !important;
-  font-size: 12px !important;
-  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
-}
-</style>
+    /* LABELS */
+    .parcel-label{
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #111 !important;
+      font-weight: 700 !important;
+      font-size: 12px !important;
+      text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+    }
+  </style>
 </head>
+
 <body>
-<div id="map"></div>
+  <div id="map"></div>
 
-<script>
-console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION CLEAN CARD_FINAL ONLY");
+  <script>
+    console.log("MAP SCRIPT LOADED");
+    console.log("SCRIPT VERSION CLEAN CARD_FINAL ONLY v2026-02-17");
 
-(function () {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+      if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
 
-  const map = L.map("map", { zoomControl: false });
-  setTimeout(() => map.invalidateSize(true), 0);
+      const map = L.map("map", { zoomControl: false });
+      setTimeout(() => map.invalidateSize(true), 0);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap"
-  }).addTo(map);
-
-  fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(data => {
-      let selected = null;
-
-      // 1) Подложка: все границы — КРАСНЫЕ
-      const baseLayer = L.geoJSON(data, {
-        interactive: false,
-        style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap"
       }).addTo(map);
 
-      // Функция: вытаскиваем номер ТОЛЬКО из card_final
-      function extractNumberFromCard(card) {
-        if (!card) return "";
-        const raw = String(card);
-        const m = raw.match(/(?:уч\.?|участок|№)\s*№?\s*(\d+)/i);
-        return m && m[1] ? m[1] : "";
-      }
+      fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
+        .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(data => {
+          let selected = null;
 
-      // 2) Слой участков (карточка ТОЛЬКО из card_final)
-      const parcelsLayer = L.geoJSON(data, {
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
+          // 1) Подложка: все границы (КПТ + всё остальное) — КРАСНЫЕ
+          const baseLayer = L.geoJSON(data, {
+            interactive: false,
+            style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+          }).addTo(map);
 
-          // Карточка — ТОЛЬКО card_final
-          const rawBody = String(p.card_final || "").trim();
-          const bodyHtml = rawBody.replace(/\n/g, "<br>");
+          // Номер на плане берём ТОЛЬКО из card_final:
+          // - ищем "уч. 278" / "уч 278" / "участок 278" / "участок № 278" / "№ 278"
+          function extractNumberFromCard(card) {
+            const raw = String(card || "");
+            const m = raw.match(/(?:уч\.?|участок|№)\s*№?\s*(\d+)/i);
+            return (m && m[1]) ? m[1] : "";
+          }
 
-          const html = `
-            <div class="popup-root">
-              <div>${bodyHtml}</div>
-            </div>
-          `;
-          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+          // 2) Участки: карточка ТОЛЬКО card_final, подпись ТОЛЬКО из card_final
+          const parcelsLayer = L.geoJSON(data, {
+            style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-          // Номер на плане — ИЩЕМ ТОЛЬКО В card_final
-          const num = extractNumberFromCard(rawBody);
+            onEachFeature: (feature, layer) => {
+              const p = feature.properties || {};
 
-          // Подписываем ТОЛЬКО если номер реально найден в card_final
-          if (num) {
-            try {
-              if (layer.getBounds && layer.getBounds().isValid()) {
-                layer.bindTooltip(num, {
-                  permanent: true,
-                  direction: "center",
-                  className: "parcel-label"
+              // Карточка — ТОЛЬКО card_final
+              const rawBody = String(p.card_final || "").trim();
+              const bodyHtml = rawBody.replace(/\n/g, "<br>");
+
+              const html = `
+                <div class="popup-root">
+                  <div>${bodyHtml}</div>
+                </div>
+              `;
+              layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+
+              // Подпись номера на плане — ТОЛЬКО из card_final
+              const num = extractNumberFromCard(rawBody);
+
+              // Запрет: если номер не найден — НЕ подписываем (в т.ч. не появится "47" из uch_num/кадастра)
+              // Исключение "47": будет подписан ТОЛЬКО если "47" реально есть в card_final (тогда extractNumberFromCard вернёт 47)
+              if (num) {
+                try {
+                  if (layer.getBounds && layer.getBounds().isValid()) {
+                    layer.bindTooltip(num, {
+                      permanent: true,
+                      direction: "center",
+                      className: "parcel-label"
+                    });
+                  }
+                } catch (e) {
+                  // молча пропускаем реально битые геометрии
+                }
+              }
+
+              layer.on("click", () => {
+                if (selected && selected !== layer) {
+                  selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+                }
+                selected = layer;
+                layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
+                layer.openPopup();
+              });
+            }
+          }).addTo(map);
+
+          // 3) Фокус
+          const parcelsBounds = parcelsLayer.getBounds();
+          const baseBounds = baseLayer.getBounds();
+          const focusBounds = (parcelsBounds && parcelsBounds.isValid()) ? parcelsBounds : baseBounds;
+
+          if (!focusBounds || !focusBounds.isValid()) {
+            alert("❌ Не удалось определить границы");
+            return;
+          }
+          map.fitBounds(focusBounds, { padding: [20, 20] });
+
+          // 4) Кнопки
+          const ButtonsControl = L.Control.extend({
+            options: { position: "bottomleft" },
+            onAdd: function () {
+              const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
+
+              const btnZoomIn = L.DomUtil.create("button", "", container);
+              btnZoomIn.type = "button";
+              btnZoomIn.innerText = "➕ Приблизить";
+
+              const btnZoomOut = L.DomUtil.create("button", "", container);
+              btnZoomOut.type = "button";
+              btnZoomOut.innerText = "➖ Отдалить";
+
+              const btnFocus = L.DomUtil.create("button", "", container);
+              btnFocus.type = "button";
+              btnFocus.innerText = "🔍 К участкам";
+
+              const btnOverview = L.DomUtil.create("button", "", container);
+              btnOverview.type = "button";
+              btnOverview.innerText = "🌍 Обзор";
+
+              L.DomEvent.disableClickPropagation(container);
+              L.DomEvent.disableScrollPropagation(container);
+
+              function bind(btn, handler) {
+                L.DomEvent.on(btn, "click", function (e) {
+                  L.DomEvent.stop(e);
+                  handler();
                 });
               }
-            } catch (e) {
-              console.warn("Не удалось поставить подпись для участка:", num);
+
+              bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
+              bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
+              bind(btnFocus, () => map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 }));
+              bind(btnOverview, () => map.fitBounds(focusBounds, { padding: [100, 100] }));
+
+              return container;
             }
-          }
-
-          // Подсветка при клике
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
-
-      // Фокус
-      const parcelsBounds = parcelsLayer.getBounds();
-      const baseBounds = baseLayer.getBounds();
-      const focusBounds = (parcelsBounds && parcelsBounds.isValid()) ? parcelsBounds : baseBounds;
-
-      if (!focusBounds || !focusBounds.isValid()) {
-        alert("❌ Не удалось определить границы");
-        return;
-      }
-
-      map.fitBounds(focusBounds, { padding: [20, 20] });
-
-      // Кнопки
-      const ButtonsControl = L.Control.extend({
-        options: { position: "bottomleft" },
-        onAdd: function () {
-          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
-
-          const btnZoomIn = L.DomUtil.create("button", "", container);
-          btnZoomIn.type = "button";
-          btnZoomIn.innerText = "➕ Приблизить";
-
-          const btnZoomOut = L.DomUtil.create("button", "", container);
-          btnZoomOut.type = "button";
-          btnZoomOut.innerText = "➖ Отдалить";
-
-          const btnFocus = L.DomUtil.create("button", "", container);
-          btnFocus.type = "button";
-          btnFocus.innerText = "🔍 К участкам";
-
-          const btnOverview = L.DomUtil.create("button", "", container);
-          btnOverview.type = "button";
-          btnOverview.innerText = "🌍 Обзор";
-
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.disableScrollPropagation(container);
-
-          function bind(btn, handler) {
-            L.DomEvent.on(btn, "click", function (e) {
-              L.DomEvent.stop(e);
-              handler();
-            });
-          }
-
-          bind(btnZoomIn, () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
-          bind(btnZoomOut, () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
-          bind(btnFocus, () => {
-            map.invalidateSize(true);
-            map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 });
-          });
-          bind(btnOverview, () => {
-            map.invalidateSize(true);
-            map.fitBounds(focusBounds, { padding: [100, 100] });
           });
 
-          return container;
-        }
-      });
-
-      map.addControl(new ButtonsControl());
-    })
-    .catch(err => {
-      console.error("Ошибка загрузки карты:", err);
-      alert("Ошибка загрузки карты. Проверь соединение или токен.");
-    });
-})();
-</script>
+          map.addControl(new ButtonsControl());
+        })
+        .catch(err => {
+          console.error("Ошибка загрузки карты:", err);
+          alert("Ошибка загрузки карты. Проверь соединение или токен.");
+        });
+    })();
+  </script>
 </body>
 </html>
