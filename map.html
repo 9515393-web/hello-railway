@@ -204,43 +204,6 @@ const parcelsLayer = L.geoJSON(data, {
   }
 }).addTo(map);
 
-
-// ===== 2) Номерные участки (uch_num не пустой) =====
-const parcelsLayer = L.geoJSON(data, {
-  filter: f => String(f?.properties?.uch_num || "").trim() !== "",
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
-    const uch = String(p.uch_num || "").trim();
-
-    // POPUP: только из card_final (может быть пустым)
-    const body = String(p.card_final || "").trim();
-    const html = `
-      <div class="popup-root">
-        <div class="popup-title">Участок № ${uch}</div>
-        <div>${body || ""}</div>
-      </div>
-    `;
-    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
-
-    // Номер на карте
-    layer.bindTooltip(uch, {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
-
-    layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-      }
-      selected = layer;
-      layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-      layer.openPopup();
-    });
-  }
-}).addTo(map);
-
-
 // ===== 3) Границы для фокуса/кнопок =====
 const parcelsBounds = parcelsLayer.getBounds();
 const baseBounds = baseLayer.getBounds();
