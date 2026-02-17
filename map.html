@@ -142,53 +142,31 @@ console.log("SCRIPT VERSION 2026-02-17 FIXED");
 
       // Участки с номерами
       const parcelsLayer = L.geoJSON(data, {
-        filter: f => {
-          const hasNum = String(f?.properties?.uch_num || "").trim() !== "";
-          return hasNum && hasValidGeometry(f);
-        },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
-          const uch = String(p.uch_num || "").trim();
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
 
-          const body = String(p.card_final || "")
-            .trim()
-            .replace(/\n/g, "<br>");
+    // Берём ТОЛЬКО card_final
+    const body = String(p.card_final || "")
+      .trim()
+      .replace(/\n/g, "<br>");
 
-          const html = `
-            <div class="popup-root">
-              <div class="popup-title">Участок № ${uch}</div>
-              <div>${body || "Нет данных"}</div>
-            </div>
-          `;
+    // Если card_final пустой — вообще ничего не показываем
+    if (!body) return;
 
-          layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+    const html = `
+      <div class="popup-root">
+        <div class="popup-title">Земельный участок</div>
+        <div>${body}</div>
+      </div>
+    `;
 
-          // Подпись только если есть данные и валидная геометрия
-          try {
-            if (body && layer.getBounds && layer.getBounds().isValid()) {
-              /*
-layer.bindTooltip(uch, {
-  permanent: true,
-  direction: "center",
-  className: "parcel-label"
-});
-*/
+    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-            }
-          } catch (e) {
-            console.warn("Пропущен битый участок:", uch);
-          }
-
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ffff00", weight: 5, fillOpacity: 0.45 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
+    layer.on("click", () => {
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
 
       // Фокус
       const parcelsBounds = parcelsLayer.getBounds();
