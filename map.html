@@ -170,16 +170,23 @@ const baseLayer = L.geoJSON(data, {
 }).addTo(map);
 
 // ===== 2) Номерные участки (uch_num не пустой) =====
+function hasValidGeometry(feature) {
+  if (!feature || !feature.geometry) return false;
+  const g = feature.geometry;
+  if (!g.coordinates) return false;
+  return JSON.stringify(g.coordinates).length > 10;
+}
+
 const parcelsLayer = L.geoJSON(data, {
-  coordsToLatLng: function (coords) {
-    return L.latLng(coords[1], coords[0]);
+  filter: f => {
+    const hasNum = String(f?.properties?.uch_num || "").trim() !== "";
+    return hasNum && hasValidGeometry(f);
   },
-  filter: f => String(f?.properties?.uch_num || "").trim() !== "",
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
     const uch = String(p.uch_num || "").trim();
-
     const body = String(p.card_final || "").trim();
+
     const html = `
       <div class="popup-root">
         <div class="popup-title">Участок № ${uch}</div>
@@ -188,11 +195,16 @@ const parcelsLayer = L.geoJSON(data, {
     `;
     layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-    layer.bindTooltip(uch, {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
+    // ✅ Подписываем ТОЛЬКО если:
+    // 1) есть card_final
+    // 2) есть валидная геометрия
+    if (body && layer.getLatLngs && layer.getLatLngs().length) {
+      layer.bindTooltip(uch, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
 
     layer.on("click", () => {
       if (selected && selected !== layer) {
@@ -204,6 +216,7 @@ const parcelsLayer = L.geoJSON(data, {
     });
   }
 }).addTo(map);
+
 
 // ===== 3) Границы для фокуса/кнопок =====
 const parcelsBounds = parcelsLayer.getBounds();
