@@ -195,15 +195,22 @@ const parcelsLayer = L.geoJSON(data, {
     `;
     layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-    // ✅ Подписываем ТОЛЬКО если:
-    // 1) есть card_final
-    // 2) есть валидная геометрия
-    if (body && layer.getLatLngs && layer.getLatLngs().length) {
-      layer.bindTooltip(uch, {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
+    // ✅ ВАЖНО: подписываем ТОЛЬКО если геометрия реально валидна
+    try {
+      if (
+        body &&
+        layer.getBounds &&
+        layer.getBounds().isValid()
+      ) {
+        layer.bindTooltip(uch, {
+          permanent: true,
+          direction: "center",
+          className: "parcel-label"
+        });
+      }
+    } catch (e) {
+      // молча пропускаем битые объекты
+      console.warn("Пропущен битый участок:", uch);
     }
 
     layer.on("click", () => {
