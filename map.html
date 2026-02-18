@@ -140,7 +140,7 @@ const parcelsLayer = L.geoJSON(data, {
 
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    // ✅ интерактив ТОЛЬКО для "реальных" участков по ПОЛНОМУ кадастру в card_final
+    // интерактив ТОЛЬКО для участков с ПОЛНЫМ кадастром
     return isRealParcelByCard(rawCard);
   },
 
@@ -173,10 +173,7 @@ const parcelsLayer = L.geoJSON(data, {
       } catch (e) {}
     }
 
-    // Клик: выделение — ТОЛЬКО красный (просто толще), без смены цвета
     layer.on("click", () => {
-      console.log("CLICK:", feature.properties);
-
       if (selected && selected !== layer) {
         selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
       }
@@ -186,7 +183,6 @@ const parcelsLayer = L.geoJSON(data, {
     });
   }
 }).addTo(map);
-
 
       // 3) Фокус
       const parcelsBounds = parcelsLayer.getBounds();
