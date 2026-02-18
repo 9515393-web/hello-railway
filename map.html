@@ -125,19 +125,28 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
         const t = feature?.geometry?.type;
         return t === "Polygon" || t === "MultiPolygon";
       }
+      
+      function isRealParcelByCard(cardFinal) {
+        const raw = String(cardFinal || "");
+       // полный кадастр: 47:26:0413001:103
+       return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
+     }
+
 
       // 2) Участки: попапы ТОЛЬКО из card_final, подписи ТОЛЬКО из card_final
       const parcelsLayer = L.geoJSON(data, {
-        filter: (feature) => {
-  if (!isPolygonLikeGeometry(feature)) return false;
+  filter: (feature) => {
+    if (!isPolygonLikeGeometry(feature)) return false;
 
-  const p = feature.properties || {};
+    const p = feature.properties || {};
 
-  // ✅ кликаем ТОЛЬКО реальные участки с номером
-  if (!p.uch_num) return false;
+    // ✅ Кликабельны ТОЛЬКО реальные участки с номером
+    if (!p.uch_num) return false;
 
-  return true;
-},
+    return true;
+  },
+  ...
+});
 
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
         onEachFeature: (feature, layer) => {
