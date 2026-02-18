@@ -60,7 +60,7 @@
 
 <script>
 console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION 2026-02-18 HARD_FILTER_ONLY_VALID_PLOTS");
+console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -90,40 +90,31 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_FILTER_ONLY_VALID_PLOTS");
         return t === "Polygon" || t === "MultiPolygon";
       }
 
+      // ЖЁСТКО: номер ТОЛЬКО "участок 123" или "участок № 123"
       function extractPlotNumberFromCard(cardFinal) {
-  const raw = String(cardFinal || "");
+        const raw = String(cardFinal || "");
 
-  // Берём только строку "1. Адрес: ...;"
-  const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
-  const addr = (addrLineMatch ? addrLineMatch[1] : raw)
-    .replace(/\s+/g, " ")
-    .trim();
+        // Берём только строку "1. Адрес: ...;"
+        const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
+        const addr = (addrLineMatch ? addrLineMatch[1] : raw)
+          .replace(/\s+/g, " ")
+          .trim();
 
-  // 1) Самый приоритетный вариант: "участок № 179"
-  let m = addr.match(/\bучасток\s*№\s*([0-9]+[а-яa-z]?)/i);
-  if (m && m[1]) return m[1];
+        // Ищем ТОЛЬКО:
+        // "участок 123" или "участок № 123"
+        const m = addr.match(/\bучасток\s*№?\s*(\d+)\b/i);
+        if (!m || !m[1]) return "";
 
-  // 2) Второй вариант: "участок 179" / "земельный участок 179"
-  m = addr.match(/\b(?:земельный\s+)?участок\s+([0-9]+[а-яa-z]?)/i);
-  if (m && m[1]) return m[1];
+        const num = m[1];
 
-  // 3) Вариант "уч. N" — собираем ВСЕ
-  const all = [];
-  const re = /\bуч\.\s*№?\s*([0-9]+[а-яa-z]?)/ig;
-  let mm;
-  while ((mm = re.exec(addr)) !== null) {
-    all.push(mm[1]);
-  }
+        // Запрещаем всё кроме чистого числа
+        if (!/^\d+$/.test(num)) return "";
 
-  if (all.length === 0) return "";
+        // ЖЁСТКИЙ ЗАПРЕТ на "47" как служебный хвост
+        if (num === "47") return "";
 
-  // Если есть любой номер кроме 47 — берём его
-  const not47 = all.find(x => x !== "47");
-  if (not47) return not47;
-
-  // Если единственный — 47, считаем это ХВОСТ АДРЕСА → не номер участка
-  return "";
-}
+        return num;
+      }
 
       function extractAreaFromCard(cardFinal) {
         const raw = String(cardFinal || "");
@@ -138,57 +129,33 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_FILTER_ONLY_VALID_PLOTS");
         // полный кадастр: 47:26:0413001:137
         return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
       }
-     
-      function isValidLandPlotCardFinal(cardFinal) {
-        const raw = String(cardFinal || "").trim();
-        if (!raw) return false;
 
-        // Только "Земельный участок"
-        if (!/^Земельный участок\s*;/i.test(raw)) return false;
-
-        // Только полный кадастр
-        if (!hasFullCadastre(raw)) return false;
-
-        // Только площадь >= 300
-        const area = extractAreaFromCard(raw);
-        if (!isFinite(area) || area < 300) return false;
-
-        return true;
-      }
-
-      // ТОЛЬКО валидные участки
+      // ТОЛЬКО валидные земельные участки
       const parcelsLayer = L.geoJSON(data, {
         filter: (feature) => {
-  if (!isPolygonLikeGeometry(feature)) return false;
+          if (!isPolygonLikeGeometry(feature)) return false;
 
-  const rawCard = String(feature?.properties?.card_final || "").trim();
+          const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  // 1) card_final обязателен
-  if (!rawCard) return false;
+          // 1) card_final обязателен
+          if (!rawCard) return false;
 
-  // 2) Только "Земельный участок"
-  if (!/^Земельный участок\s*;/i.test(rawCard)) return false;
+          // 2) Только "Земельный участок"
+          if (!/^Земельный участок\s*;/i.test(rawCard)) return false;
 
-  // 3) Только с полным кадастром
-  if (!hasFullCadastre(rawCard)) return false;
+          // 3) Только с полным кадастром
+          if (!hasFullCadastre(rawCard)) return false;
 
-  // 4) Только если площадь >= 300
-  const area = extractAreaFromCard(rawCard);
-  if (!isFinite(area) || area < 300) return false;
+          // 4) Только если площадь >= 300
+          const area = extractAreaFromCard(rawCard);
+          if (!isFinite(area) || area < 300) return false;
 
-  // 5) ДОЛЖЕН быть валидный номер участка
-  const num = extractPlotNumberFromCard(rawCard);
+          // 5) ДОЛЖЕН быть валидный номер участка
+          const num = extractPlotNumberFromCard(rawCard);
+          if (!num) return false;
 
-// номер должен существовать
-if (!num) return false;
-
-// ЖЁСТКИЙ ЗАПРЕТ на "47"
-if (num === "47") return false;
-
-
-  return true;
-},
-
+          return true;
+        },
 
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
@@ -200,7 +167,7 @@ if (num === "47") return false;
           const html = `<div class="popup-root"><div>${bodyHtml}</div></div>`;
           layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-          // Подпись — только из card_final
+          // Подпись — только валидный номер
           const num = extractPlotNumberFromCard(rawCard);
           if (num) {
             try {
