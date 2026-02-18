@@ -129,9 +129,16 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
       // 2) Участки: попапы ТОЛЬКО из card_final, подписи ТОЛЬКО из card_final
       const parcelsLayer = L.geoJSON(data, {
         filter: (feature) => {
-          if (!isPolygonLikeGeometry(feature)) return false;
-          return true;
-        },
+  if (!isPolygonLikeGeometry(feature)) return false;
+
+  const p = feature.properties || {};
+
+  // ✅ кликаем ТОЛЬКО реальные участки с номером
+  if (!p.uch_num) return false;
+
+  return true;
+},
+
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
         onEachFeature: (feature, layer) => {
           const p = feature.properties || {};
