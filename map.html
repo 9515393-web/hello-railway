@@ -211,14 +211,23 @@ const parcelsLayer = L.geoJSON(data, {
     layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`, { maxWidth: 9999, autoPan: true });
 
     // Подпись — по твоей текущей логике
-    const num = extractPlotNumberFromCard(rawCard);
-    if (num) {
-      try {
-        if (layer.getBounds && layer.getBounds().isValid()) {
-          layer.bindTooltip(num, { permanent: true, direction: "center", className: "parcel-label" });
-        }
-      } catch (e) {}
-    }
+    // Подпись ТОЛЬКО для реальных участков с полным кадастром
+if (isRealParcelByCard(rawCard)) {
+  const num = extractPlotNumberFromCard(rawCard);
+
+  if (num) {
+    try {
+      if (layer.getBounds && layer.getBounds().isValid()) {
+        layer.bindTooltip(num, {
+          permanent: true,
+          direction: "center",
+          className: "parcel-label"
+        });
+      }
+    } catch (e) {}
+  }
+}
+
 
     layer.on("click", () => {
       if (selected && selected !== layer) {
