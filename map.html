@@ -60,7 +60,7 @@
 
 <script>
 console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
+console.log("SCRIPT VERSION 2026-02-18 HARD_VALID_PLOTS_ONLY");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -90,30 +90,9 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
         return t === "Polygon" || t === "MultiPolygon";
       }
 
-      // ЖЁСТКО: номер ТОЛЬКО "участок 123" или "участок № 123"
-      function extractPlotNumberFromCard(cardFinal) {
+      function hasFullCadastre(cardFinal) {
         const raw = String(cardFinal || "");
-
-        // Берём только строку "1. Адрес: ...;"
-        const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
-        const addr = (addrLineMatch ? addrLineMatch[1] : raw)
-          .replace(/\s+/g, " ")
-          .trim();
-
-        // Ищем ТОЛЬКО:
-        // "участок 123" или "участок № 123"
-        const m = addr.match(/\bучасток\s*№?\s*(\d+)\b/i);
-        if (!m || !m[1]) return "";
-
-        const num = m[1];
-
-        // Запрещаем всё кроме чистого числа
-        if (!/^\d+$/.test(num)) return "";
-
-        // ЖЁСТКИЙ ЗАПРЕТ на "47" как служебный хвост
-        if (num === "47") return "";
-
-        return num;
+        return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
       }
 
       function extractAreaFromCard(cardFinal) {
@@ -124,37 +103,45 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
         return isNaN(v) ? NaN : v;
       }
 
-      function hasFullCadastre(cardFinal) {
+      // ЖЁСТКОЕ извлечение номера участка
+      function extractPlotNumberFromCard(cardFinal) {
         const raw = String(cardFinal || "");
-        // полный кадастр: 47:26:0413001:137
-        return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
+
+        // Берём строку "1. Адрес: ...;"
+        const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
+        const addr = (addrLineMatch ? addrLineMatch[1] : raw)
+          .replace(/\s+/g, " ")
+          .trim();
+
+        // 1) "участок № 179"
+        let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
+        if (m && m[1]) return m[1];
+
+        // 2) "участок 179" / "земельный участок 179"
+        m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
+        if (m && m[1]) return m[1];
+
+        // 3) "уч. N" — собираем все
+        const all = [];
+        const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
+        let mm;
+        while ((mm = re.exec(addr)) !== null) {
+          all.push(mm[1]);
+        }
+
+        if (all.length === 0) return "";
+
+        // Если есть любой номер кроме 47 — берём его
+        const not47 = all.find(x => x !== "47");
+        if (not47) return not47;
+
+        // Если только 47 — это хвост адреса → НЕ номер участка
+        return "";
       }
 
-      // ТОЛЬКО валидные земельные участки
       const parcelsLayer = L.geoJSON(data, {
         filter: (feature) => {
-          if (!isPolygonLikeGeometry(feature)) return false;
-
-          const rawCard = String(feature?.properties?.card_final || "").trim();
-
-          // 1) card_final обязателен
-          if (!rawCard) return false;
-
-          // 2) Только "Земельный участок"
-          if (!/^Земельный участок\s*;/i.test(rawCard)) return false;
-
-          // 3) Только с полным кадастром
-          if (!hasFullCadastre(rawCard)) return false;
-
-          // 4) Только если площадь >= 300
-          const area = extractAreaFromCard(rawCard);
-          if (!isFinite(area) || area < 300) return false;
-
-          // 5) ДОЛЖЕН быть валидный номер участка
-          const num = extractPlotNumberFromCard(rawCard);
-          if (!num) return false;
-
-          return true;
+          return isPolygonLikeGeometry(feature);
         },
 
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
@@ -162,24 +149,39 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
         onEachFeature: (feature, layer) => {
           const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          // POPUP — строго card_final
+          const isLand =
+            rawCard &&
+            /^Земельный участок\s*;/i.test(rawCard) &&
+            hasFullCadastre(rawCard) &&
+            (() => {
+              const a = extractAreaFromCard(rawCard);
+              return isFinite(a) && a >= 300;
+            })();
+
+          const plotNum = isLand ? extractPlotNumberFromCard(rawCard) : "";
+
+          // Если невалидный — делаем немым
+          if (!isLand || !plotNum) {
+            layer.off();
+            layer.unbindPopup();
+            return;
+          }
+
+          // POPUP
           const bodyHtml = rawCard.replace(/\n/g, "<br>");
           const html = `<div class="popup-root"><div>${bodyHtml}</div></div>`;
           layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-          // Подпись — только валидный номер
-          const num = extractPlotNumberFromCard(rawCard);
-          if (num) {
-            try {
-              if (layer.getBounds && layer.getBounds().isValid()) {
-                layer.bindTooltip(num, {
-                  permanent: true,
-                  direction: "center",
-                  className: "parcel-label"
-                });
-              }
-            } catch (e) {}
-          }
+          // Подпись
+          try {
+            if (layer.getBounds && layer.getBounds().isValid()) {
+              layer.bindTooltip(plotNum, {
+                permanent: true,
+                direction: "center",
+                className: "parcel-label"
+              });
+            }
+          } catch (e) {}
 
           layer.on("click", () => {
             if (selected && selected !== layer) {
@@ -196,11 +198,9 @@ console.log("SCRIPT VERSION 2026-02-18 HARD_STRICT_FILTER_NO_47");
       const baseBounds = baseLayer.getBounds();
       const focusBounds = (parcelsBounds && parcelsBounds.isValid()) ? parcelsBounds : baseBounds;
 
-      if (!focusBounds || !focusBounds.isValid()) {
-        alert("❌ Не удалось определить границы");
-        return;
+      if (focusBounds && focusBounds.isValid()) {
+        map.fitBounds(focusBounds, { padding: [20, 20] });
       }
-      map.fitBounds(focusBounds, { padding: [20, 20] });
 
       const ButtonsControl = L.Control.extend({
         options: { position: "bottomleft" },
