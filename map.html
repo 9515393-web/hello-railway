@@ -131,52 +131,92 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
        // полный кадастр: 47:26:0413001:103
        return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
      }
+      // площадь полигона в м² (приближённо, но достаточно для фильтра "здания vs участки")
+function ringAreaM2(ring) {
+  if (!ring || ring.length < 3) return 0;
+
+  // средняя широта для поправки cos(lat)
+  let latSum = 0;
+  for (const p of ring) latSum += p[1];
+  const lat0 = (latSum / ring.length) * Math.PI / 180;
+
+  const R = 6371000; // м
+  const toX = (lonDeg) => (lonDeg * Math.PI / 180) * R * Math.cos(lat0);
+  const toY = (latDeg) => (latDeg * Math.PI / 180) * R;
+
+  let area2 = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const x1 = toX(ring[i][0]),     y1 = toY(ring[i][1]);
+    const x2 = toX(ring[i+1][0]),   y2 = toY(ring[i+1][1]);
+    area2 += (x1 * y2 - x2 * y1);
+  }
+  return Math.abs(area2) / 2;
+}
+
+function featureAreaM2(feature) {
+  const g = feature && feature.geometry;
+  if (!g) return 0;
+
+  if (g.type === "Polygon") {
+    const ring = g.coordinates && g.coordinates[0];
+    return ringAreaM2(ring);
+  }
+
+  if (g.type === "MultiPolygon") {
+    let best = 0;
+    const polys = g.coordinates || [];
+    for (const poly of polys) {
+      const ring = poly && poly[0];
+      best = Math.max(best, ringAreaM2(ring));
+    }
+    return best;
+  }
+
+  return 0;
+}
 
 
-      // 2) Участки: попапы ТОЛЬКО из card_final, подписи ТОЛЬКО из card_final
+
+    // Фон: рисуем ВСЁ, но НЕИНТЕРАКТИВНО (чтобы здания/тех-слои не перехватывали клики)
+const parcelsBase = L.geoJSON(data, {
+  filter: (feature) => isPolygonLikeGeometry(feature),
+  interactive: false,
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 }
+}).addTo(map);
+
+// Интерактив: только "нормальные участки" (площадь >= 300 м²) + полный кадастр в card_final
 const parcelsLayer = L.geoJSON(data, {
   filter: (feature) => {
     if (!isPolygonLikeGeometry(feature)) return false;
 
-    const rawCard = String(feature?.properties?.card_final || "").trim();
+    const area = featureAreaM2(feature);
+    if (area > 0 && area < 300) return false; // 🔥 ЖЁСТКО убираем здания/мелочь
 
-    // интерактив ТОЛЬКО для участков с ПОЛНЫМ кадастром
-    return isRealParcelByCard(rawCard);
+    const rawCard = String(feature?.properties?.card_final || "").trim();
+    return isRealParcelByCard(rawCard); // как у тебя было
   },
 
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
-    const rawCard = String(p.card_final || "").trim();
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
     // POPUP — строго card_final
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
-    const html = `
-      <div class="popup-root">
-        <div>${bodyHtml}</div>
-      </div>
-    `;
-    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+    layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`, { maxWidth: 9999, autoPan: true });
 
-    // Подпись — строго из card_final (уч. 278 / участок 278)
+    // Подпись — как раньше
     const num = extractPlotNumberFromCard(rawCard);
     if (num) {
       try {
         if (layer.getBounds && layer.getBounds().isValid()) {
-          layer.bindTooltip(num, {
-            permanent: true,
-            direction: "center",
-            className: "parcel-label"
-          });
+          layer.bindTooltip(num, { permanent: true, direction: "center", className: "parcel-label" });
         }
       } catch (e) {}
     }
 
     layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-      }
+      if (selected && selected !== layer) selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
       selected = layer;
       layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
       layer.openPopup();
