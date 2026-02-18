@@ -134,64 +134,59 @@ console.log("SCRIPT VERSION 2026-02-17 CARD_FINAL_ONLY + WARNING");
 
 
       // 2) Участки: попапы ТОЛЬКО из card_final, подписи ТОЛЬКО из card_final
-      const parcelsLayer = L.geoJSON(data, {
+const parcelsLayer = L.geoJSON(data, {
   filter: (feature) => {
     if (!isPolygonLikeGeometry(feature)) return false;
 
-    const p = feature.properties || {};
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    // ✅ Кликабельны ТОЛЬКО реальные участки с номером
-    if (!p.uch_num) return false;
-
-    return true;
+    // ✅ интерактив ТОЛЬКО для "реальных" участков по ПОЛНОМУ кадастру в card_final
+    return isRealParcelByCard(rawCard);
   },
-  ...
-});
 
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
-          const rawCard = String(p.card_final || "").trim();
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-         // строго показываем card_final
-const bodyHtml = rawCard.replace(/\n/g, "<br>");
+  onEachFeature: (feature, layer) => {
+    const p = feature.properties || {};
+    const rawCard = String(p.card_final || "").trim();
 
-const html = `
-  <div class="popup-root">
-    <div>${bodyHtml}</div>
-  </div>
-`;
-layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
+    // POPUP — строго card_final
+    const bodyHtml = rawCard.replace(/\n/g, "<br>");
+    const html = `
+      <div class="popup-root">
+        <div>${bodyHtml}</div>
+      </div>
+    `;
+    layer.bindPopup(html, { maxWidth: 9999, autoPan: true });
 
-
-          // Подпись — строго из card_final (уч. 278 / участок 278)
-          const num = extractPlotNumberFromCard(rawCard);
-
-          if (num) {
-            try {
-              if (layer.getBounds && layer.getBounds().isValid()) {
-                layer.bindTooltip(num, {
-                  permanent: true,
-                  direction: "center",
-                  className: "parcel-label"
-                });
-              }
-            } catch (e) {}
-          }
-
-          // Клик: выделение — ТОЛЬКО красный (просто толще), без смены цвета
-          layer.on("click", () => {
-            console.log("CLICK:", feature.properties);
-            
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-            layer.openPopup();
+    // Подпись — строго из card_final (уч. 278 / участок 278)
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num) {
+      try {
+        if (layer.getBounds && layer.getBounds().isValid()) {
+          layer.bindTooltip(num, {
+            permanent: true,
+            direction: "center",
+            className: "parcel-label"
           });
         }
-      }).addTo(map);
+      } catch (e) {}
+    }
+
+    // Клик: выделение — ТОЛЬКО красный (просто толще), без смены цвета
+    layer.on("click", () => {
+      console.log("CLICK:", feature.properties);
+
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
+      selected = layer;
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
+
 
       // 3) Фокус
       const parcelsBounds = parcelsLayer.getBounds();
