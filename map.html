@@ -189,11 +189,16 @@ const parcelsLayer = L.geoJSON(data, {
   filter: (feature) => {
     if (!isPolygonLikeGeometry(feature)) return false;
 
-    const area = featureAreaM2(feature);
-    if (area > 0 && area < 300) return false; // 🔥 ЖЁСТКО убираем здания/мелочь
+    const p = feature.properties || {};
+    const rawCard = String(p.card_final || "").trim();
 
-    const rawCard = String(feature?.properties?.card_final || "").trim();
-    return isRealParcelByCard(rawCard); // как у тебя было
+    // 🔒 ЖЁСТКО: если НЕТ card_final — объект НЕИНТЕРАКТИВНЫЙ
+    if (!rawCard) return false;
+
+    // 🔒 ЖЁСТКО: если это не "Земельный участок" — тоже не даём попап
+    if (!/^Земельный участок/i.test(rawCard)) return false;
+
+    return true; // только такие объекты получат попап и подпись
   },
 
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
@@ -205,7 +210,7 @@ const parcelsLayer = L.geoJSON(data, {
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`, { maxWidth: 9999, autoPan: true });
 
-    // Подпись — как раньше
+    // Подпись — по твоей текущей логике
     const num = extractPlotNumberFromCard(rawCard);
     if (num) {
       try {
@@ -216,13 +221,16 @@ const parcelsLayer = L.geoJSON(data, {
     }
 
     layer.on("click", () => {
-      if (selected && selected !== layer) selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
       selected = layer;
       layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
       layer.openPopup();
     });
   }
 }).addTo(map);
+
 
       // 3) Фокус
       const parcelsBounds = parcelsLayer.getBounds();
