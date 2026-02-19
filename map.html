@@ -97,86 +97,74 @@ console.log("SCRIPT VERSION 2026-02-19 STRICT_INTERACTIVE_VALID_PLOTS");
     return m ? m[0] : "";
   }
 
-  // Площадь: берём число после "Площадь ... участка"
-  function extractArea(cardFinal) {
-    const raw = String(cardFinal || "");
+  function extractCadastre(card) {
+  const raw = String(card || "");
+  const m = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
+  return m ? m[0] : "";
+}
 
-    const m =
-      raw.match(/Площадь\s+земельного\s+участка\s*([\d.,]+)/i) ||
-      raw.match(/Площадь\s+участка\s*([\d.,]+)/i) ||
-      raw.match(/Площадь\s*([\d.,]+)\s*(?:кв\.?\s*м|м2|м²)?/i);
+function extractArea(card) {
+  const raw = String(card || "");
+  const m = raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i)
+        || raw.match(/Площадь\s+участка\s*([\d.,]+)/i);
+  if (!m) return NaN;
+  const v = parseFloat(m[1].replace(",", "."));
+  return isNaN(v) ? NaN : v;
+}
 
-    if (!m || !m[1]) return NaN;
-    const v = parseFloat(String(m[1]).replace(",", "."));
-    return isNaN(v) ? NaN : v;
-  }
+function extractPlotNumberFromCard(card) {
+  const raw = String(card || "");
 
-  // ✅ Жёстко убираем хвост "уч. 47" ТОЛЬКО если он реально хвост, а не номер участка.
-  // Логика:
-  // - если кадастр в REAL_47_CADASTRES → 47 разрешён
-  // - иначе "уч. 47" в конце адреса считаем служебным хвостом и вырезаем из текста для отображения
-  function cleanCardFinalForDisplay(cardFinal) {
-    const raw = String(cardFinal || "");
-    const cad = extractCadastre(raw);
+  // берём строку адреса, если есть
+  const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
+  const addr = (addrLineMatch ? addrLineMatch[1] : raw)
+    .replace(/\s+/g, " ")
+    .trim();
 
-    if (cad && REAL_47_CADASTRES.has(cad)) {
-      return raw; // настоящий 47 — ничего не режем
-    }
+  // 1) участок № 71
+  let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
+  if (m) return m[1];
 
-    // режем только хвостовые варианты "... уч. 47;" или "... уч.47;" или "... уч. 47"
-    // важно: не трогаем кадастровые "47:.."
-    return raw.replace(/(\s*,?\s*(?:уч|участок)\.\s*№?\s*47)\s*;?/ig, (m, g1, offset) => {
-      // режем только если это ближе к концу строки адреса/карточки, а не где-то в середине
-      // (простая защита: если после этого есть "Кадастровый" — значит это хвост адреса)
-      const tail = raw.slice(offset);
-      if (/Кадастров/i.test(tail)) return ""; // хвост перед "Кадастровый" — вырезаем
-      // если прям в конце карточки тоже вырезаем
-      if (tail.length < 40) return "";
-      return m; // иначе не трогаем
-    });
-  }
+  // 2) земельный участок 71 / участок 71
+  m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
+  if (m) return m[1];
 
-  // ✅ Номер участка берём ИЗ properties.uch_num (это главное!)
-  // Если uch_num = "47" → разрешаем ТОЛЬКО если кадастр в списке REAL_47_CADASTRES.
-  function getPlotNumber(feature) {
-    const rawCard = String(feature?.properties?.card_final || "");
-    const cad = extractCadastre(rawCard);
+  // 3) уч. 71 (но если только 47 — считаем хвостом)
+  const all = [];
+  const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
+  let mm;
+  while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
 
-    const num = normalizeSpaces(feature?.properties?.uch_num || "");
-    if (!num) return "";
+  if (all.length === 0) return "";
 
-    if (num === "47") {
-      return (cad && REAL_47_CADASTRES.has(cad)) ? "47" : "";
-    }
+  const not47 = all.find(x => x !== "47");
+  if (not47) return not47;
 
-    // Допускаем 154а, 73а и т.п.
-    if (/^\d+[а-яa-z]?$/i.test(num)) return num;
+  // если найдено только "47" — считаем это хвостом адреса, а не номером участка
+  return "";
+}
 
-    return "";
-  }
+function isValidFromCardFinal(card) {
+  const raw = String(card || "").trim();
+  if (!raw) return false;
 
-  // ✅ Валидный участок для интерактива:
-  // - Полигон
-  // - card_final есть
-  // - "Земельный участок;"
-  // - полный кадастр обязателен
-  // - площадь >= 300 (убирает мусор типа 62.05 и т.п.)
-  // - номер участка НЕ обязателен (ты говорил: могут быть на учёте без номера)
-  //   но если номера нет — будет попап, НО БЕЗ ПОДПИСИ
-  function isValidLandPlotForPopup(feature) {
-    const raw = String(feature?.properties?.card_final || "").trim();
-    if (!raw) return false;
+  // 1) Только земельные участки
+  if (!/^Земельный участок\s*;/i.test(raw)) return false;
 
-    if (!/^Земельный участок\s*;/i.test(raw)) return false;
+  // 2) Должен быть кадастровый номер
+  const cad = extractCadastre(raw);
+  if (!cad) return false;
 
-    const cad = extractCadastre(raw);
-    if (!cad) return false;
+  // 3) Должна быть площадь
+  const area = extractArea(raw);
+  if (!isFinite(area) || area <= 0) return false;
 
-    const area = extractArea(raw);
-    if (!isFinite(area) || area < 300) return false;
+  // 4) Должен быть номер участка
+  const num = extractPlotNumberFromCard(raw);
+  if (!num) return false;
 
-    return true;
-  }
+  return true;
+}
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -203,65 +191,57 @@ console.log("SCRIPT VERSION 2026-02-19 STRICT_INTERACTIVE_VALID_PLOTS");
         okNoNumber: 0,
       };
 
-      const parcelsLayer = L.geoJSON(data, {
-        interactive: true,
+      let totalPoly = 0;
+let validCount = 0;
 
-        filter: (feature) => {
-          if (!isPolygonLikeGeometry(feature)) { rejectStats.nonPolygon++; return false; }
+const parcelsLayer = L.geoJSON(data, {
+  interactive: true,
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-          const raw = String(feature?.properties?.card_final || "").trim();
-          if (!raw) { rejectStats.noCard++; return false; }
+  onEachFeature: (feature, layer) => {
+    totalPoly++;
 
-          if (!/^Земельный участок\s*;/i.test(raw)) { rejectStats.notLandPlot++; return false; }
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          const cad = extractCadastre(raw);
-          if (!cad) { rejectStats.noCadastre++; return false; }
+    const valid = isValidFromCardFinal(rawCard);
+    if (!valid) {
+      layer.off();
+      layer.unbindPopup();
+      return;
+    }
 
-          const area = extractArea(raw);
-          if (!isFinite(area) || area < 300) { rejectStats.badArea++; return false; }
+    validCount++;
 
-          rejectStats.okPopup++;
-          return true;
-        },
+    // POPUP — строго card_final
+    const bodyHtml = rawCard.replace(/\n/g, "<br>");
+    layer.bindPopup(
+      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+      { maxWidth: 9999, autoPan: true }
+    );
 
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+    // Подпись — номер участка из card_final
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num && layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(num, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
 
-        onEachFeature: (feature, layer) => {
-          const rawCard = String(feature?.properties?.card_final || "").trim();
+    layer.on("click", () => {
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
+      selected = layer;
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
 
-          // POPUP всегда для валидных (фильтр уже отобрал)
-          const cleanedForDisplay = cleanCardFinalForDisplay(rawCard);
-          const bodyHtml = cleanedForDisplay.replace(/\n/g, "<br>");
-          layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`, { maxWidth: 9999, autoPan: true });
+console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
 
-          // Подпись только если номер реально валиден
-          const num = getPlotNumber(feature);
-          if (num) {
-            rejectStats.okWithNumber++;
-            try {
-              if (layer.getBounds && layer.getBounds().isValid()) {
-                layer.bindTooltip(num, {
-                  permanent: true,
-                  direction: "center",
-                  className: "parcel-label"
-                });
-              }
-            } catch(e) {}
-          } else {
-            rejectStats.okNoNumber++;
-          }
-
-          // Клик
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
 
       console.log("REJECT STATS:", rejectStats);
 
