@@ -79,7 +79,13 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
     .then(data => {
   console.log("GEOJSON LOADED", data);
   console.log("FEATURES COUNT:", data.features?.length);
+  if (!Array.isArray(data.features)) {
+  console.error("❌ data.features НЕ массив!", data);
+} else {
+  console.log("GEOMETRY TYPES SAMPLE:", data.features.slice(0, 10).map(f => f?.geometry?.type));
+}
 
+      
   let selected = null;
 
 
