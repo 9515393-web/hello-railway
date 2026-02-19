@@ -40,6 +40,7 @@
       padding:10px 14px;
       font-size:16px;
       border-radius:12px;
+      pointer-events:auto;
       cursor:pointer;
     }
 
@@ -59,7 +60,7 @@
 
 <script>
 console.log("MAP SCRIPT LOADED");
-console.log("SCRIPT VERSION 2026-02-19 DIAG_STRICT_FIXED");
+console.log("SCRIPT VERSION 2026-02-19 STRICT_INTERACTIVE_VALID_PLOTS");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -73,183 +74,195 @@ console.log("SCRIPT VERSION 2026-02-19 DIAG_STRICT_FIXED");
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
+  // ✅ Реальные участки №47 (которые НЕЛЬЗЯ выкидывать)
+  const REAL_47_CADASTRES = new Set([
+    "47:26:0413001:379",
+    "47:26:0414001:88",
+    "47:26:0416001:159"
+  ]);
+
+  function isPolygonLikeGeometry(feature) {
+    const t = String(feature?.geometry?.type || "");
+    return t === "Polygon" || t === "MultiPolygon" || t.includes("Polygon");
+  }
+
+  function normalizeSpaces(s) {
+    return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  // Полный кадастр вида 47:26:0413001:379
+  function extractCadastre(cardFinal) {
+    const raw = String(cardFinal || "");
+    const m = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
+    return m ? m[0] : "";
+  }
+
+  // Площадь: берём число после "Площадь ... участка"
+  function extractArea(cardFinal) {
+    const raw = String(cardFinal || "");
+
+    const m =
+      raw.match(/Площадь\s+земельного\s+участка\s*([\d.,]+)/i) ||
+      raw.match(/Площадь\s+участка\s*([\d.,]+)/i) ||
+      raw.match(/Площадь\s*([\d.,]+)\s*(?:кв\.?\s*м|м2|м²)?/i);
+
+    if (!m || !m[1]) return NaN;
+    const v = parseFloat(String(m[1]).replace(",", "."));
+    return isNaN(v) ? NaN : v;
+  }
+
+  // ✅ Жёстко убираем хвост "уч. 47" ТОЛЬКО если он реально хвост, а не номер участка.
+  // Логика:
+  // - если кадастр в REAL_47_CADASTRES → 47 разрешён
+  // - иначе "уч. 47" в конце адреса считаем служебным хвостом и вырезаем из текста для отображения
+  function cleanCardFinalForDisplay(cardFinal) {
+    const raw = String(cardFinal || "");
+    const cad = extractCadastre(raw);
+
+    if (cad && REAL_47_CADASTRES.has(cad)) {
+      return raw; // настоящий 47 — ничего не режем
+    }
+
+    // режем только хвостовые варианты "... уч. 47;" или "... уч.47;" или "... уч. 47"
+    // важно: не трогаем кадастровые "47:.."
+    return raw.replace(/(\s*,?\s*(?:уч|участок)\.\s*№?\s*47)\s*;?/ig, (m, g1, offset) => {
+      // режем только если это ближе к концу строки адреса/карточки, а не где-то в середине
+      // (простая защита: если после этого есть "Кадастровый" — значит это хвост адреса)
+      const tail = raw.slice(offset);
+      if (/Кадастров/i.test(tail)) return ""; // хвост перед "Кадастровый" — вырезаем
+      // если прям в конце карточки тоже вырезаем
+      if (tail.length < 40) return "";
+      return m; // иначе не трогаем
+    });
+  }
+
+  // ✅ Номер участка берём ИЗ properties.uch_num (это главное!)
+  // Если uch_num = "47" → разрешаем ТОЛЬКО если кадастр в списке REAL_47_CADASTRES.
+  function getPlotNumber(feature) {
+    const rawCard = String(feature?.properties?.card_final || "");
+    const cad = extractCadastre(rawCard);
+
+    const num = normalizeSpaces(feature?.properties?.uch_num || "");
+    if (!num) return "";
+
+    if (num === "47") {
+      return (cad && REAL_47_CADASTRES.has(cad)) ? "47" : "";
+    }
+
+    // Допускаем 154а, 73а и т.п.
+    if (/^\d+[а-яa-z]?$/i.test(num)) return num;
+
+    return "";
+  }
+
+  // ✅ Валидный участок для интерактива:
+  // - Полигон
+  // - card_final есть
+  // - "Земельный участок;"
+  // - полный кадастр обязателен
+  // - площадь >= 300 (убирает мусор типа 62.05 и т.п.)
+  // - номер участка НЕ обязателен (ты говорил: могут быть на учёте без номера)
+  //   но если номера нет — будет попап, НО БЕЗ ПОДПИСИ
+  function isValidLandPlotForPopup(feature) {
+    const raw = String(feature?.properties?.card_final || "").trim();
+    if (!raw) return false;
+
+    if (!/^Земельный участок\s*;/i.test(raw)) return false;
+
+    const cad = extractCadastre(raw);
+    if (!cad) return false;
+
+    const area = extractArea(raw);
+    if (!isFinite(area) || area < 300) return false;
+
+    return true;
+  }
+
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
       console.log("GEOJSON LOADED", data);
       console.log("FEATURES COUNT:", data.features?.length);
 
-      if (!Array.isArray(data.features)) {
-        console.error("❌ data.features НЕ массив!", data);
-        return;
-      }
-
-      console.log("GEOMETRY TYPES SAMPLE:", data.features.slice(0, 10).map(f => f?.geometry?.type));
-
       let selected = null;
 
-      // Фоновый слой — все границы
+      // Подложка — все границы (неинтерактивно)
       const baseLayer = L.geoJSON(data, {
         interactive: false,
         style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
       }).addTo(map);
 
-      function isPolygonLikeGeometry(feature) {
-        const t = String(feature?.geometry?.type || "");
-        return t.includes("Polygon");
-      }
-
-      function hasFullCadastre(cardFinal) {
-        const raw = String(cardFinal || "");
-        return /\b\d{2}:\d{2}:\d{7}:\d+\b/.test(raw);
-      }
-
-      function extractAreaFromCard(cardFinal) {
-        const raw = String(cardFinal || "");
-        const m =
-          raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i) ||
-          raw.match(/Площадь\s+участка\s*([\d.,]+)/i);
-
-        if (!m || !m[1]) return NaN;
-        const v = parseFloat(String(m[1]).replace(",", "."));
-        return isNaN(v) ? NaN : v;
-      }
-
-      function extractPlotNumberFromCard(cardFinal) {
-        const raw = String(cardFinal || "");
-
-        const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
-        const addr = (addrLineMatch ? addrLineMatch[1] : raw)
-          .replace(/\s+/g, " ")
-          .trim();
-
-        // 1) участок № 179
-        let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
-        if (m && m[1]) return m[1];
-
-        // 2) участок 179 / земельный участок 179
-        m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
-        if (m && m[1]) return m[1];
-
-        // 3) уч. N — собираем все
-        const all = [];
-        const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
-        let mm;
-        while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
-
-        if (all.length === 0) return "";
-
-        // если есть любой кроме 47 — берём его
-        const not47 = all.find(x => x !== "47");
-        if (not47) return not47;
-
-        // если только 47 — считаем хвостом адреса
-        return "";
-      }
-
       const rejectStats = {
-        empty: 0,
-        notLand: 0,
-        noCad: 0,
+        nonPolygon: 0,
+        noCard: 0,
+        notLandPlot: 0,
+        noCadastre: 0,
         badArea: 0,
-        noNum: 0,
-        ok: 0
+        okPopup: 0,
+        okWithNumber: 0,
+        okNoNumber: 0,
       };
 
-      function isValidLandPlot(cardFinal) {
-  const raw = String(cardFinal || "").trim();
-
-  if (!raw) {
-    rejectStats.empty++;
-    console.log("REJECT empty card_final");
-    return false;
-  }
-
-  if (!/Земельный участок/i.test(raw)) {
-    rejectStats.notLand++;
-    console.log("REJECT not land:", raw.slice(0, 80));
-    return false;
-  }
-
-  if (!hasFullCadastre(raw)) {
-    rejectStats.noCad++;
-    console.log("REJECT no cadastre:", raw.match(/Кадастровый[^;\n]*/i)?.[0] || raw.slice(0,80));
-    return false;
-  }
-
-  const area = extractAreaFromCard(raw);
-  if (!isFinite(area) || area < 300) {
-    rejectStats.badArea++;
-    console.log("REJECT bad area:", area, raw.match(/Площадь[^;\n]*/i)?.[0] || raw.slice(0,80));
-    return false;
-  }
-
-  const num = extractPlotNumberFromCard(raw);
-  if (!num) {
-    rejectStats.noNum++;
-    console.log("REJECT no number:", raw.match(/Адрес[^;\n]*/i)?.[0] || raw.slice(0,80));
-    return false;
-  }
-
-  rejectStats.ok++;
-  return true;
-}
-
-      let totalPoly = 0;
-      let validCount = 0;
-
-      console.log("ABOUT TO BUILD PARCELS LAYER");
-
       const parcelsLayer = L.geoJSON(data, {
-  interactive: true,
+        interactive: true,
 
-  filter: (feature) => {
-    // Берём ТОЛЬКО полигоны
-    const t = String(feature?.geometry?.type || "");
-    if (!t.includes("Polygon")) return false;
+        filter: (feature) => {
+          if (!isPolygonLikeGeometry(feature)) { rejectStats.nonPolygon++; return false; }
 
-    // И только те, где есть card_final
-    const rawCard = String(feature?.properties?.card_final || "").trim();
-    if (!rawCard) return false;
+          const raw = String(feature?.properties?.card_final || "").trim();
+          if (!raw) { rejectStats.noCard++; return false; }
 
-    return true; // ← НИКАКИХ ДРУГИХ ФИЛЬТРОВ
-  },
+          if (!/^Земельный участок\s*;/i.test(raw)) { rejectStats.notLandPlot++; return false; }
 
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+          const cad = extractCadastre(raw);
+          if (!cad) { rejectStats.noCadastre++; return false; }
 
-  onEachFeature: (feature, layer) => {
-    const rawCard = String(feature?.properties?.card_final || "").trim();
+          const area = extractArea(raw);
+          if (!isFinite(area) || area < 300) { rejectStats.badArea++; return false; }
 
-    // POPUP — всегда показываем card_final
-    const bodyHtml = rawCard.replace(/\n/g, "<br>");
-    layer.bindPopup(
-      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-      { maxWidth: 9999, autoPan: true }
-    );
+          rejectStats.okPopup++;
+          return true;
+        },
 
-    // Подпись — если удалось извлечь номер
-    const num = extractPlotNumberFromCard(rawCard);
-    if (num && layer.getBounds && layer.getBounds().isValid()) {
-      layer.bindTooltip(num, {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
-    }
+        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-    // Клик — подсветка + открытие попапа
-    layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-      }
-      selected = layer;
-      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-      layer.openPopup();
-    });
-  }
-}).addTo(map);
+        onEachFeature: (feature, layer) => {
+          const rawCard = String(feature?.properties?.card_final || "").trim();
 
-      console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
+          // POPUP всегда для валидных (фильтр уже отобрал)
+          const cleanedForDisplay = cleanCardFinalForDisplay(rawCard);
+          const bodyHtml = cleanedForDisplay.replace(/\n/g, "<br>");
+          layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`, { maxWidth: 9999, autoPan: true });
+
+          // Подпись только если номер реально валиден
+          const num = getPlotNumber(feature);
+          if (num) {
+            rejectStats.okWithNumber++;
+            try {
+              if (layer.getBounds && layer.getBounds().isValid()) {
+                layer.bindTooltip(num, {
+                  permanent: true,
+                  direction: "center",
+                  className: "parcel-label"
+                });
+              }
+            } catch(e) {}
+          } else {
+            rejectStats.okNoNumber++;
+          }
+
+          // Клик
+          layer.on("click", () => {
+            if (selected && selected !== layer) {
+              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+            }
+            selected = layer;
+            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+            layer.openPopup();
+          });
+        }
+      }).addTo(map);
+
       console.log("REJECT STATS:", rejectStats);
 
       const parcelsBounds = parcelsLayer.getBounds();
@@ -262,11 +275,46 @@ console.log("SCRIPT VERSION 2026-02-19 DIAG_STRICT_FIXED");
         alert("❌ Не удалось определить границы");
       }
 
+      const ButtonsControl = L.Control.extend({
+        options: { position: "bottomleft" },
+        onAdd: function () {
+          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
+
+          const btnZoomIn = L.DomUtil.create("button", "", container);
+          btnZoomIn.type = "button";
+          btnZoomIn.innerText = "➕ Приблизить";
+
+          const btnZoomOut = L.DomUtil.create("button", "", container);
+          btnZoomOut.type = "button";
+          btnZoomOut.innerText = "➖ Отдалить";
+
+          const btnFocus = L.DomUtil.create("button", "", container);
+          btnFocus.type = "button";
+          btnFocus.innerText = "🔍 К участкам";
+
+          const btnOverview = L.DomUtil.create("button", "", container);
+          btnOverview.type = "button";
+          btnOverview.innerText = "🌍 Обзор";
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+
+          L.DomEvent.on(btnZoomIn, "click", (e) => { L.DomEvent.stop(e); map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }); });
+          L.DomEvent.on(btnZoomOut, "click", (e) => { L.DomEvent.stop(e); map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }); });
+          L.DomEvent.on(btnFocus, "click", (e) => { L.DomEvent.stop(e); map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 }); });
+          L.DomEvent.on(btnOverview, "click", (e) => { L.DomEvent.stop(e); map.fitBounds(focusBounds, { padding: [100, 100] }); });
+
+          return container;
+        }
+      });
+
+      map.addControl(new ButtonsControl());
     })
     .catch(err => {
       console.error("Ошибка загрузки карты:", err);
       alert("Ошибка загрузки карты. Проверь соединение или токен.");
     });
+
 })();
 </script>
 </body>
