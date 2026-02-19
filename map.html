@@ -110,11 +110,6 @@ console.log("SCRIPT VERSION 2026-02-19 STRICT_INTERACTIVE_VALID_PLOTS");
     return m ? m[0] : "";
   }
 
-  function extractCadastre(card) {
-  const raw = String(card || "");
-  const m = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
-  return m ? m[0] : "";
-}
 
 function extractArea(card) {
   const raw = String(card || "");
@@ -209,28 +204,26 @@ let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
-  bubblingMouseEvents: false,   // важно для тача
+  bubblingMouseEvents: false,
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    // Если нет card_final — вообще ничего не показываем
     if (!rawCard) {
       layer.off();
       return;
     }
 
-    // ✅ POPUP — ТОЛЬКО из card_final
+    // POPUP
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
-    // ✅ Пытаемся вытащить номер участка из card_final
+    // Номер участка
     const num = extractPlotNumberFromCard(rawCard);
-
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
         permanent: true,
@@ -239,15 +232,18 @@ const parcelsLayer = L.geoJSON(data, {
       });
     }
 
-    // ✅ Клик
-    layer.on("click", () => {
+    // Клик + тач
+    const onSelect = () => {
       if (selected && selected !== layer) {
         selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
       }
       selected = layer;
       layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
       layer.openPopup();
-    });
+    };
+
+    layer.on("click", onSelect);
+    layer.on("touchstart", onSelect);
   }
 }).addTo(map);
 
