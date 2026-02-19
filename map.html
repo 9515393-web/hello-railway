@@ -53,6 +53,14 @@
       font-size:12px !important;
       text-shadow:0 0 2px #fff, 0 0 2px #fff;
     }
+    .leaflet-tooltip {
+      pointer-events: none;
+    }
+    .leaflet-tooltip-pane {
+      z-index: 650;
+    }
+
+    
   </style>
 </head>
 <body>
@@ -67,7 +75,12 @@ console.log("SCRIPT VERSION 2026-02-19 STRICT_INTERACTIVE_VALID_PLOTS");
   const token = params.get("token");
   if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
 
-  const map = L.map("map", { zoomControl: false });
+  const map = L.map("map", {
+  zoomControl: false,
+  tap: true,
+  touchZoom: true
+});
+
   setTimeout(() => map.invalidateSize(true), 0);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -196,6 +209,7 @@ let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
+  bubblingMouseEvents: false,   // 👈 ВОТ СЮДА ДОБАВЛЯЕШЬ
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
@@ -223,20 +237,30 @@ const parcelsLayer = L.geoJSON(data, {
     const num = extractPlotNumberFromCard(rawCard);
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
+  permanent: true,
+  direction: "center",
+  className: "parcel-label",
+  opacity: 1
+});
+
+// 👇 ВАЖНО ДЛЯ МОБИЛЫ — принудительно открыть
+layer.openTooltip();
+
     }
 
-    layer.on("click", () => {
-      if (selected && selected !== layer) {
-        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-      }
-      selected = layer;
-      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-      layer.openPopup();
-    });
+    function onSelect(e) {
+  if (selected && selected !== layer) {
+    selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+  }
+  selected = layer;
+  layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+  layer.openPopup();
+  L.DomEvent.stop(e);
+}
+
+layer.on("click", onSelect);
+layer.on("touchend", onSelect);
+
   }
 }).addTo(map);
 
