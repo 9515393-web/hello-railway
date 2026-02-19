@@ -194,11 +194,18 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
         console.error("PRE-BUILD ERROR", e);
       }
       
-      const parcelsLayer = L.geoJSON(data, {
+      let totalPoly = 0;
+let validCount = 0;
+
+const parcelsLayer = L.geoJSON(data, {
   interactive: true,
+
   filter: (feature) => {
-    return isPolygonLikeGeometry(feature); // ← ТОЛЬКО геометрию фильтруем
+    if (!isPolygonLikeGeometry(feature)) return false;
+    totalPoly++;
+    return true; // ← ВАЖНО: БОЛЬШЕ НИЧЕГО ТУТ НЕ ФИЛЬТРУЕМ
   },
+
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
@@ -207,11 +214,13 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
     const valid = isValidLandPlot(rawCard);
 
     if (!valid) {
-      // ❌ мусор / здания / кривые карточки — БЕЗ интерактива
+      // ❌ мусор / здания / кривые — без интерактива
       layer.off();
       layer.unbindPopup();
       return;
     }
+
+    validCount++;
 
     // ✅ POPUP
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
@@ -230,6 +239,7 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
       });
     }
 
+    // ✅ Клик
     layer.on("click", () => {
       if (selected && selected !== layer) {
         selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
@@ -241,10 +251,8 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
   }
 }).addTo(map);
 
+console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
 
-
-
-      console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
 
       const parcelsBounds = parcelsLayer.getBounds();
       const baseBounds = baseLayer.getBounds();
