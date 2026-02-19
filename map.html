@@ -157,34 +157,43 @@ console.log("SCRIPT VERSION 2026-02-19 DIAG_STRICT_FIXED");
       };
 
       function isValidLandPlot(cardFinal) {
-        const raw = String(cardFinal || "").trim();
-        if (!raw) { rejectStats.empty++; return false; }
+  const raw = String(cardFinal || "").trim();
 
-        if (!/Земельный участок/i.test(raw)) {
-          rejectStats.notLand++;
-          return false;
-        }
+  if (!raw) {
+    rejectStats.empty++;
+    console.log("REJECT empty card_final");
+    return false;
+  }
 
-        if (!hasFullCadastre(raw)) {
-          rejectStats.noCad++;
-          return false;
-        }
+  if (!/Земельный участок/i.test(raw)) {
+    rejectStats.notLand++;
+    console.log("REJECT not land:", raw.slice(0, 80));
+    return false;
+  }
 
-        const area = extractAreaFromCard(raw);
-        if (!isFinite(area) || area < 300) {
-          rejectStats.badArea++;
-          return false;
-        }
+  if (!hasFullCadastre(raw)) {
+    rejectStats.noCad++;
+    console.log("REJECT no cadastre:", raw.match(/Кадастровый[^;\n]*/i)?.[0] || raw.slice(0,80));
+    return false;
+  }
 
-        const num = extractPlotNumberFromCard(raw);
-        if (!num) {
-          rejectStats.noNum++;
-          return false;
-        }
+  const area = extractAreaFromCard(raw);
+  if (!isFinite(area) || area < 300) {
+    rejectStats.badArea++;
+    console.log("REJECT bad area:", area, raw.match(/Площадь[^;\n]*/i)?.[0] || raw.slice(0,80));
+    return false;
+  }
 
-        rejectStats.ok++;
-        return true;
-      }
+  const num = extractPlotNumberFromCard(raw);
+  if (!num) {
+    rejectStats.noNum++;
+    console.log("REJECT no number:", raw.match(/Адрес[^;\n]*/i)?.[0] || raw.slice(0,80));
+    return false;
+  }
+
+  rejectStats.ok++;
+  return true;
+}
 
       let totalPoly = 0;
       let validCount = 0;
