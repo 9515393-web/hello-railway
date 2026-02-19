@@ -123,34 +123,35 @@ function extractArea(card) {
 function extractPlotNumberFromCard(card) {
   const raw = String(card || "");
 
-  // берём строку адреса, если есть
+  // Берём строку адреса, если есть
   const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
   const addr = (addrLineMatch ? addrLineMatch[1] : raw)
     .replace(/\s+/g, " ")
     .trim();
 
-  // 1) участок № 71
-  let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
+  // Нормализуем: убираем лишние пробелы
+  const s = addr;
+
+  // 1) участок №71 / участок № 71
+  let m = s.match(/\bучасток\s*№\s*(\d+)\b/i);
   if (m) return m[1];
 
   // 2) земельный участок 71 / участок 71
-  m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
+  m = s.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
   if (m) return m[1];
 
-  // 3) уч. 71 (но если только 47 — считаем хвостом)
-  const all = [];
-  const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
-  let mm;
-  while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
+  // 3) уч.71 / уч. 71 / уч 71 / уч№71 / уч № 71
+  m = s.match(/\bуч\.?\s*№?\s*(\d+)\b/i);
+  if (m) {
+    // если это единственный найденный номер и он 47 — считаем хвостом адреса
+    if (m[1] === "47") return "";
+    return m[1];
+  }
 
-  if (all.length === 0) return "";
-
-  const not47 = all.find(x => x !== "47");
-  if (not47) return not47;
-
-  // если найдено только "47" — считаем это хвостом адреса, а не номером участка
+  // Если ничего не нашли
   return "";
 }
+
 
 function isValidFromCardFinal(card) {
   const raw = String(card || "").trim();
