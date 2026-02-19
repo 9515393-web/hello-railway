@@ -204,26 +204,29 @@ let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
-  bubblingMouseEvents: false,
+  bubblingMouseEvents: false, // важно для тача
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
     if (!rawCard) {
+      // вообще нет данных — не делаем интерактив
       layer.off();
       return;
     }
 
-    // POPUP
+    // ✅ POPUP — ТОЛЬКО card_final как есть
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
-    // Номер участка
+    // ✅ Пытаемся вытащить номер участка ТОЛЬКО из card_final
     const num = extractPlotNumberFromCard(rawCard);
+
+    // Если номер нормальный — показываем подпись
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
         permanent: true,
@@ -232,7 +235,7 @@ const parcelsLayer = L.geoJSON(data, {
       });
     }
 
-    // Клик + тач
+    // ✅ Клик и тач
     const onSelect = () => {
       if (selected && selected !== layer) {
         selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
