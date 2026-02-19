@@ -209,38 +209,37 @@ let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
-  bubblingMouseEvents: false,   // для тача
-
+  bubblingMouseEvents: false,   // важно для тача
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    // Если card_final пустой — вообще ничего не делаем
-    if (!rawCard) return;
+    // Если нет card_final — вообще ничего не показываем
+    if (!rawCard) {
+      layer.off();
+      return;
+    }
 
-    // POPUP — ТОЛЬКО card_final
+    // ✅ POPUP — ТОЛЬКО из card_final
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
-    // Номер — ТОЛЬКО из card_final
+    // ✅ Пытаемся вытащить номер участка из card_final
     const num = extractPlotNumberFromCard(rawCard);
+
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
         permanent: true,
         direction: "center",
-        className: "parcel-label",
-        opacity: 1
+        className: "parcel-label"
       });
-
-      // 👇 ВАЖНО для мобилы
-      layer.openTooltip();
     }
 
-    // Клик
+    // ✅ Клик
     layer.on("click", () => {
       if (selected && selected !== layer) {
         selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
