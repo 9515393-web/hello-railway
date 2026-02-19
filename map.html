@@ -197,28 +197,30 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
       const parcelsLayer = L.geoJSON(data, {
   interactive: true,
   filter: (feature) => {
-  if (!isPolygonLikeGeometry(feature)) return false;
+    return isPolygonLikeGeometry(feature); // ← ТОЛЬКО геометрию фильтруем
+  },
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-  const rawCard = String(feature?.properties?.card_final || "").trim();
-  if (!rawCard) return false;
+  onEachFeature: (feature, layer) => {
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  const ok = isValidLandPlot(rawCard);
+    const valid = isValidLandPlot(rawCard);
 
-  if (!ok) {
-    console.log("❌ REJECTED:", rawCard);
-  }
+    if (!valid) {
+      // ❌ мусор / здания / кривые карточки — БЕЗ интерактива
+      layer.off();
+      layer.unbindPopup();
+      return;
+    }
 
-  return ok;
-},
-
-
-    // ✅ только ВАЛИДНЫМ — попап и интерактив
+    // ✅ POPUP
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
+    // ✅ Tooltip
     const num = extractPlotNumberFromCard(rawCard);
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
@@ -238,6 +240,7 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
     });
   }
 }).addTo(map);
+
 
 
 
