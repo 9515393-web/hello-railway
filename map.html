@@ -201,50 +201,53 @@ console.log("SCRIPT VERSION 2026-02-19 DIAG_STRICT_FIXED");
       console.log("ABOUT TO BUILD PARCELS LAYER");
 
       const parcelsLayer = L.geoJSON(data, {
-        interactive: true,
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+  interactive: true,
 
-        onEachFeature: (feature, layer) => {
-          if (!isPolygonLikeGeometry(feature)) return;
+  filter: (feature) => {
+    // Берём ТОЛЬКО полигоны
+    const t = String(feature?.geometry?.type || "");
+    if (!t.includes("Polygon")) return false;
 
-          totalPoly++;
+    // И только те, где есть card_final
+    const rawCard = String(feature?.properties?.card_final || "").trim();
+    if (!rawCard) return false;
 
-          const rawCard = String(feature?.properties?.card_final || "").trim();
-          const valid = isValidLandPlot(rawCard);
+    return true; // ← НИКАКИХ ДРУГИХ ФИЛЬТРОВ
+  },
 
-          if (!valid) {
-            layer.off();
-            layer.unbindPopup();
-            return;
-          }
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-          validCount++;
+  onEachFeature: (feature, layer) => {
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          const bodyHtml = rawCard.replace(/\n/g, "<br>");
-          layer.bindPopup(
-            `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-            { maxWidth: 9999, autoPan: true }
-          );
+    // POPUP — всегда показываем card_final
+    const bodyHtml = rawCard.replace(/\n/g, "<br>");
+    layer.bindPopup(
+      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+      { maxWidth: 9999, autoPan: true }
+    );
 
-          const num = extractPlotNumberFromCard(rawCard);
-          if (num && layer.getBounds && layer.getBounds().isValid()) {
-            layer.bindTooltip(num, {
-              permanent: true,
-              direction: "center",
-              className: "parcel-label"
-            });
-          }
+    // Подпись — если удалось извлечь номер
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num && layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(num, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
 
-          layer.on("click", () => {
-            if (selected && selected !== layer) {
-              selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-            }
-            selected = layer;
-            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-            layer.openPopup();
-          });
-        }
-      }).addTo(map);
+    // Клик — подсветка + открытие попапа
+    layer.on("click", () => {
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
+      selected = layer;
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
 
       console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
       console.log("REJECT STATS:", rejectStats);
