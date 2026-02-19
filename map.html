@@ -179,8 +179,9 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
         const num = extractPlotNumberFromCard(raw);
         if (!num) return false;
 
-        // жёстко запрещаем 47 как номер участка (служебный хвост)
-        if (num === "47") return false;
+        // разрешаем 47, если он реально номер участка
+        // (хвосты мы уже отрезаем в extractPlotNumberFromCard)
+
 
         return true;
       }
@@ -196,21 +197,20 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
       const parcelsLayer = L.geoJSON(data, {
   interactive: true,
   filter: (feature) => {
-    return isPolygonLikeGeometry(feature); // ← БЕРЁМ ВСЕ полигоны
-  },
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+  if (!isPolygonLikeGeometry(feature)) return false;
 
-  onEachFeature: (feature, layer) => {
-    const rawCard = String(feature?.properties?.card_final || "").trim();
+  const rawCard = String(feature?.properties?.card_final || "").trim();
+  if (!rawCard) return false;
 
-    const valid = isValidLandPlot(rawCard);
+  const ok = isValidLandPlot(rawCard);
 
-    if (!valid) {
-      // ❌ мусор / здания / битые — без попапа и без клика
-      layer.off();
-      layer.unbindPopup();
-      return;
-    }
+  if (!ok) {
+    console.log("❌ REJECTED:", rawCard);
+  }
+
+  return ok;
+},
+
 
     // ✅ только ВАЛИДНЫМ — попап и интерактив
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
