@@ -209,60 +209,49 @@ let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
-  bubblingMouseEvents: false,   // 👈 ВОТ СЮДА ДОБАВЛЯЕШЬ
+  bubblingMouseEvents: false,   // для тача
+
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
-    totalPoly++;
-
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    const valid = isValidFromCardFinal(rawCard);
-    if (!valid) {
-      layer.off();
-      layer.unbindPopup();
-      return;
-    }
+    // Если card_final пустой — вообще ничего не делаем
+    if (!rawCard) return;
 
-    validCount++;
-
-    // POPUP — строго card_final
+    // POPUP — ТОЛЬКО card_final
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
-    // Подпись — номер участка из card_final
+    // Номер — ТОЛЬКО из card_final
     const num = extractPlotNumberFromCard(rawCard);
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
-  permanent: true,
-  direction: "center",
-  className: "parcel-label",
-  opacity: 1
-});
+        permanent: true,
+        direction: "center",
+        className: "parcel-label",
+        opacity: 1
+      });
 
-// 👇 ВАЖНО ДЛЯ МОБИЛЫ — принудительно открыть
-layer.openTooltip();
-
+      // 👇 ВАЖНО для мобилы
+      layer.openTooltip();
     }
 
-    function onSelect(e) {
-  if (selected && selected !== layer) {
-    selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
-  }
-  selected = layer;
-  layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-  layer.openPopup();
-  L.DomEvent.stop(e);
-}
-
-layer.on("click", onSelect);
-layer.on("touchend", onSelect);
-
+    // Клик
+    layer.on("click", () => {
+      if (selected && selected !== layer) {
+        selected.setStyle({ color: "#ff0000", weight: 2, fillOpacity: 0.20 });
+      }
+      selected = layer;
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.openPopup();
+    });
   }
 }).addTo(map);
+
 
 console.log("POLYGONS:", totalPoly, "VALID INTERACTIVE:", validCount);
 
