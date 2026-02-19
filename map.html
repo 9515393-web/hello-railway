@@ -194,21 +194,17 @@ console.log("SCRIPT VERSION 2026-02-18 WORKING_INTERACTIVE_STRICT");
         console.error("PRE-BUILD ERROR", e);
       }
       
-      let totalPoly = 0;
+let totalPoly = 0;
 let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
 
-  filter: (feature) => {
-    if (!isPolygonLikeGeometry(feature)) return false;
-    totalPoly++;
-    return true; // ← ВАЖНО: БОЛЬШЕ НИЧЕГО ТУТ НЕ ФИЛЬТРУЕМ
-  },
-
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
+    totalPoly++;
+
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
     const valid = isValidLandPlot(rawCard);
