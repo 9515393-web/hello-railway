@@ -204,36 +204,73 @@ function isValidFromCardFinal(card) {
 let validCount = 0;
 
 const parcelsLayer = L.geoJSON(data, {
+  function extractPlotNumberFromCard(card) {
+  const raw = String(card || "");
+
+  const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
+  const addr = (addrLineMatch ? addrLineMatch[1] : raw)
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
+  if (m) return m[1];
+
+  m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
+  if (m) return m[1];
+
+  const all = [];
+  const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
+  let mm;
+  while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
+
+  if (all.length === 0) return "";
+
+  const not47 = all.find(x => x !== "47");
+  if (not47) return not47;
+
+  return "";
+}
+
+const parcelsLayer = L.geoJSON(data, {
   interactive: true,
-  bubblingMouseEvents: false, // важно для тача
+  bubblingMouseEvents: false,
+
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
     const rawCard = String(feature?.properties?.card_final || "").trim();
 
+    // ❗ ЕСЛИ НЕТ card_final — НИЧЕГО НЕ ДЕЛАЕМ
     if (!rawCard) {
-      // вообще нет данных — не делаем интерактив
       layer.off();
       return;
     }
 
-    // ✅ POPUP — ТОЛЬКО card_final как есть
+    // ✅ POPUP — СТРОГО из card_final
     const bodyHtml = rawCard.replace(/\n/g, "<br>");
     layer.bindPopup(
       `<div class="popup-root"><div>${bodyHtml}</div></div>`,
       { maxWidth: 9999, autoPan: true }
     );
 
-    // ✅ Пытаемся вытащить номер участка ТОЛЬКО из card_final
+    // ✅ Номер — ТОЛЬКО из card_final
     const num = extractPlotNumberFromCard(rawCard);
 
-    // Если номер нормальный — показываем подпись
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
         permanent: true,
         direction: "center",
         className: "parcel-label"
       });
+    }
+
+    // ✅ Клик / тап
+    layer.on("click", () => {
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.openPopup();
+    });
+  }
+}).addTo(map);
     }
 
     // ✅ Клик и тач
