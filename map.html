@@ -144,12 +144,26 @@
         onEachFeature: (feature, layer) => {
   const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  // Если нет card_final — участок остаётся на карте, но без инфы
+  // Всегда сначала очищаем любые старые popup/tooltip
+  layer.unbindPopup();
+  layer.unbindTooltip();
+
+  // Если нет card_final — ничего не показываем, но участок остаётся
   if (!rawCard) return;
 
-  // Popup — ТОЛЬКО из card_final
   const bodyHtml = rawCard.replace(/\n/g, "<br>");
-  layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`);
+
+  // ЖЁСТКО: при клике каждый раз подставляем ТОЛЬКО card_final
+  layer.on("click", () => {
+    layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+
+    layer.bindPopup(
+      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+      { maxWidth: 9999, autoPan: true }
+    );
+
+    layer.openPopup();
+  });
 
   // Номер — ТОЛЬКО из card_final
   const num = extractPlotNumberFromCard(rawCard);
@@ -160,12 +174,6 @@
       className: "parcel-label"
     });
   }
-
-  // Подсветка при клике
-  layer.on("click", () => {
-    layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-    layer.openPopup();
-  });
 }
       }).addTo(map);
 
