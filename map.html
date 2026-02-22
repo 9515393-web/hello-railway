@@ -136,44 +136,53 @@ console.log("VERSION: NORMALIZED POPUPS ONLY");
       }).addTo(map);
 
       // Интерактивные участки
-      const parcelsLayer = L.geoJSON(data, {
-        interactive: true,
-        bubblingMouseEvents: false,
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+      // Регексп для поиска кадастрового номера
+const CAD_REGEX = /(?:Кадастровый\s+номер\s*)?(\d{2}\s*:\s*\d{2}\s*:\s*\d{6,8}\s*:\s*\d+)/i;
 
-        onEachFeature: (feature, layer) => {
-          const rawCard = String(feature?.properties?.card_final || "").trim();
+// Интерактивные участки — ТОЛЬКО НЕПРОБЛЕМНЫЕ
+const parcelsLayer = L.geoJSON(data, {
+  interactive: true,
+  bubblingMouseEvents: false,
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-          // Сносим любые старые попапы/тултипы
-          layer.unbindPopup();
-          layer.unbindTooltip();
+  // ФИЛЬТР: исключаем участки без кадастрового номера в card_final
+  filter: (feature) => {
+    const rawCard = String(feature?.properties?.card_final || "");
+    const m = rawCard.match(CAD_REGEX);
+    return !!m; // берём только те, где номер найден
+  },
 
-          // Если нет card_final — участок остаётся без инфы
-          if (!rawCard) return;
+  onEachFeature: (feature, layer) => {
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          // ВАЖНО: строим попап ТОЛЬКО через нормализатор
-          const bodyHtml = buildPopupFromCardFinal(rawCard);
+    layer.unbindPopup();
+    layer.unbindTooltip();
 
-          layer.on("click", () => {
-            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-            layer.bindPopup(
-              `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-              { maxWidth: 9999, autoPan: true }
-            );
-            layer.openPopup();
-          });
+    if (!rawCard) return;
 
-          // Номер на карте — тоже из card_final
-          const num = extractPlotNumberFromCard(rawCard);
-          if (num && layer.getBounds && layer.getBounds().isValid()) {
-            layer.bindTooltip(num, {
-              permanent: true,
-              direction: "center",
-              className: "parcel-label"
-            });
-          }
-        }
-      }).addTo(map);
+    // Попап ТОЛЬКО из card_final через нормализатор
+    const bodyHtml = buildPopupFromCardFinal(rawCard);
+
+    layer.on("click", () => {
+      layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+      layer.bindPopup(
+        `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+        { maxWidth: 9999, autoPan: true }
+      );
+      layer.openPopup();
+    });
+
+    // Номер на карте — из card_final
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num && layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(num, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
+  }
+}).addTo(map);
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
       if (focusBounds && focusBounds.isValid()) {
