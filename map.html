@@ -126,6 +126,30 @@
     if (!num) return false;
     return true;
   }
+  function buildPopupFromCardFinal(card) {
+  const raw = String(card || "");
+
+  // Адрес
+  const addrMatch = raw.match(/Адрес:\s*([^;]+);?/i);
+  const address = addrMatch ? addrMatch[1].trim() : "—";
+
+  // Кадастровый номер
+  const cadMatch = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
+  const cadastre = cadMatch ? cadMatch[0] : "—";
+
+  // Площадь
+  const areaMatch = raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i);
+  const area = areaMatch ? areaMatch[1].replace(",", ".") : "—";
+
+  return `
+Земельный участок;<br>
+1. Адрес: ${address};<br>
+2. Кадастровый номер ${cadastre};<br>
+3. Площадь земельного участка ${area};<br>
+4. Ф.И.О. _______________________;<br>
+5. Контакты ______________________.
+  `.trim();
+}
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -151,7 +175,7 @@
   // Если нет card_final — ничего не показываем, но участок остаётся
   if (!rawCard) return;
 
-  const bodyHtml = rawCard.replace(/\n/g, "<br>");
+  const bodyHtml = buildPopupFromCardFinal(rawCard);
 
   // ЖЁСТКО: при клике каждый раз подставляем ТОЛЬКО card_final
   layer.on("click", () => {
