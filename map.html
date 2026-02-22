@@ -61,6 +61,8 @@
 <div id="map"></div>
 
 <script>
+console.log("VERSION: NORMALIZED POPUPS ONLY");
+
 (function () {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
@@ -73,24 +75,8 @@
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  function extractCadastre(cardFinal) {
-    const raw = String(cardFinal || "");
-    const m = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
-    return m ? m[0] : "";
-  }
-
-  function extractArea(card) {
-    const raw = String(card || "");
-    const m = raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i)
-          || raw.match(/Площадь\s+участка\s*([\d.,]+)/i);
-    if (!m) return NaN;
-    const v = parseFloat(m[1].replace(",", "."));
-    return isNaN(v) ? NaN : v;
-  }
-
   function extractPlotNumberFromCard(card) {
     const raw = String(card || "");
-
     const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
     const addr = (addrLineMatch ? addrLineMatch[1] : raw)
       .replace(/\s+/g, " ")
@@ -108,99 +94,85 @@
     while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
 
     if (all.length === 0) return "";
-
     const not47 = all.find(x => x !== "47");
     if (not47) return not47;
-
     return "";
   }
 
-  function isValidFromCardFinal(card) {
-    const raw = String(card || "").trim();
-    if (!raw) return false;
-    if (!/^Земельный участок\s*;/i.test(raw)) return false;
-    if (!extractCadastre(raw)) return false;
-    const area = extractArea(raw);
-    if (!isFinite(area) || area <= 0) return false;
-    const num = extractPlotNumberFromCard(raw);
-    if (!num) return false;
-    return true;
-  }
+  // НОРМАЛИЗАТОР POPUP — берёт данные ТОЛЬКО из card_final
   function buildPopupFromCardFinal(card) {
-  const raw = String(card || "");
+    const raw = String(card || "");
 
-  // Адрес
-  const addrMatch = raw.match(/Адрес:\s*([^;]+);?/i);
-  const address = addrMatch ? addrMatch[1].trim() : "—";
+    // Адрес
+    const addrMatch = raw.match(/Адрес:\s*([^;]+);?/i);
+    const address = addrMatch ? addrMatch[1].trim() : "—";
 
-  // Кадастровый номер
-  const cadMatch = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
-  const cadastre = cadMatch ? cadMatch[0] : "—";
+    // Кадастровый номер
+    const cadMatch = raw.match(/\b\d{2}:\d{2}:\d{7}:\d+\b/);
+    const cadastre = cadMatch ? cadMatch[0] : "—";
 
-  // Площадь
-  const areaMatch = raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i);
-  const area = areaMatch ? areaMatch[1].replace(",", ".") : "—";
+    // Площадь
+    const areaMatch = raw.match(/Площадь\s+(?:земельного\s+)?участка\s*([\d.,]+)/i);
+    const area = areaMatch ? areaMatch[1].replace(",", ".") : "—";
 
-  return `
+    return `
 Земельный участок;<br>
 1. Адрес: ${address};<br>
 2. Кадастровый номер ${cadastre};<br>
 3. Площадь земельного участка ${area};<br>
 4. Ф.И.О. _______________________;<br>
 5. Контакты ______________________.
-  `.trim();
-}
+    `.trim();
+  }
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
 
+      // Подложка — все границы
       const baseLayer = L.geoJSON(data, {
         interactive: false,
         style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
       }).addTo(map);
 
+      // Интерактивные участки
       const parcelsLayer = L.geoJSON(data, {
         interactive: true,
         bubblingMouseEvents: false,
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
         onEachFeature: (feature, layer) => {
-  const rawCard = String(feature?.properties?.card_final || "").trim();
+          const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  // Всегда сначала очищаем любые старые popup/tooltip
-  layer.unbindPopup();
-  layer.unbindTooltip();
+          // Сносим любые старые попапы/тултипы
+          layer.unbindPopup();
+          layer.unbindTooltip();
 
-  // Если нет card_final — ничего не показываем, но участок остаётся
-  if (!rawCard) return;
-          
-  console.log("CARD_FINAL RAW:", rawCard);
+          // Если нет card_final — участок остаётся без инфы
+          if (!rawCard) return;
 
-  const bodyHtml = buildPopupFromCardFinal(rawCard);
+          // ВАЖНО: строим попап ТОЛЬКО через нормализатор
+          const bodyHtml = buildPopupFromCardFinal(rawCard);
 
-  // ЖЁСТКО: при клике каждый раз подставляем ТОЛЬКО card_final
-  layer.on("click", () => {
-    layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+          layer.on("click", () => {
+            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+            layer.bindPopup(
+              `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+              { maxWidth: 9999, autoPan: true }
+            );
+            layer.openPopup();
+          });
 
-    layer.bindPopup(
-      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-      { maxWidth: 9999, autoPan: true }
-    );
-
-    layer.openPopup();
-  });
-
-  // Номер — ТОЛЬКО из card_final
-  const num = extractPlotNumberFromCard(rawCard);
-  if (num && layer.getBounds && layer.getBounds().isValid()) {
-    layer.bindTooltip(num, {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
-  }
-}
+          // Номер на карте — тоже из card_final
+          const num = extractPlotNumberFromCard(rawCard);
+          if (num && layer.getBounds && layer.getBounds().isValid()) {
+            layer.bindTooltip(num, {
+              permanent: true,
+              direction: "center",
+              className: "parcel-label"
+            });
+          }
+        }
       }).addTo(map);
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
