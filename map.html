@@ -142,26 +142,31 @@
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
         onEachFeature: (feature, layer) => {
-          const rawCard = String(feature?.properties?.card_final || "").trim();
-          if (!rawCard) return;
+  const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          const bodyHtml = rawCard.replace(/\n/g, "<br>");
-          layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`);
+  // Если нет card_final — участок остаётся на карте, но без инфы
+  if (!rawCard) return;
 
-          const num = extractPlotNumberFromCard(rawCard);
-          if (num && layer.getBounds && layer.getBounds().isValid()) {
-            layer.bindTooltip(num, {
-              permanent: true,
-              direction: "center",
-              className: "parcel-label"
-            });
-          }
+  // Popup — ТОЛЬКО из card_final
+  const bodyHtml = rawCard.replace(/\n/g, "<br>");
+  layer.bindPopup(`<div class="popup-root"><div>${bodyHtml}</div></div>`);
 
-          layer.on("click", () => {
-            layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
-            layer.openPopup();
-          });
-        }
+  // Номер — ТОЛЬКО из card_final
+  const num = extractPlotNumberFromCard(rawCard);
+  if (num && layer.getBounds && layer.getBounds().isValid()) {
+    layer.bindTooltip(num, {
+      permanent: true,
+      direction: "center",
+      className: "parcel-label"
+    });
+  }
+
+  // Подсветка при клике
+  layer.on("click", () => {
+    layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+    layer.openPopup();
+  });
+}
       }).addTo(map);
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
