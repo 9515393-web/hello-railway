@@ -131,126 +131,52 @@ console.log("VERSION: NORMALIZED POPUPS ONLY");
 
       // Подложка — все границы
       const baseLayer = L.geoJSON(data, {
-        interactive: false,
-        style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
-      }).addTo(map);
+  interactive: false,
+  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+}).addTo(map);
 
-      // Интерактивные участки
-      // Регексп для поиска кадастрового номера
-const CAD_REGEX = /(?:Кадастровый\s+номер\s*)?(\d{2}\s*:\s*\d{2}\s*:\s*\d{6,8}\s*:\s*\d+)/i;
-
-// Интерактивные участки — ТОЛЬКО НЕПРОБЛЕМНЫЕ
 const parcelsLayer = L.geoJSON(data, {
   interactive: true,
   bubblingMouseEvents: false,
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-  // ФИЛЬТР: исключаем участки без кадастрового номера в card_final
-  filter: (feature) => {
-    const rawCard = String(feature?.properties?.card_final || "");
-    const m = rawCard.match(CAD_REGEX);
-    return !!m; // берём только те, где номер найден
-  },
-
   onEachFeature: (feature, layer) => {
-  const rawCard = String(feature?.properties?.card_final || "").trim();
-  if (!rawCard) return;
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  const plotNum = extractPlotNumberFromCard(rawCard);
-  if (!plotNum) return;
+    // Гарантируем, что слой кликабельный
+    layer.options.interactive = true;
 
-  // Ключ участка: например "2-102"
-  const plotKey = plotNum.includes("-") ? plotNum : `2-${plotNum}`;
+    // Вешаем клик
+    const bodyHtml = rawCard
+  ? buildPopupFromCardFinal(rawCard)
+  : "Нет данных card_final";
 
-  // Тултип с номером
-  if (layer.getBounds && layer.getBounds().isValid()) {
-    layer.bindTooltip(plotNum, {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
-  }
+// Биндим попап ОДИН РАЗ
+layer.bindPopup(
+  `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+  { maxWidth: 9999, autoPan: true }
+);
 
-  layer.on("click", async () => {
-    layer.setStyle({ color: "#ff0000", weight: 5, fillOpacity: 0.35 });
+// Логируем и открываем при клике
+layer.on("click", () => {
+  console.log("CLICK ON PLOT", feature?.properties?.uch_num || "no num");
+  layer.openPopup();
+});
 
-    // Загружаем данные из БД
-    let data = { fio: "", phone: "", note: "" };
-    try {
-      const r = await fetch(`/api/plot/${plotKey}`);
-      if (r.ok) {
-        const j = await r.json();
-        data.fio = j.fio || "";
-        data.phone = j.phone || "";
-        data.note = j.note || "";
-      }
-    } catch (e) {
-      console.error("Ошибка загрузки данных участка", e);
+    // Подпись номера участка
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num && layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(num, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
     }
-
-    const baseHtml = buildPopupFromCardFinal(rawCard);
-
-    const formHtml = `
-      <hr>
-      <div style="display:flex; flex-direction:column; gap:8px;">
-        <label>ФИО:<br>
-          <input id="pf-fio" type="text" style="width:100%" value="${data.fio}">
-        </label>
-        <label>Телефон:<br>
-          <input id="pf-phone" type="text" style="width:100%" value="${data.phone}">
-        </label>
-        <label>Примечание:<br>
-          <textarea id="pf-note" style="width:100%">${data.note}</textarea>
-        </label>
-        <button id="pf-save" style="padding:8px; font-size:16px;">💾 Сохранить</button>
-        <div id="pf-status" style="font-size:14px;"></div>
-      </div>
-    `;
-
-    const popupHtml = `
-      <div class="popup-root">
-        <div>${baseHtml}</div>
-        ${formHtml}
-      </div>
-    `;
-
-    layer.bindPopup(popupHtml, { maxWidth: 9999, autoPan: true });
-    layer.openPopup();
-
-    // Навешиваем обработчик сохранения после открытия попапа
-    setTimeout(() => {
-      const btn = document.getElementById("pf-save");
-      if (!btn) return;
-
-      btn.onclick = async () => {
-        const fio = document.getElementById("pf-fio").value;
-        const phone = document.getElementById("pf-phone").value;
-        const note = document.getElementById("pf-note").value;
-        const status = document.getElementById("pf-status");
-
-        status.textContent = "Сохраняю...";
-
-        try {
-          const resp = await fetch(`/api/plot/${plotKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fio, phone, note })
-          });
-
-          if (resp.ok) {
-            status.textContent = "✅ Сохранено";
-          } else {
-            status.textContent = "❌ Ошибка сохранения";
-          }
-        } catch (e) {
-          console.error(e);
-          status.textContent = "❌ Ошибка сети";
-        }
-      };
-    }, 50);
-  });
-}
+  }
 }).addTo(map);
+
+// 🔥 КРИТИЧНО: поднимаем интерактивный слой НАВЕРХ
+parcelsLayer.bringToFront();
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
       if (focusBounds && focusBounds.isValid()) {
