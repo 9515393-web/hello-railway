@@ -101,43 +101,19 @@ console.log("VERSION: NORMALIZED POPUPS ONLY");
 
   // НОРМАЛИЗАТОР POPUP — берёт данные ТОЛЬКО из card_final
   function buildPopupFromCardFinal(card) {
-  const raw = String(card || "").replace(/\r/g, "");
+  const raw = String(card || "").trim();
 
-  // 1) Адрес: берём строку после "Адрес:" до конца строки или до ';'
-  // В card_final адрес обычно на строке "1. Адрес: ...;"
-  let address = "—";
-  {
-    const m =
-      raw.match(/(?:^|\n)\s*1\.\s*Адрес:\s*([^\n;]+)\s*;?/i) ||
-      raw.match(/Адрес:\s*([^\n;]+)\s*;?/i);
-    if (m) address = m[1].trim();
-  }
+  console.log("RAW card_final:", raw); // ← ВАЖНО: для отладки
 
-  // 2) Кадастровый номер: допускаем пробелы вокруг двоеточий
-  let cadastre = "—";
-  {
-    const m = raw.match(/\b\d{2}\s*:\s*\d{2}\s*:\s*\d{7}\s*:\s*\d+\b/);
-    if (m) cadastre = m[0].replace(/\s*/g, "").trim(); // убираем пробелы
-  }
+  if (!raw) return "НЕТ card_final";
 
-  // 3) Площадь: берём число после "Площадь ... участка"
-  let area = "—";
-{
-  // Ищем ТОЛЬКО целые числа >= 100 рядом со словом "Площадь"
-  const m =
-    raw.match(/Площадь[\s\S]{0,50}?([1-9][0-9]{2,})/i);
+  const safe = raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
 
-  if (m) area = m[1].trim();
-}
-
-  return `
-Земельный участок;<br>
-1. Адрес: ${address};<br>
-2. Кадастровый номер ${cadastre};<br>
-3. Площадь земельного участка ${area};<br>
-4. Ф.И.О. _______________________;<br>
-5. Контакты ______________________.
-  `.trim();
+  return safe;
 }
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
