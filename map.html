@@ -61,7 +61,7 @@
 <div id="map"></div>
 
 <script>
-console.log("VERSION: NORMALIZED POPUPS ONLY");
+console.log("VERSION: POPUP = RAW card_final ONLY");
 
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -75,6 +75,17 @@ console.log("VERSION: NORMALIZED POPUPS ONLY");
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
+  // ЖЁСТКО: показываем ТОЛЬКО card_final как есть
+  function buildPopupFromCardFinal(card) {
+    const raw = String(card || "");
+    return raw
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>");
+  }
+
+  // Для подписи номера участка (это НЕ влияет на попап)
   function extractPlotNumberFromCard(card) {
     const raw = String(card || "");
     const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
@@ -99,79 +110,55 @@ console.log("VERSION: NORMALIZED POPUPS ONLY");
     return "";
   }
 
-  // НОРМАЛИЗАТОР POPUP — берёт данные ТОЛЬКО из card_final
-  function buildPopupFromCardFinal(card) {
-  const raw = String(card || "").trim();
-
-  console.log("RAW card_final:", raw); // ← ВАЖНО: для отладки
-
-  if (!raw) return "НЕТ card_final";
-
-  const safe = raw
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
-
-  return safe;
-}
-
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
 
       // Подложка — все границы
       const baseLayer = L.geoJSON(data, {
-  interactive: false,
-  style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
-}).addTo(map);
+        interactive: false,
+        style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
+      }).addTo(map);
 
-const parcelsLayer = L.geoJSON(data, {
-  interactive: true,
-  bubblingMouseEvents: false,
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+      // Интерактивные участки
+      const parcelsLayer = L.geoJSON(data, {
+        interactive: true,
+        bubblingMouseEvents: false,
+        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-  onEachFeature: (feature, layer) => {
-  const rawCard = String(feature?.properties?.card_final || "").trim();
+        onEachFeature: (feature, layer) => {
+          const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  // гарантируем кликабельность
-  layer.options.interactive = true;
+          const bodyHtml = rawCard
+            ? buildPopupFromCardFinal(rawCard)
+            : "Нет данных card_final";
 
-  // 🔥 ТОЛЬКО card_final, без парсинга
-  const bodyHtml = rawCard
-    ? rawCard
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\n/g, "<br>")
-    : "Нет данных card_final";
+          // Биндим попап ОДИН РАЗ
+          layer.bindPopup(
+            `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+            { maxWidth: 9999, autoPan: true }
+          );
 
-  // биндим попап один раз
-  layer.bindPopup(
-    `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-    { maxWidth: 9999, autoPan: true }
-  );
+          // Открываем по клику
+          layer.on("click", () => {
+            console.log("CLICK, card_final =", rawCard);
+            layer.openPopup();
+          });
 
-  layer.on("click", () => {
-    // для проверки: что реально в card_final у этого участка
-    console.log("card_final:", feature?.properties?.card_final);
-    layer.openPopup();
-  });
+          // Подпись номера участка
+          const num = extractPlotNumberFromCard(rawCard);
+          if (num && layer.getBounds && layer.getBounds().isValid()) {
+            layer.bindTooltip(num, {
+              permanent: true,
+              direction: "center",
+              className: "parcel-label"
+            });
+          }
+        }
+      }).addTo(map);
 
-  // номер оставляем как было (он тоже берётся из card_final)
-  const num = extractPlotNumberFromCard(rawCard);
-  if (num && layer.getBounds && layer.getBounds().isValid()) {
-    layer.bindTooltip(num, {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
-  }
-}
-}).addTo(map);
-
-// 🔥 КРИТИЧНО: поднимаем интерактивный слой НАВЕРХ
-parcelsLayer.bringToFront();
+      // Поднимаем интерактивный слой наверх
+      parcelsLayer.bringToFront();
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
       if (focusBounds && focusBounds.isValid()) {
