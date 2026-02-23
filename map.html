@@ -127,34 +127,30 @@ console.log("VERSION: POPUP = RAW card_final ONLY");
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
         onEachFeature: (feature, layer) => {
-          const rawCard = String(feature?.properties?.card_final || "").trim();
+  const rawCard = String(feature?.properties?.card_final || "").trim();
 
-          const bodyHtml = rawCard
-            ? buildPopupFromCardFinal(rawCard)
-            : "Нет данных card_final";
+  // ТОЛЬКО card_final, без логики и парсинга
+  const bodyHtml = rawCard
+    ? rawCard
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br>")
+    : "Нет данных card_final";
 
-          // Биндим попап ОДИН РАЗ
-          layer.bindPopup(
-            `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-            { maxWidth: 9999, autoPan: true }
-          );
+  // Биндим попап ОДИН РАЗ
+  layer.bindPopup(
+    `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+    { maxWidth: 9999, autoPan: true }
+  );
 
-          // Открываем по клику
-          layer.on("click", () => {
-            console.log("CLICK, card_final =", rawCard);
-            layer.openPopup();
-          });
-
-          // Подпись номера участка
-          const num = extractPlotNumberFromCard(rawCard);
-          if (num && layer.getBounds && layer.getBounds().isValid()) {
-            layer.bindTooltip(num, {
-              permanent: true,
-              direction: "center",
-              className: "parcel-label"
-            });
-          }
-        }
+  // Открываем по клику
+  layer.on("click", () => {
+    console.log("CLICK, card_final =", rawCard);
+    layer.openPopup();
+  });
+}
+      }
       }).addTo(map);
 
       // Поднимаем интерактивный слой наверх
