@@ -132,38 +132,42 @@ const parcelsLayer = L.geoJSON(data, {
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
   onEachFeature: (feature, layer) => {
-    const rawCard = String(feature?.properties?.card_final || "").trim();
+  const rawCard = String(feature?.properties?.card_final || "").trim();
 
-    // Гарантируем, что слой кликабельный
-    layer.options.interactive = true;
+  // гарантируем кликабельность
+  layer.options.interactive = true;
 
-    // Вешаем клик
-    const bodyHtml = rawCard
-  ? buildPopupFromCardFinal(rawCard)
-  : "Нет данных card_final";
+  // 🔥 ТОЛЬКО card_final, без парсинга
+  const bodyHtml = rawCard
+    ? rawCard
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br>")
+    : "Нет данных card_final";
 
-// Биндим попап ОДИН РАЗ
-layer.bindPopup(
-  `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-  { maxWidth: 9999, autoPan: true }
-);
+  // биндим попап один раз
+  layer.bindPopup(
+    `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+    { maxWidth: 9999, autoPan: true }
+  );
 
-// Логируем и открываем при клике
-layer.on("click", () => {
-  console.log("CLICK ON PLOT", feature?.properties?.uch_num || "no num");
-  layer.openPopup();
-});
+  layer.on("click", () => {
+    // для проверки: что реально в card_final у этого участка
+    console.log("card_final:", feature?.properties?.card_final);
+    layer.openPopup();
+  });
 
-    // Подпись номера участка
-    const num = extractPlotNumberFromCard(rawCard);
-    if (num && layer.getBounds && layer.getBounds().isValid()) {
-      layer.bindTooltip(num, {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
-    }
+  // номер оставляем как было (он тоже берётся из card_final)
+  const num = extractPlotNumberFromCard(rawCard);
+  if (num && layer.getBounds && layer.getBounds().isValid()) {
+    layer.bindTooltip(num, {
+      permanent: true,
+      direction: "center",
+      className: "parcel-label"
+    });
   }
+}
 }).addTo(map);
 
 // 🔥 КРИТИЧНО: поднимаем интерактивный слой НАВЕРХ
