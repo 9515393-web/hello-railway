@@ -148,10 +148,9 @@ console.log("VERSION: POPUP = RAW card_final ONLY");
   layer.on("click", () => {
     console.log("CLICK, card_final =", rawCard);
     layer.openPopup();
-  });
-}
-      }
-      }).addTo(map);
+   });
+  }
+}).addTo(map);
 
       // Поднимаем интерактивный слой наверх
       parcelsLayer.bringToFront();
