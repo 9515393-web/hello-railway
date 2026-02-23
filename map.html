@@ -122,33 +122,33 @@ console.log("VERSION: POPUP = RAW card_final ONLY");
 
       // Интерактивные участки
       const parcelsLayer = L.geoJSON(data, {
-        interactive: true,
-        bubblingMouseEvents: false,
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+  interactive: true,
+  bubblingMouseEvents: false,
+  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
 
-        onEachFeature: (feature, layer) => {
-  const rawCard = String(feature?.properties?.card_final || "").trim();
+  onEachFeature: (feature, layer) => {
+    const rawCard = String(feature?.properties?.card_final || "").trim();
 
-  // ТОЛЬКО card_final, без логики и парсинга
-  const bodyHtml = rawCard
-    ? rawCard
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\n/g, "<br>")
-    : "Нет данных card_final";
+    // ТОЛЬКО card_final, без парсинга и подмен
+    const bodyHtml = rawCard
+      ? rawCard
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>")
+      : "Нет данных card_final";
 
-  // Биндим попап ОДИН РАЗ
-  layer.bindPopup(
-    `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-    { maxWidth: 9999, autoPan: true }
-  );
+    // Биндим попап один раз
+    layer.bindPopup(
+      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
+      { maxWidth: 9999, autoPan: true }
+    );
 
-  // Открываем по клику
-  layer.on("click", () => {
-    console.log("CLICK, card_final =", rawCard);
-    layer.openPopup();
-   });
+    // Открываем по клику
+    layer.on("click", () => {
+      console.log("CLICK, card_final =", rawCard);
+      layer.openPopup();
+    });
   }
 }).addTo(map);
 
