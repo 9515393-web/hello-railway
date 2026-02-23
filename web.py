@@ -3,10 +3,12 @@ from fastapi.responses import FileResponse
 import os
 import asyncpg
 from datetime import datetime
+from pydantic import BaseModel
 
 app = FastAPI()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 @app.get("/")
 async def index(request: Request, token: str):
@@ -57,6 +59,52 @@ async def get_geojson(token: str):
         media_type="application/geo+json",
         filename="Zahozhe_final_2026.geojson"
     )
+
+
+# ====== ВОТ ТУТ НАЧИНАЕТСЯ НОВЫЙ API ДЛЯ УЧАСТКОВ ======
+
+class PlotDataIn(BaseModel):
+    fio: str | None = None
+    phone: str | None = None
+    note: str | None = None
+
+
+@app.get("/api/plot/{plot_key}")
+async def get_plot_data(plot_key: str):
+    conn = await asyncpg.connect(DATABASE_URL)
+    row = await conn.fetchrow(
+        "SELECT plot_key, fio, phone, note FROM plot_data WHERE plot_key = $1",
+        plot_key
+    )
+    await conn.close()
+
+    if not row:
+        return {"plot_key": plot_key, "fio": None, "phone": None, "note": None}
+
+    return dict(row)
+
+
+@app.post("/api/plot/{plot_key}")
+async def save_plot_data(plot_key: str, data: PlotDataIn):
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    await conn.execute(
+        """
+        INSERT INTO plot_data (plot_key, fio, phone, note, updated_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (plot_key)
+        DO UPDATE SET
+          fio = EXCLUDED.fio,
+          phone = EXCLUDED.phone,
+          note = EXCLUDED.note,
+          updated_at = NOW()
+        """,
+        plot_key, data.fio, data.phone, data.note
+    )
+
+    await conn.close()
+
+    return {"status": "ok", "plot_key": plot_key}
 
 
 # ⚠️ ВРЕМЕННО! УДАЛИТЬ после использования!
