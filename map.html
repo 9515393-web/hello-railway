@@ -63,6 +63,17 @@
 <script>
 console.log("VERSION: POPUP = RAW card_final ONLY");
 
+function isLandParcel(feature) {
+  const raw = String(feature?.properties?.card_final || "");
+
+  // ищем "Площадь земельного участка XXX"
+  const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
+  if (!m) return false;
+
+  const area = Number(m[1]);
+  return area >= 400;
+}
+
 (function () {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
