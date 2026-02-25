@@ -121,7 +121,7 @@ console.log("VERSION: POPUP = RAW card_final ONLY");
       }).addTo(map);
 
       // Интерактивные участки
-      const parcelsLayer = L.geoJSON(data, {
+const parcelsLayer = L.geoJSON(data, {
   interactive: true,
   bubblingMouseEvents: false,
   style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
