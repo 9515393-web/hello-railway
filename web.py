@@ -10,9 +10,11 @@ app = FastAPI()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-@app.get("/")
-async def index(request: Request, token: str):
-    # проверяем токен
+# ====== ОБЩАЯ ПРОВЕРКА ТОКЕНА (АДМИН) ======
+async def require_admin(token: str):
+    if not token:
+        raise HTTPException(status_code=403, detail="token required")
+
     conn = await asyncpg.connect(DATABASE_URL)
     row = await conn.fetchrow(
         "SELECT admin_id, expires_at FROM admin_sessions WHERE token = $1",
@@ -26,30 +28,18 @@ async def index(request: Request, token: str):
     if row["expires_at"] < datetime.utcnow():
         raise HTTPException(status_code=403, detail="token expired")
 
-    # если всё ок — отдаём HTML карты
+    return row
+
+
+@app.get("/")
+async def index(request: Request, token: str):
+    await require_admin(token)
     return FileResponse("map.html", media_type="text/html")
 
 
 @app.get("/Zahozhe_final_2026.geojson")
 async def get_geojson(token: str):
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    row = await conn.fetchrow(
-        "SELECT admin_id, expires_at FROM admin_sessions WHERE token = $1",
-        token
-    )
-
-    await conn.close()
-
-    if not row:
-        raise HTTPException(status_code=403, detail="Invalid token")
-
-    if row["expires_at"] < datetime.utcnow():
-        raise HTTPException(status_code=403, detail="Token expired")
-
-    # Проверим, что файл реально существует
-    print("CWD:", os.getcwd())
-    print("Files:", os.listdir("."))
+    await require_admin(token)
 
     if not os.path.exists("Zahozhe_final_2026.geojson"):
         raise HTTPException(status_code=500, detail="GeoJSON file not found on server")
@@ -61,7 +51,7 @@ async def get_geojson(token: str):
     )
 
 
-# ====== ВОТ ТУТ НАЧИНАЕТСЯ НОВЫЙ API ДЛЯ УЧАСТКОВ ======
+# ====== API ДЛЯ АНКЕТЫ (plot_data) ======
 
 class PlotDataIn(BaseModel):
     fio: str | None = None
@@ -70,7 +60,9 @@ class PlotDataIn(BaseModel):
 
 
 @app.get("/api/plot/{plot_key}")
-async def get_plot_data(plot_key: str):
+async def get_plot_data(plot_key: str, token: str):
+    await require_admin(token)
+
     conn = await asyncpg.connect(DATABASE_URL)
     row = await conn.fetchrow(
         "SELECT plot_key, fio, phone, note FROM plot_data WHERE plot_key = $1",
@@ -85,9 +77,10 @@ async def get_plot_data(plot_key: str):
 
 
 @app.post("/api/plot/{plot_key}")
-async def save_plot_data(plot_key: str, data: PlotDataIn):
-    conn = await asyncpg.connect(DATABASE_URL)
+async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
+    await require_admin(token)
 
+    conn = await asyncpg.connect(DATABASE_URL)
     await conn.execute(
         """
         INSERT INTO plot_data (plot_key, fio, phone, note, updated_at)
@@ -101,9 +94,61 @@ async def save_plot_data(plot_key: str, data: PlotDataIn):
         """,
         plot_key, data.fio, data.phone, data.note
     )
-
     await conn.close()
 
+    return {"status": "ok", "plot_key": plot_key}
+
+
+# ====== API ДЛЯ ПОЛНОЙ КАРТОЧКИ (plot_cards) ======
+
+class CardIn(BaseModel):
+    card_text: str
+
+
+@app.get("/api/card/{plot_key}")
+async def get_card(plot_key: str, token: str):
+    await require_admin(token)
+
+    conn = await asyncpg.connect(DATABASE_URL)
+    row = await conn.fetchrow(
+        "SELECT plot_key, card_text, updated_at FROM plot_cards WHERE plot_key = $1",
+        plot_key
+    )
+    await conn.close()
+
+    if not row:
+        return {"plot_key": plot_key, "card_text": None, "updated_at": None}
+
+    return dict(row)
+
+
+@app.post("/api/card/{plot_key}")
+async def save_card(plot_key: str, data: CardIn, token: str):
+    await require_admin(token)
+
+    text = (data.card_text or "").strip()
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    # если прислали пусто — удаляем кастомную карточку (вернёмся к card_final)
+    if text == "":
+        await conn.execute("DELETE FROM plot_cards WHERE plot_key = $1", plot_key)
+        await conn.close()
+        return {"status": "deleted", "plot_key": plot_key}
+
+    await conn.execute(
+        """
+        INSERT INTO plot_cards (plot_key, card_text, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (plot_key)
+        DO UPDATE SET
+          card_text = EXCLUDED.card_text,
+          updated_at = NOW()
+        """,
+        plot_key, text
+    )
+
+    await conn.close()
     return {"status": "ok", "plot_key": plot_key}
 
 
