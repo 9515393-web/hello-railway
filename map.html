@@ -24,6 +24,49 @@
       overflow-wrap: break-word;
     }
     .popup-root{ font-size: 16px; line-height: 1.4; }
+    .popup-raw { margin-bottom: 12px; }
+
+    .edit-box{
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .edit-row{ margin: 8px 0; }
+    .edit-row label{
+      display:block;
+      font-size: 13px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .edit-row input, .edit-row textarea{
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+    .edit-actions{
+      display:flex;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .btn{
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-save{ background: #1f7ae0; color: #fff; }
+    .btn-reload{ background: #eee; }
+    .status-line{
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: .75;
+    }
 
     .leaflet-control.custom-buttons{
       display:flex;
@@ -61,15 +104,12 @@
 <div id="map"></div>
 
 <script>
-console.log("VERSION: POPUP = RAW card_final ONLY");
+console.log("VERSION: POPUP = RAW card_final + editable fio/phone/note (DB)");
 
 function isLandParcel(feature) {
   const raw = String(feature?.properties?.card_final || "");
-
-  // ищем "Площадь земельного участка XXX"
   const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
   if (!m) return false;
-
   const area = Number(m[1]);
   return area >= 400;
 }
@@ -86,17 +126,32 @@ function isLandParcel(feature) {
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  // ЖЁСТКО: показываем ТОЛЬКО card_final как есть
-  function buildPopupFromCardFinal(card) {
-    const raw = String(card || "");
-    return raw
+  function escapeHtml(s) {
+    return String(s ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\n/g, "<br>");
+      .replace(/>/g, "&gt;");
   }
 
-  // Для подписи номера участка (это НЕ влияет на попап)
+  // ЖЁСТКО: card_final показываем как есть (никакого парсинга)
+  function cardFinalToHtml(rawCard) {
+    return escapeHtml(rawCard).replace(/\n/g, "<br>");
+  }
+
+  // plot_key = "<номер СНТ>-<номер участка>"
+  // СНТ берём из строки адреса: Захожье-2, Захожье-6 и т.п.
+  function getPlotKey(feature) {
+    const uch = String(feature?.properties?.uch_num || "").trim();
+    const card = String(feature?.properties?.card_final || "");
+
+    // ищем "Захожье-2" / "Захожье - 2" / 'ТСН "Захожье-6"' и т.д.
+    const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
+    const snt = m ? m[1] : "0"; // 0 = если вдруг не нашли
+
+    return `${snt}-${uch || "?"}`;
+  }
+
+  // подписи участков (не влияет на popup)
   function extractPlotNumberFromCard(card) {
     const raw = String(card || "");
     const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
@@ -104,66 +159,175 @@ function isLandParcel(feature) {
       .replace(/\s+/g, " ")
       .trim();
 
-    let m = addr.match(/\bучасток\s*№\s*(\d+)\b/i);
+    let m = addr.match(/\bуч\.\s*(\d+)\b/i);
     if (m) return m[1];
 
-    m = addr.match(/\b(?:земельный\s+)?участок\s+(\d+)\b/i);
+    m = addr.match(/\bучасток\s*№?\s*(\d+)\b/i);
     if (m) return m[1];
 
-    const all = [];
-    const re = /\bуч\.\s*№?\s*(\d+)\b/ig;
-    let mm;
-    while ((mm = re.exec(addr)) !== null) all.push(mm[1]);
+    m = addr.match(/\bуч\.\s*№?\s*(\d+)\b/i);
+    if (m) return m[1];
 
-    if (all.length === 0) return "";
-    const not47 = all.find(x => x !== "47");
-    if (not47) return not47;
     return "";
+  }
+
+  async function apiGetPlot(plotKey) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}?token=${encodeURIComponent(token)}`);
+    if (!r.ok) throw new Error("GET /api/plot failed: " + r.status);
+    return await r.json();
+  }
+
+  async function apiSavePlot(plotKey, payload) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}?token=${encodeURIComponent(token)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error("POST /api/plot failed: " + r.status);
+    return await r.json();
+  }
+
+  function renderPopupHtml(rawCard, plotKey) {
+    const rawHtml = rawCard ? cardFinalToHtml(rawCard) : "Нет данных card_final";
+
+    // Важно: у элементов уникальные id по plotKey (иначе пересечения при нескольких попапах)
+    const fioId = `fio-${plotKey}`;
+    const phoneId = `phone-${plotKey}`;
+    const noteId = `note-${plotKey}`;
+    const statusId = `status-${plotKey}`;
+    const saveId = `save-${plotKey}`;
+    const reloadId = `reload-${plotKey}`;
+
+    return `
+      <div class="popup-root" data-plotkey="${escapeHtml(plotKey)}">
+        <div class="popup-raw">${rawHtml}</div>
+
+        <div class="edit-box">
+          <div style="font-weight:700;margin-bottom:6px;">✍️ Данные участника (только админ)</div>
+
+          <div class="edit-row">
+            <label for="${fioId}">Ф.И.О.</label>
+            <input id="${fioId}" type="text" placeholder="Введите ФИО">
+          </div>
+
+          <div class="edit-row">
+            <label for="${phoneId}">Телефон</label>
+            <input id="${phoneId}" type="text" placeholder="+7...">
+          </div>
+
+          <div class="edit-row">
+            <label for="${noteId}">Примечание</label>
+            <textarea id="${noteId}" rows="3" placeholder="Любая заметка..."></textarea>
+          </div>
+
+          <div class="edit-actions">
+            <button class="btn btn-reload" id="${reloadId}">♻️ Обновить</button>
+            <button class="btn btn-save" id="${saveId}">💾 Сохранить</button>
+          </div>
+
+          <div class="status-line" id="${statusId}">plot_key: ${escapeHtml(plotKey)}</div>
+        </div>
+      </div>
+    `.trim();
+  }
+
+  async function bindPopupLogic(layer, feature) {
+    const rawCard = String(feature?.properties?.card_final || "").trim();
+    const plotKey = getPlotKey(feature);
+
+    layer.bindPopup(
+      renderPopupHtml(rawCard, plotKey),
+      { maxWidth: 9999, autoPan: true }
+    );
+
+    // Когда попап открылся — подгружаем данные из БД и вешаем обработчики
+    layer.on("popupopen", async () => {
+      const fioEl = document.getElementById(`fio-${plotKey}`);
+      const phoneEl = document.getElementById(`phone-${plotKey}`);
+      const noteEl = document.getElementById(`note-${plotKey}`);
+      const statusEl = document.getElementById(`status-${plotKey}`);
+      const saveBtn = document.getElementById(`save-${plotKey}`);
+      const reloadBtn = document.getElementById(`reload-${plotKey}`);
+
+      const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
+
+      const load = async () => {
+        try {
+          setStatus("⏳ Загружаю данные из БД...");
+          const data = await apiGetPlot(plotKey);
+          if (fioEl) fioEl.value = data.fio ?? "";
+          if (phoneEl) phoneEl.value = data.phone ?? "";
+          if (noteEl) noteEl.value = data.note ?? "";
+          setStatus(`✅ Загружено. updated_at: ${data.updated_at ?? "—"}`);
+        } catch (e) {
+          console.error(e);
+          setStatus("❌ Ошибка загрузки из БД (см. console)");
+        }
+      };
+
+      // чтобы не навесить 100 обработчиков при повторных открытиях
+      const once = (el, evt, fn) => {
+        if (!el) return;
+        const key = `__bound_${evt}`;
+        if (el[key]) return;
+        el.addEventListener(evt, fn);
+        el[key] = true;
+      };
+
+      once(reloadBtn, "click", async () => { await load(); });
+
+      once(saveBtn, "click", async () => {
+        try {
+          setStatus("💾 Сохраняю...");
+          await apiSavePlot(plotKey, {
+            fio: fioEl ? fioEl.value.trim() : null,
+            phone: phoneEl ? phoneEl.value.trim() : null,
+            note: noteEl ? noteEl.value.trim() : null
+          });
+          await load();
+        } catch (e) {
+          console.error(e);
+          setStatus("❌ Ошибка сохранения (см. console)");
+        }
+      });
+
+      await load();
+    });
+
+    // клики
+    layer.on("click", () => {
+      console.log("CLICK, plot_key =", plotKey, "card_final =", rawCard);
+      layer.openPopup();
+    });
+
+    // подпись номера участка
+    const num = extractPlotNumberFromCard(rawCard);
+    if (num && layer.getBounds && layer.getBounds().isValid()) {
+      layer.bindTooltip(num, {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
+    }
   }
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(data => {
+    .then(async (data) => {
 
-      // Подложка — все границы
       const baseLayer = L.geoJSON(data, {
         interactive: false,
         style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
       }).addTo(map);
 
-      // Интерактивные участки
-const parcelsLayer = L.geoJSON(data, {
-  interactive: true,
-  bubblingMouseEvents: false,
-  style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+      const parcelsLayer = L.geoJSON(data, {
+        filter: isLandParcel, // ✅ фильтр зданий
+        interactive: true,
+        bubblingMouseEvents: false,
+        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
+        onEachFeature: (feature, layer) => { bindPopupLogic(layer, feature); }
+      }).addTo(map);
 
-  onEachFeature: (feature, layer) => {
-    const rawCard = String(feature?.properties?.card_final || "").trim();
-
-    // ТОЛЬКО card_final, без парсинга и подмен
-    const bodyHtml = rawCard
-      ? rawCard
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\n/g, "<br>")
-      : "Нет данных card_final";
-
-    // Биндим попап один раз
-    layer.bindPopup(
-      `<div class="popup-root"><div>${bodyHtml}</div></div>`,
-      { maxWidth: 9999, autoPan: true }
-    );
-
-    // Открываем по клику
-    layer.on("click", () => {
-      console.log("CLICK, card_final =", rawCard);
-      layer.openPopup();
-    });
-  }
-}).addTo(map);
-
-      // Поднимаем интерактивный слой наверх
       parcelsLayer.bringToFront();
 
       const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
