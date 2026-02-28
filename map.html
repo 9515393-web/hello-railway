@@ -19,11 +19,8 @@
       overflow-y: auto;
       font-size: 16px;
       line-height: 1.4;
-      white-space: normal !important;
-      word-break: normal;
-      overflow-wrap: break-word;
     }
-    .popup-root{ font-size: 16px; line-height: 1.4; }
+
     .popup-raw { margin-bottom: 12px; }
 
     .edit-box{
@@ -31,13 +28,16 @@
       padding-top: 10px;
       margin-top: 10px;
     }
+
     .edit-row{ margin: 8px 0; }
+
     .edit-row label{
       display:block;
       font-size: 13px;
       opacity: 0.8;
       margin-bottom: 4px;
     }
+
     .edit-row input, .edit-row textarea{
       width: 100%;
       box-sizing: border-box;
@@ -45,13 +45,14 @@
       padding: 8px 10px;
       border-radius: 10px;
       border: 1px solid #ccc;
-      outline: none;
     }
+
     .edit-actions{
       display:flex;
       gap:10px;
       margin-top: 10px;
     }
+
     .btn{
       flex: 1;
       padding: 10px 12px;
@@ -60,31 +61,14 @@
       cursor: pointer;
       font-size: 14px;
     }
+
     .btn-save{ background: #1f7ae0; color: #fff; }
     .btn-reload{ background: #eee; }
+
     .status-line{
       margin-top: 8px;
       font-size: 12px;
       opacity: .75;
-    }
-
-    .leaflet-control.custom-buttons{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      padding:12px;
-      border-radius:16px;
-      background:rgba(255,255,255,0.9);
-      pointer-events:auto;
-      z-index:1000;
-    }
-    .leaflet-control.custom-buttons button{
-      min-height:48px;
-      padding:10px 14px;
-      font-size:16px;
-      border-radius:12px;
-      pointer-events:auto;
-      cursor:pointer;
     }
 
     .parcel-label{
@@ -94,38 +78,22 @@
       color:#111 !important;
       font-weight:700 !important;
       font-size:12px !important;
-      text-shadow:0 0 2px #fff, 0 0 2px #fff;
+      text-shadow:0 0 2px #fff;
     }
-    .leaflet-tooltip { pointer-events: none; }
-    .leaflet-tooltip-pane { z-index: 650; }
   </style>
 </head>
 <body>
 <div id="map"></div>
 
 <script>
-console.log("VERSION: POPUP = RAW card_final + editable fio/phone/note (DB)");
-
-function isLandParcel(feature) {
-  const raw = String(feature?.properties?.card_final || "");
-  const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
-  if (!m) return false;
-  const area = Number(m[1]);
-  return area >= 400;
-}
-
 (function () {
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
 
-  const map = L.map("map", { zoomControl: false, tap: true, touchZoom: true });
-  setTimeout(() => map.invalidateSize(true), 0);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap"
-  }).addTo(map);
+  const map = L.map("map", { zoomControl: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
   function escapeHtml(s) {
     return String(s ?? "")
@@ -146,28 +114,9 @@ function isLandParcel(feature) {
     return `${snt}-${uch || "?"}`;
   }
 
-  function extractPlotNumberFromCard(card) {
-    const raw = String(card || "");
-    const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
-    const addr = (addrLineMatch ? addrLineMatch[1] : raw)
-      .replace(/\s+/g, " ")
-      .trim();
-
-    let m = addr.match(/\bуч\.\s*(\d+)\b/i);
-    if (m) return m[1];
-
-    m = addr.match(/\bучасток\s*№?\s*(\d+)\b/i);
-    if (m) return m[1];
-
-    m = addr.match(/\bуч\.\s*№?\s*(\d+)\b/i);
-    if (m) return m[1];
-
-    return "";
-  }
-
   async function apiGetPlot(plotKey) {
     const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}?token=${encodeURIComponent(token)}`);
-    if (!r.ok) throw new Error("GET failed: " + r.status);
+    if (!r.ok) throw new Error("GET failed");
     return await r.json();
   }
 
@@ -177,16 +126,14 @@ function isLandParcel(feature) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!r.ok) throw new Error("POST failed: " + r.status);
+    if (!r.ok) throw new Error("POST failed");
     return await r.json();
   }
 
   function renderPopupHtml(rawCard, plotKey) {
-    const rawHtml = rawCard ? cardFinalToHtml(rawCard) : "Нет данных";
-
     return `
-      <div class="popup-root" data-plotkey="${escapeHtml(plotKey)}">
-        <div class="popup-raw">${rawHtml}</div>
+      <div>
+        <div class="popup-raw">${cardFinalToHtml(rawCard)}</div>
 
         <div class="edit-box">
           <div style="font-weight:700;margin-bottom:6px;">✍️ Данные участника</div>
@@ -214,96 +161,78 @@ function isLandParcel(feature) {
           <div class="status-line" id="status-${plotKey}">plot_key: ${escapeHtml(plotKey)}</div>
         </div>
       </div>
-    `.trim();
+    `;
   }
 
-  // ✅ ЗАМЕНЁННАЯ ФУНКЦИЯ
-  async function bindPopupLogic(layer, feature) {
+  function bindPopupLogic(layer, feature) {
     const rawCard = String(feature?.properties?.card_final || "").trim();
     const plotKey = getPlotKey(feature);
 
-    layer.bindPopup(
-      renderPopupHtml(rawCard, plotKey),
-      { maxWidth: 9999, autoPan: true }
-    );
+    layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
     layer.on("popupopen", async (e) => {
+
       const container = e.popup.getElement();
       if (!container) return;
 
-      const fioEl = container.querySelector(`#fio-${CSS.escape(plotKey)}`);
-      const phoneEl = container.querySelector(`#phone-${CSS.escape(plotKey)}`);
-      const noteEl = container.querySelector(`#note-${CSS.escape(plotKey)}`);
-      const statusEl = container.querySelector(`#status-${CSS.escape(plotKey)}`);
-      const saveBtn = container.querySelector(`#save-${CSS.escape(plotKey)}`);
-      const reloadBtn = container.querySelector(`#reload-${CSS.escape(plotKey)}`);
+      const fioEl = container.querySelector('[id="fio-' + plotKey + '"]');
+      const phoneEl = container.querySelector('[id="phone-' + plotKey + '"]');
+      const noteEl = container.querySelector('[id="note-' + plotKey + '"]');
+      const statusEl = container.querySelector('[id="status-' + plotKey + '"]');
+      const saveBtn = container.querySelector('[id="save-' + plotKey + '"]');
+      const reloadBtn = container.querySelector('[id="reload-' + plotKey + '"]');
 
       const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
 
-      const load = async () => {
+      async function load() {
         try {
           setStatus("⏳ Загружаю...");
           const data = await apiGetPlot(plotKey);
-
           if (fioEl) fioEl.value = data?.fio ?? "";
           if (phoneEl) phoneEl.value = data?.phone ?? "";
           if (noteEl) noteEl.value = data?.note ?? "";
-
-          setStatus(`✅ Загружено. updated_at: ${data?.updated_at ?? "—"}`);
-        } catch (err) {
-          console.error(err);
+          setStatus("✅ Загружено");
+        } catch (e) {
+          console.error(e);
           setStatus("❌ Ошибка загрузки");
         }
-      };
+      }
 
-      const bindOnce = (el, event, handler) => {
-        if (!el) return;
-        const key = `__bound_${event}`;
-        if (el[key]) return;
-        el.addEventListener(event, handler);
-        el[key] = true;
-      };
+      if (reloadBtn && !reloadBtn._bound) {
+        reloadBtn.addEventListener("click", load);
+        reloadBtn._bound = true;
+      }
 
-      bindOnce(reloadBtn, "click", async () => { await load(); });
-
-      bindOnce(saveBtn, "click", async () => {
-        try {
-          setStatus("💾 Сохраняю...");
-          await apiSavePlot(plotKey, {
-            fio: fioEl?.value.trim() || null,
-            phone: phoneEl?.value.trim() || null,
-            note: noteEl?.value.trim() || null
-          });
-          await load();
-        } catch (err) {
-          console.error(err);
-          setStatus("❌ Ошибка сохранения");
-        }
-      });
+      if (saveBtn && !saveBtn._bound) {
+        saveBtn.addEventListener("click", async () => {
+          try {
+            setStatus("💾 Сохраняю...");
+            await apiSavePlot(plotKey, {
+              fio: fioEl?.value.trim() || null,
+              phone: phoneEl?.value.trim() || null,
+              note: noteEl?.value.trim() || null
+            });
+            setStatus("✅ Сохранено");
+          } catch (e) {
+            console.error(e);
+            setStatus("❌ Ошибка сохранения");
+          }
+        });
+        saveBtn._bound = true;
+      }
 
       await load();
     });
 
     layer.on("click", () => layer.openPopup());
-
-    const num = extractPlotNumberFromCard(rawCard);
-    if (num && layer.getBounds && layer.getBounds().isValid()) {
-      layer.bindTooltip(num, {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
-    }
   }
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => r.json())
-    .then((data) => {
-
+    .then(data => {
       const parcelsLayer = L.geoJSON(data, {
-        filter: isLandParcel,
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
+        style: { color: "#ff0000", weight: 2, fillOpacity: 0.2 },
+        onEachFeature: bindPopupLogic
       }).addTo(map);
 
       map.fitBounds(parcelsLayer.getBounds(), { padding: [20, 20] });
