@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Админ-карта Захожье</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,14 +11,12 @@
   <style>
     html, body, #map { height: 100%; margin: 0; }
 
-    .leaflet-popup-content-wrapper { border-radius: 14px; }
     .leaflet-popup-content{
       width: 420px !important;
       max-width: 420px !important;
       max-height: 60vh;
       overflow-y: auto;
-      font-size: 16px;
-      line-height: 1.4;
+      font-size: 15px;
     }
 
     .popup-raw { margin-bottom: 12px; }
@@ -34,7 +32,7 @@
     .edit-row label{
       display:block;
       font-size: 13px;
-      opacity: 0.8;
+      opacity: .8;
       margin-bottom: 4px;
     }
 
@@ -42,8 +40,8 @@
       width: 100%;
       box-sizing: border-box;
       font-size: 14px;
-      padding: 8px 10px;
-      border-radius: 10px;
+      padding: 8px;
+      border-radius: 8px;
       border: 1px solid #ccc;
     }
 
@@ -54,30 +52,29 @@
     }
 
     .btn{
-      flex: 1;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 0;
-      cursor: pointer;
-      font-size: 14px;
+      flex:1;
+      padding:10px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-size:14px;
     }
 
-    .btn-save{ background: #1f7ae0; color: #fff; }
-    .btn-reload{ background: #eee; }
+    .btn-save{ background:#1f7ae0; color:#fff; }
+    .btn-reload{ background:#eee; }
 
     .status-line{
-      margin-top: 8px;
-      font-size: 12px;
-      opacity: .75;
+      margin-top:8px;
+      font-size:12px;
+      opacity:.7;
     }
 
     .parcel-label{
       background:transparent !important;
       border:none !important;
       box-shadow:none !important;
-      color:#111 !important;
-      font-weight:700 !important;
-      font-size:12px !important;
+      font-weight:700;
+      font-size:12px;
       text-shadow:0 0 2px #fff;
     }
   </style>
@@ -90,9 +87,9 @@
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
-  if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
+  if (!token) { alert("Нет токена доступа"); throw new Error("No token"); }
 
-  const map = L.map("map", { zoomControl: false });
+  const map = L.map("map");
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
   function escapeHtml(s) {
@@ -104,6 +101,13 @@
 
   function cardFinalToHtml(rawCard) {
     return escapeHtml(rawCard).replace(/\n/g, "<br>");
+  }
+
+  function isLandParcel(feature) {
+    const raw = String(feature?.properties?.card_final || "");
+    const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
+    if (!m) return false;
+    return Number(m[1]) >= 400;
   }
 
   function getPlotKey(feature) {
@@ -230,12 +234,14 @@
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => r.json())
     .then(data => {
+
       const parcelsLayer = L.geoJSON(data, {
+        filter: isLandParcel,
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.2 },
-        onEachFeature: bindPopupLogic
+        onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
       }).addTo(map);
 
-      map.fitBounds(parcelsLayer.getBounds(), { padding: [20, 20] });
+      map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
     });
 
 })();
