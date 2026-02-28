@@ -115,6 +115,7 @@ function isLandParcel(feature) {
 }
 
 (function () {
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   if (!token) { alert("⛔ Нет токена доступа"); throw new Error("No token"); }
@@ -133,25 +134,18 @@ function isLandParcel(feature) {
       .replace(/>/g, "&gt;");
   }
 
-  // ЖЁСТКО: card_final показываем как есть (никакого парсинга)
   function cardFinalToHtml(rawCard) {
     return escapeHtml(rawCard).replace(/\n/g, "<br>");
   }
 
-  // plot_key = "<номер СНТ>-<номер участка>"
-  // СНТ берём из строки адреса: Захожье-2, Захожье-6 и т.п.
   function getPlotKey(feature) {
     const uch = String(feature?.properties?.uch_num || "").trim();
     const card = String(feature?.properties?.card_final || "");
-
-    // ищем "Захожье-2" / "Захожье - 2" / 'ТСН "Захожье-6"' и т.д.
     const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
-    const snt = m ? m[1] : "0"; // 0 = если вдруг не нашли
-
+    const snt = m ? m[1] : "0";
     return `${snt}-${uch || "?"}`;
   }
 
-  // подписи участков (не влияет на popup)
   function extractPlotNumberFromCard(card) {
     const raw = String(card || "");
     const addrLineMatch = raw.match(/^\s*1\.\s*Адрес:\s*([\s\S]*?);/mi);
@@ -173,7 +167,7 @@ function isLandParcel(feature) {
 
   async function apiGetPlot(plotKey) {
     const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}?token=${encodeURIComponent(token)}`);
-    if (!r.ok) throw new Error("GET /api/plot failed: " + r.status);
+    if (!r.ok) throw new Error("GET failed: " + r.status);
     return await r.json();
   }
 
@@ -183,54 +177,47 @@ function isLandParcel(feature) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!r.ok) throw new Error("POST /api/plot failed: " + r.status);
+    if (!r.ok) throw new Error("POST failed: " + r.status);
     return await r.json();
   }
 
   function renderPopupHtml(rawCard, plotKey) {
-    const rawHtml = rawCard ? cardFinalToHtml(rawCard) : "Нет данных card_final";
-
-    // Важно: у элементов уникальные id по plotKey (иначе пересечения при нескольких попапах)
-    const fioId = `fio-${plotKey}`;
-    const phoneId = `phone-${plotKey}`;
-    const noteId = `note-${plotKey}`;
-    const statusId = `status-${plotKey}`;
-    const saveId = `save-${plotKey}`;
-    const reloadId = `reload-${plotKey}`;
+    const rawHtml = rawCard ? cardFinalToHtml(rawCard) : "Нет данных";
 
     return `
       <div class="popup-root" data-plotkey="${escapeHtml(plotKey)}">
         <div class="popup-raw">${rawHtml}</div>
 
         <div class="edit-box">
-          <div style="font-weight:700;margin-bottom:6px;">✍️ Данные участника (только админ)</div>
+          <div style="font-weight:700;margin-bottom:6px;">✍️ Данные участника</div>
 
           <div class="edit-row">
-            <label for="${fioId}">Ф.И.О.</label>
-            <input id="${fioId}" type="text" placeholder="Введите ФИО">
+            <label>Ф.И.О.</label>
+            <input id="fio-${plotKey}" type="text">
           </div>
 
           <div class="edit-row">
-            <label for="${phoneId}">Телефон</label>
-            <input id="${phoneId}" type="text" placeholder="+7...">
+            <label>Телефон</label>
+            <input id="phone-${plotKey}" type="text">
           </div>
 
           <div class="edit-row">
-            <label for="${noteId}">Примечание</label>
-            <textarea id="${noteId}" rows="3" placeholder="Любая заметка..."></textarea>
+            <label>Примечание</label>
+            <textarea id="note-${plotKey}" rows="3"></textarea>
           </div>
 
           <div class="edit-actions">
-            <button class="btn btn-reload" id="${reloadId}">♻️ Обновить</button>
-            <button class="btn btn-save" id="${saveId}">💾 Сохранить</button>
+            <button class="btn btn-reload" id="reload-${plotKey}">♻️ Обновить</button>
+            <button class="btn btn-save" id="save-${plotKey}">💾 Сохранить</button>
           </div>
 
-          <div class="status-line" id="${statusId}">plot_key: ${escapeHtml(plotKey)}</div>
+          <div class="status-line" id="status-${plotKey}">plot_key: ${escapeHtml(plotKey)}</div>
         </div>
       </div>
     `.trim();
   }
 
+  // ✅ ЗАМЕНЁННАЯ ФУНКЦИЯ
   async function bindPopupLogic(layer, feature) {
     const rawCard = String(feature?.properties?.card_final || "").trim();
     const plotKey = getPlotKey(feature);
@@ -240,67 +227,65 @@ function isLandParcel(feature) {
       { maxWidth: 9999, autoPan: true }
     );
 
-    // Когда попап открылся — подгружаем данные из БД и вешаем обработчики
-    layer.on("popupopen", async () => {
-      const fioEl = document.getElementById(`fio-${plotKey}`);
-      const phoneEl = document.getElementById(`phone-${plotKey}`);
-      const noteEl = document.getElementById(`note-${plotKey}`);
-      const statusEl = document.getElementById(`status-${plotKey}`);
-      const saveBtn = document.getElementById(`save-${plotKey}`);
-      const reloadBtn = document.getElementById(`reload-${plotKey}`);
+    layer.on("popupopen", async (e) => {
+      const container = e.popup.getElement();
+      if (!container) return;
+
+      const fioEl = container.querySelector(`#fio-${CSS.escape(plotKey)}`);
+      const phoneEl = container.querySelector(`#phone-${CSS.escape(plotKey)}`);
+      const noteEl = container.querySelector(`#note-${CSS.escape(plotKey)}`);
+      const statusEl = container.querySelector(`#status-${CSS.escape(plotKey)}`);
+      const saveBtn = container.querySelector(`#save-${CSS.escape(plotKey)}`);
+      const reloadBtn = container.querySelector(`#reload-${CSS.escape(plotKey)}`);
 
       const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
 
       const load = async () => {
         try {
-          setStatus("⏳ Загружаю данные из БД...");
+          setStatus("⏳ Загружаю...");
           const data = await apiGetPlot(plotKey);
-          if (fioEl) fioEl.value = data.fio ?? "";
-          if (phoneEl) phoneEl.value = data.phone ?? "";
-          if (noteEl) noteEl.value = data.note ?? "";
-          setStatus(`✅ Загружено. updated_at: ${data.updated_at ?? "—"}`);
-        } catch (e) {
-          console.error(e);
-          setStatus("❌ Ошибка загрузки из БД (см. console)");
+
+          if (fioEl) fioEl.value = data?.fio ?? "";
+          if (phoneEl) phoneEl.value = data?.phone ?? "";
+          if (noteEl) noteEl.value = data?.note ?? "";
+
+          setStatus(`✅ Загружено. updated_at: ${data?.updated_at ?? "—"}`);
+        } catch (err) {
+          console.error(err);
+          setStatus("❌ Ошибка загрузки");
         }
       };
 
-      // чтобы не навесить 100 обработчиков при повторных открытиях
-      const once = (el, evt, fn) => {
+      const bindOnce = (el, event, handler) => {
         if (!el) return;
-        const key = `__bound_${evt}`;
+        const key = `__bound_${event}`;
         if (el[key]) return;
-        el.addEventListener(evt, fn);
+        el.addEventListener(event, handler);
         el[key] = true;
       };
 
-      once(reloadBtn, "click", async () => { await load(); });
+      bindOnce(reloadBtn, "click", async () => { await load(); });
 
-      once(saveBtn, "click", async () => {
+      bindOnce(saveBtn, "click", async () => {
         try {
           setStatus("💾 Сохраняю...");
           await apiSavePlot(plotKey, {
-            fio: fioEl ? fioEl.value.trim() : null,
-            phone: phoneEl ? phoneEl.value.trim() : null,
-            note: noteEl ? noteEl.value.trim() : null
+            fio: fioEl?.value.trim() || null,
+            phone: phoneEl?.value.trim() || null,
+            note: noteEl?.value.trim() || null
           });
           await load();
-        } catch (e) {
-          console.error(e);
-          setStatus("❌ Ошибка сохранения (см. console)");
+        } catch (err) {
+          console.error(err);
+          setStatus("❌ Ошибка сохранения");
         }
       });
 
       await load();
     });
 
-    // клики
-    layer.on("click", () => {
-      console.log("CLICK, plot_key =", plotKey, "card_final =", rawCard);
-      layer.openPopup();
-    });
+    layer.on("click", () => layer.openPopup());
 
-    // подпись номера участка
     const num = extractPlotNumberFromCard(rawCard);
     if (num && layer.getBounds && layer.getBounds().isValid()) {
       layer.bindTooltip(num, {
@@ -312,58 +297,16 @@ function isLandParcel(feature) {
   }
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(async (data) => {
-
-      const baseLayer = L.geoJSON(data, {
-        interactive: false,
-        style: { color: "#ff0000", weight: 1, opacity: 0.35, fill: false }
-      }).addTo(map);
+    .then(r => r.json())
+    .then((data) => {
 
       const parcelsLayer = L.geoJSON(data, {
-        filter: isLandParcel, // ✅ фильтр зданий
-        interactive: true,
-        bubblingMouseEvents: false,
+        filter: isLandParcel,
         style: { color: "#ff0000", weight: 2, fillOpacity: 0.20 },
-        onEachFeature: (feature, layer) => { bindPopupLogic(layer, feature); }
+        onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
       }).addTo(map);
 
-      parcelsLayer.bringToFront();
-
-      const focusBounds = parcelsLayer.getBounds().isValid() ? parcelsLayer.getBounds() : baseLayer.getBounds();
-      if (focusBounds && focusBounds.isValid()) {
-        map.fitBounds(focusBounds, { padding: [20, 20] });
-      }
-
-      const ButtonsControl = L.Control.extend({
-        options: { position: "bottomleft" },
-        onAdd: function () {
-          const container = L.DomUtil.create("div", "leaflet-control custom-buttons");
-
-          const btnZoomIn = L.DomUtil.create("button", "", container);
-          btnZoomIn.innerText = "➕ Приблизить";
-          const btnZoomOut = L.DomUtil.create("button", "", container);
-          btnZoomOut.innerText = "➖ Отдалить";
-          const btnFocus = L.DomUtil.create("button", "", container);
-          btnFocus.innerText = "🔍 К участкам";
-          const btnOverview = L.DomUtil.create("button", "", container);
-          btnOverview.innerText = "🌍 Обзор";
-
-          L.DomEvent.disableClickPropagation(container);
-          L.DomEvent.on(btnZoomIn, "click", () => map.flyTo(map.getCenter(), map.getZoom() + 2, { duration: 0.4 }));
-          L.DomEvent.on(btnZoomOut, "click", () => map.flyTo(map.getCenter(), map.getZoom() - 2, { duration: 0.4 }));
-          L.DomEvent.on(btnFocus, "click", () => map.fitBounds(focusBounds, { padding: [20, 20], maxZoom: 18 }));
-          L.DomEvent.on(btnOverview, "click", () => map.fitBounds(focusBounds, { padding: [100, 100] }));
-
-          return container;
-        }
-      });
-
-      map.addControl(new ButtonsControl());
-    })
-    .catch(err => {
-      console.error("Ошибка загрузки карты:", err);
-      alert("Ошибка загрузки карты. Проверь соединение или токен.");
+      map.fitBounds(parcelsLayer.getBounds(), { padding: [20, 20] });
     });
 
 })();
