@@ -32,7 +32,10 @@ async def require_admin(token: str):
 
 
 @app.get("/")
-async def index(request: Request, token: str):
+async def index(request: Request, token: str | None = None):
+    if not token:
+        raise HTTPException(status_code=403, detail="Token required")
+
     await require_admin(token)
     return FileResponse("map.html", media_type="text/html")
 
