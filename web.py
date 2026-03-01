@@ -51,7 +51,7 @@ async def get_geojson(token: str):
     )
 
 
-# ====== API ДЛЯ АНКЕТЫ (plot_data) ======
+# ====== API ДЛЯ АНКЕТЫ (plot_cards) ======
 
 class PlotDataIn(BaseModel):
     fio: str | None = None
@@ -64,14 +64,25 @@ async def get_plot_data(plot_key: str, token: str):
     await require_admin(token)
 
     conn = await asyncpg.connect(DATABASE_URL)
+
     row = await conn.fetchrow(
-        "SELECT plot_key, fio, phone, note FROM plot_data WHERE plot_key = $1",
+        """
+        SELECT plot_key, fio, phone, note
+        FROM plot_cards
+        WHERE plot_key = $1
+        """,
         plot_key
     )
+
     await conn.close()
 
     if not row:
-        return {"plot_key": plot_key, "fio": None, "phone": None, "note": None}
+        return {
+            "plot_key": plot_key,
+            "fio": None,
+            "phone": None,
+            "note": None
+        }
 
     return dict(row)
 
@@ -81,9 +92,10 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
     await require_admin(token)
 
     conn = await asyncpg.connect(DATABASE_URL)
+
     await conn.execute(
         """
-        INSERT INTO plot_data (plot_key, fio, phone, note, updated_at)
+        INSERT INTO plot_cards (plot_key, fio, phone, note, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (plot_key)
         DO UPDATE SET
@@ -92,63 +104,14 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
           note = EXCLUDED.note,
           updated_at = NOW()
         """,
-        plot_key, data.fio, data.phone, data.note
-    )
-    await conn.close()
-
-    return {"status": "ok", "plot_key": plot_key}
-
-
-# ====== API ДЛЯ ПОЛНОЙ КАРТОЧКИ (plot_cards) ======
-
-class CardIn(BaseModel):
-    card_text: str
-
-
-@app.get("/api/card/{plot_key}")
-async def get_card(plot_key: str, token: str):
-    await require_admin(token)
-
-    conn = await asyncpg.connect(DATABASE_URL)
-    row = await conn.fetchrow(
-        "SELECT plot_key, card_text, updated_at FROM plot_cards WHERE plot_key = $1",
-        plot_key
-    )
-    await conn.close()
-
-    if not row:
-        return {"plot_key": plot_key, "card_text": None, "updated_at": None}
-
-    return dict(row)
-
-
-@app.post("/api/card/{plot_key}")
-async def save_card(plot_key: str, data: CardIn, token: str):
-    await require_admin(token)
-
-    text = (data.card_text or "").strip()
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    # если прислали пусто — удаляем кастомную карточку (вернёмся к card_final)
-    if text == "":
-        await conn.execute("DELETE FROM plot_cards WHERE plot_key = $1", plot_key)
-        await conn.close()
-        return {"status": "deleted", "plot_key": plot_key}
-
-    await conn.execute(
-        """
-        INSERT INTO plot_cards (plot_key, card_text, updated_at)
-        VALUES ($1, $2, NOW())
-        ON CONFLICT (plot_key)
-        DO UPDATE SET
-          card_text = EXCLUDED.card_text,
-          updated_at = NOW()
-        """,
-        plot_key, text
+        plot_key,
+        data.fio,
+        data.phone,
+        data.note
     )
 
     await conn.close()
+
     return {"status": "ok", "plot_key": plot_key}
 
 
