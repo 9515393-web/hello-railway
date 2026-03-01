@@ -483,7 +483,7 @@ async def admin_menu(message: types.Message):
         "🔐 Админ-панель",
         reply_markup=admin_keyboard
     )
-ADMIN_MAP_BASE_URL = "https://admin-map-web-production.up.railway.app"  # ← твой домен из Railway
+ADMIN_MAP_BASE_URL = "https://hello-railway-production-6ef1.up.railway.app"
 
 @dp.message(F.text == "🗺 Открыть админ-карту")
 async def open_admin_map(message: types.Message):
