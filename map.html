@@ -215,10 +215,12 @@
 }
 console.log("SAVE BUTTON FOUND", plotKey);
       
-if (saveBtn && !saveBtn._bound) {
-  saveBtn.addEventListener("click", async (ev) => {
+if (saveBtn) {
+  saveBtn.onclick = async function (ev) {
     ev.preventDefault();
     ev.stopPropagation();
+    console.log("SAVE CLICKED", plotKey);
+
     try {
       setStatus("💾 Сохраняю...");
       await apiSavePlot(plotKey, {
@@ -231,8 +233,7 @@ if (saveBtn && !saveBtn._bound) {
       console.error(e);
       setStatus("❌ Ошибка сохранения");
     }
-  });
-  saveBtn._bound = true;
+  };
 }
 
       await load();
