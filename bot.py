@@ -487,6 +487,7 @@ ADMIN_MAP_BASE_URL = "https://admin-map-web-production.up.railway.app"
 
 @dp.message(F.text == "🗺 Открыть админ-карту")
 async def open_admin_map(message: types.Message):
+    print("OPEN ADMIN MAP HANDLER TRIGGERED")
     if not is_admin(message.from_user.id):
         await message.answer("⛔ Доступ запрещён")
         return
