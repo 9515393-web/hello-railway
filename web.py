@@ -138,7 +138,11 @@ async def _dev_extend_token(token: str):
         token
     )
 
-    @app.get("/_fix_table")
+    await conn.close()
+    return {"status": "ok", "result": result}
+
+
+@app.get("/_fix_table")
 async def fix_table():
     conn = await asyncpg.connect(DATABASE_URL)
 
@@ -156,7 +160,3 @@ async def fix_table():
 
     await conn.close()
     return {"status": "ok"}
-
-    await conn.close()
-
-    return {"status": "ok", "result": result}
