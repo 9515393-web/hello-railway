@@ -1474,14 +1474,6 @@ async def main():
     await init_db()
     await debug_bot(bot)
 
-    # 🔒 Защита от случайного двойного запуска
-    # Railway = всегда можно
-    # Локально = только если RUN_LOCAL=1
-    if not IS_RAILWAY and not RUN_LOCAL:
-        print("⛔ Локальный запуск запрещён (RUN_LOCAL=0).")
-        print("👉 Для локального запуска поставь RUN_LOCAL=1")
-        return
-
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
