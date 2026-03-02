@@ -213,7 +213,8 @@
   });
   reloadBtn._bound = true;
 }
-
+console.log("SAVE BUTTON FOUND", plotKey);
+      
 if (saveBtn && !saveBtn._bound) {
   saveBtn.addEventListener("click", async (ev) => {
     ev.preventDefault();
