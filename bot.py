@@ -483,7 +483,7 @@ async def admin_menu(message: types.Message):
         "🔐 Админ-панель",
         reply_markup=admin_keyboard
     )
-ADMIN_MAP_BASE_URL = "https://hello-railway-production-6ef1.up.railway.app"
+ADMIN_MAP_BASE_URL = "https://admin-map-web-production.up.railway.app"
 
 @dp.message(F.text == "🗺 Открыть админ-карту")
 async def open_admin_map(message: types.Message):
@@ -500,7 +500,11 @@ async def open_admin_map(message: types.Message):
         "🔐 Ссылка действует 10 минут:\n"
         f"{url}"
     )
-
+# ===== DEBUG: что реально приходит от кнопки =====
+@dp.message()
+async def _debug_text(message: types.Message):
+    if is_admin(message.from_user.id):
+        print("DEBUG TEXT =", repr(message.text))
 
 @dp.message(Command("whoami"))
 async def whoami(message: types.Message):
