@@ -178,6 +178,9 @@
 
       const container = e.popup.getElement();
       if (!container) return;
+      // ✅ важно: чтобы карта не съедала клики/скролл внутри popup
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
 
       const fioEl = container.querySelector('[id="fio-' + plotKey + '"]');
       const phoneEl = container.querySelector('[id="phone-' + plotKey + '"]');
@@ -203,27 +206,33 @@
       }
 
       if (reloadBtn && !reloadBtn._bound) {
-        reloadBtn.addEventListener("click", load);
-        reloadBtn._bound = true;
-      }
+  reloadBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    load();
+  });
+  reloadBtn._bound = true;
+}
 
-      if (saveBtn && !saveBtn._bound) {
-        saveBtn.addEventListener("click", async () => {
-          try {
-            setStatus("💾 Сохраняю...");
-            await apiSavePlot(plotKey, {
-              fio: fioEl?.value.trim() || null,
-              phone: phoneEl?.value.trim() || null,
-              note: noteEl?.value.trim() || null
-            });
-            setStatus("✅ Сохранено");
-          } catch (e) {
-            console.error(e);
-            setStatus("❌ Ошибка сохранения");
-          }
-        });
-        saveBtn._bound = true;
-      }
+if (saveBtn && !saveBtn._bound) {
+  saveBtn.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    try {
+      setStatus("💾 Сохраняю...");
+      await apiSavePlot(plotKey, {
+        fio: fioEl?.value.trim() || null,
+        phone: phoneEl?.value.trim() || null,
+        note: noteEl?.value.trim() || null
+      });
+      setStatus("✅ Сохранено");
+    } catch (e) {
+      console.error(e);
+      setStatus("❌ Ошибка сохранения");
+    }
+  });
+  saveBtn._bound = true;
+}
 
       await load();
     });
