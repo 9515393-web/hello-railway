@@ -292,6 +292,30 @@
   });
 }
 
+function getUchNumber(feature) {
+  return (feature?.properties?.uch_num ?? "").toString().trim();
+}
+
+function addParcelLabel(layer, feature) {
+  const uch = getUchNumber(feature);
+  if (!uch) return;
+  if (!layer.getBounds) return;
+
+  try {
+    const center = layer.getBounds().getCenter();
+
+    L.marker(center, {
+      interactive: false,
+      icon: L.divIcon({
+        className: "parcel-label",
+        html: String(uch)
+      })
+    }).addTo(map);
+
+  } catch (e) {
+    console.warn("Label skipped:", uch);
+  }
+}
 
 const geojsonUrl = `Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`;
 const allUrl = `/api/plot/all?token=${encodeURIComponent(token)}`;
@@ -320,6 +344,8 @@ Promise.all([
 
     onEachFeature: (feature, layer) => {
   bindPopupLogic(layer, feature);
+  addParcelLabel(layer, feature);   // ← ВОТ ЭТА СТРОКА
+}
 
   // ✅ НОМЕР УЧАСТКА
   const uch = feature?.properties?.uch_num;
