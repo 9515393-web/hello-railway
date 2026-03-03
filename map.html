@@ -169,117 +169,99 @@
   }
 
   function bindPopupLogic(layer, feature) {
-    const rawCard = String(feature?.properties?.card_final || "").trim();
-    const plotKey = getPlotKey(feature);
+  const rawCard = String(feature?.properties?.card_final || "").trim();
+  const plotKey = getPlotKey(feature);
 
-    layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
+  layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
-layer.on("popupopen", async (e) => {
+  layer.on("popupopen", async (e) => {
 
-  map.dragging.disable();
-  map.scrollWheelZoom.disable();
-  map.doubleClickZoom.disable();
+    map.dragging.disable();
+    map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable();
 
-  const container = e.popup.getElement();
-  if (!container) return;
+    const container = e.popup.getElement();
+    if (!container) return;
 
-  // ✅ ОЧЕНЬ важно: остановить все события, которые Leaflet использует для карты
-  const stop = L.DomEvent.stopPropagation;
-  const prevent = L.DomEvent.preventDefault;
+    L.DomEvent.disableClickPropagation(container);
+    L.DomEvent.disableScrollPropagation(container);
 
-  // стопаем события на всем popup
-  ["click","dblclick","mousedown","mouseup","touchstart","touchend","wheel","contextmenu"]
-    .forEach((evt) => L.DomEvent.on(container, evt, stop));
+    const fioEl = container.querySelector(`#fio-${plotKey}`);
+    const phoneEl = container.querySelector(`#phone-${plotKey}`);
+    const noteEl = container.querySelector(`#note-${plotKey}`);
+    const statusEl = container.querySelector(`#status-${plotKey}`);
+    const saveBtn = container.querySelector(`#save-${plotKey}`);
+    const reloadBtn = container.querySelector(`#reload-${plotKey}`);
 
-  // и отдельно отключаем прокрутку/клики как ты уже делал
-  L.DomEvent.disableClickPropagation(container);
-  L.DomEvent.disableScrollPropagation(container);
+    const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
 
-  const fioEl = container.querySelector(`#fio-${plotKey}`);
-  const phoneEl = container.querySelector(`#phone-${plotKey}`);
-  const noteEl = container.querySelector(`#note-${plotKey}`);
-  const statusEl = container.querySelector(`#status-${plotKey}`);
-  const saveBtn = container.querySelector(`#save-${plotKey}`);
-  const reloadBtn = container.querySelector(`#reload-${plotKey}`);
-
-  const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
-
-  async function load() {
-    try {
-      setStatus("⏳ Загружаю...");
-      const data = await apiGetPlot(plotKey);
-      if (fioEl) fioEl.value = data?.fio ?? "";
-      if (phoneEl) phoneEl.value = data?.phone ?? "";
-      if (noteEl) noteEl.value = data?.note ?? "";
-      setStatus("✅ Загружено");
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Ошибка загрузки");
+    async function load() {
+      try {
+        setStatus("⏳ Загружаю...");
+        const data = await apiGetPlot(plotKey);
+        if (fioEl) fioEl.value = data?.fio ?? "";
+        if (phoneEl) phoneEl.value = data?.phone ?? "";
+        if (noteEl) noteEl.value = data?.note ?? "";
+        setStatus("✅ Загружено");
+      } catch (err) {
+        console.error(err);
+        setStatus("❌ Ошибка загрузки");
+      }
     }
-  }
 
-  // ✅ reload
-  if (reloadBtn && !reloadBtn._bound) {
-    L.DomEvent.on(reloadBtn, "click", (ev) => {
-      prevent(ev);
-      stop(ev);
-      load();
-    });
-    reloadBtn._bound = true;
-  }
-
-  // ✅ save
-  if (saveBtn && !saveBtn._bound) {
-
-  console.log("SAVE BUTTON FOUND", plotKey);
-
-  L.DomEvent.on(saveBtn, "click", async (ev) => {
-    L.DomEvent.preventDefault(ev);
-    L.DomEvent.stopPropagation(ev);
-
-    console.log("SAVE CLICKED", plotKey);
-
-    try {
-      setStatus("💾 Сохраняю...");
-      await apiSavePlot(plotKey, {
-        fio: fioEl?.value?.trim() || null,
-        phone: phoneEl?.value?.trim() || null,
-        note: noteEl?.value?.trim() || null,
-      });
-      setStatus("✅ Сохранено");
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Ошибка сохранения");
+    if (reloadBtn) {
+      reloadBtn.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        load();
+      };
     }
+
+    if (saveBtn) {
+      saveBtn.onclick = async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        console.log("SAVE CLICKED", plotKey);
+
+        try {
+          setStatus("💾 Сохраняю...");
+          await apiSavePlot(plotKey, {
+            fio: fioEl?.value?.trim() || null,
+            phone: phoneEl?.value?.trim() || null,
+            note: noteEl?.value?.trim() || null,
+          });
+          setStatus("✅ Сохранено");
+        } catch (err) {
+          console.error(err);
+          setStatus("❌ Ошибка сохранения");
+        }
+      };
+    }
+
+    await load();
   });
 
-  saveBtn._bound = true;
+  layer.on("popupclose", () => {
+    map.dragging.enable();
+    map.scrollWheelZoom.enable();
+    map.doubleClickZoom.enable();
+  });
 }
 
-  await load();
-});
 
-// 👇 ВОТ ЭТО ОБЯЗАТЕЛЬНО
-layer.on("popupclose", () => {
-  map.dragging.enable();
-  map.scrollWheelZoom.enable();
-  map.doubleClickZoom.enable();
-});
+fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
+  .then(r => r.json())
+  .then(data => {
 
-}
+    const parcelsLayer = L.geoJSON(data, {
+      filter: isLandParcel,
+      style: { color: "#ff0000", weight: 2, fillOpacity: 0.2 },
+      onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
+    }).addTo(map);
 
-  fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-    .then(r => r.json())
-    .then(data => {
-
-      const parcelsLayer = L.geoJSON(data, {
-        filter: isLandParcel,
-        style: { color: "#ff0000", weight: 2, fillOpacity: 0.2 },
-        onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
-      }).addTo(map);
-
-      map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
-    });
+    map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
+  });
 
 })();
 </script>
