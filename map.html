@@ -311,10 +311,13 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
 
   const uch = feature?.properties?.uch_num;
 
-  // Добавляем номер только если это полигон
+  const type = feature?.geometry?.type;
+
   if (
     uch &&
-    layer instanceof L.Polygon
+    (type === "Polygon" || type === "MultiPolygon") &&
+    feature.geometry.coordinates &&
+    feature.geometry.coordinates.length
   ) {
     layer.bindTooltip(String(uch), {
       permanent: true,
