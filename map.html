@@ -371,21 +371,15 @@ Promise.all([
 
   const parcelsLayer = L.geoJSON(geojson, {
     filter: isLandParcel,
-
-    // ✅ цвет сразу при создании слоя (без клика)
     style: (feature) => {
       const plotKey = getPlotKey(feature);
       const data = allPlots?.[plotKey];
       return getPlotStyle(data?.fio, data?.phone);
     },
-
     onEachFeature: (feature, layer) => {
-      // попап (редактирование)
       bindPopupLogic(layer, feature);
 
-      // ✅ номер участка (перманентный tooltip)
       const uch = (feature?.properties?.uch_num ?? "").toString().trim();
-
       if (uch && layerHasLatLngs(layer)) {
         try {
           layer.bindTooltip(String(uch), {
@@ -400,7 +394,6 @@ Promise.all([
     }
   }).addTo(map);
 
-  // ✅ fitBounds только если реально есть геометрия
   try {
     const b = parcelsLayer.getBounds();
     if (b && b.isValid && b.isValid()) {
@@ -411,9 +404,9 @@ Promise.all([
   }
 
 })
-.catch(err => {
-  console.error("LOAD ERROR:", err);
-});
+.catch(err => console.error("LOAD ERROR:", err));
+
+})();
 </script>
 </body>
 </html>
