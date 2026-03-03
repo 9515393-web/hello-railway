@@ -307,50 +307,49 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
       },
       onEachFeature: (feature, layer) => {
 
-  bindPopupLogic(layer, feature);
+        bindPopupLogic(layer, feature);
 
-  const uch = feature?.properties?.uch_num;
+        const uch = feature?.properties?.uch_num;
 
-  const type = feature?.geometry?.type;
-
-  if (
-  uch &&
-  layer instanceof L.Polygon &&
-  layer.getLatLngs &&
-  layer.getLatLngs().length > 0
-) {
-  try {
-    layer.bindTooltip(String(uch), {
-      permanent: true,
-      direction: "center",
-      className: "parcel-label"
-    });
-  } catch (e) {
-    console.warn("Tooltip skipped:", uch);
-  }
-}
+        if (
+          uch &&
+          layer instanceof L.Polygon &&
+          layer.getLatLngs &&
+          layer.getLatLngs().length > 0
+        ) {
+          try {
+            layer.bindTooltip(String(uch), {
+              permanent: true,
+              direction: "center",
+              className: "parcel-label"
+            });
+          } catch (e) {
+            console.warn("Tooltip skipped:", uch);
+          }
+        }
+      }
     }).addTo(map);
-    // 🔥 Автоматическая подсветка всех участков при загрузке
-parcelsLayer.eachLayer(async (layer) => {
 
-  const feature = layer.feature;
-  if (!feature) return;
+    // 🔥 автоподсветка
+    parcelsLayer.eachLayer(async (layer) => {
 
-  const plotKey = getPlotKey(feature);
+      const feature = layer.feature;
+      if (!feature) return;
 
-  try {
-    const data = await apiGetPlot(plotKey);
+      const plotKey = getPlotKey(feature);
 
-    const style = getPlotStyle(data?.fio, data?.phone);
-    layer.setStyle(style);
+      try {
+        const data = await apiGetPlot(plotKey);
+        const style = getPlotStyle(data?.fio, data?.phone);
+        layer.setStyle(style);
+      } catch (e) {
+        console.warn("Color load failed:", plotKey);
+      }
 
-  } catch (e) {
-    console.warn("Color load failed:", plotKey);
-  }
-
-});
+    });
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
+
   });
 
 })();
