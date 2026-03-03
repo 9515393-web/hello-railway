@@ -111,12 +111,13 @@
   }
 
   function getPlotKey(feature) {
-    const uch = String(feature?.properties?.uch_num || "").trim();
-    const card = String(feature?.properties?.card_final || "");
-    const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
-    const snt = m ? m[1] : "0";
-    return `${snt}-${uch || "?"}`;
-  }
+  const uch = String(feature?.properties?.uch_num || "").trim() || "0";
+  const card = String(feature?.properties?.card_final || "");
+  const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
+  const snt = m ? m[1] : "0";
+
+  return `${snt}_${uch}`;  // используем _
+}
 
   async function apiGetPlot(plotKey) {
     const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}?token=${encodeURIComponent(token)}`);
