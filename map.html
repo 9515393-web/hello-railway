@@ -306,18 +306,23 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
         weight: 2
       },
       onEachFeature: (feature, layer) => {
-        bindPopupLogic(layer, feature);
 
-        const uch = feature?.properties?.uch_num;
+  bindPopupLogic(layer, feature);
 
-        if (uch) {
-          layer.bindTooltip(String(uch), {
-            permanent: true,
-            direction: "center",
-            className: "parcel-label"
-          });
-        }
-      }
+  const uch = feature?.properties?.uch_num;
+
+  // Добавляем номер только если это полигон
+  if (
+    uch &&
+    layer instanceof L.Polygon
+  ) {
+    layer.bindTooltip(String(uch), {
+      permanent: true,
+      direction: "center",
+      className: "parcel-label"
+    });
+  }
+}
     }).addTo(map);
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
