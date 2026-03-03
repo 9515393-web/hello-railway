@@ -103,12 +103,49 @@
     return escapeHtml(rawCard).replace(/\n/g, "<br>");
   }
 
-  function isLandParcel(feature) {
-    const raw = String(feature?.properties?.card_final || "");
-    const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
-    if (!m) return false;
-    return Number(m[1]) >= 400;
+  function hasGeometry(feature) {
+  const g = feature?.geometry;
+  if (!g) return false;
+
+  const coords = g.coordinates;
+  if (!coords) return false;
+
+  // просто проверка что есть хоть что-то
+  if (!Array.isArray(coords)) return false;
+  if (coords.length === 0) return false;
+
+  return true;
+}
+
+function isLandParcel(feature) {
+  if (!hasGeometry(feature)) return false;
+
+  const raw = String(feature?.properties?.card_final || "");
+  const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
+  if (!m) return false;
+  return Number(m[1]) >= 400;
+}
+
+function layerHasLatLngs(layer) {
+  if (!layer || !layer.getLatLngs) return false;
+
+  let ll;
+  try { ll = layer.getLatLngs(); } catch (e) { return false; }
+
+  if (!Array.isArray(ll) || ll.length === 0) return false;
+
+  // polygon: [[LatLng...]]
+  // multipolygon: [[[LatLng...]]]
+  const a0 = ll[0];
+  if (!Array.isArray(a0) || a0.length === 0) return false;
+
+  // если это multipolygon, a0[0] тоже массив
+  if (Array.isArray(a0[0])) {
+    return Array.isArray(a0[0]) && a0[0].length > 0;
   }
+
+  return true;
+}
 
   function getPlotKey(feature) {
   const uch = String(feature?.properties?.uch_num || "").trim();
@@ -335,46 +372,48 @@ Promise.all([
   const parcelsLayer = L.geoJSON(geojson, {
     filter: isLandParcel,
 
-    // 🔥 цвет сразу при создании слоя
+    // ✅ цвет сразу при создании слоя (без клика)
     style: (feature) => {
       const plotKey = getPlotKey(feature);
-      const data = allPlots[plotKey];
+      const data = allPlots?.[plotKey];
       return getPlotStyle(data?.fio, data?.phone);
     },
 
     onEachFeature: (feature, layer) => {
-  bindPopupLogic(layer, feature);
-  addParcelLabel(layer, feature);   // ← ВОТ ЭТА СТРОКА
-}
+      // попап (редактирование)
+      bindPopupLogic(layer, feature);
 
-  // ✅ НОМЕР УЧАСТКА
-  const uch = feature?.properties?.uch_num;
-  if (!uch) return;
+      // ✅ номер участка (перманентный tooltip)
+      const uch = (feature?.properties?.uch_num ?? "").toString().trim();
 
-  try {
-    // Вариант 1 (рекомендую): tooltip по центру полигона
-    if (layer.getBounds) {
-      layer.bindTooltip(String(uch), {
-        permanent: true,
-        direction: "center",
-        className: "parcel-label"
-      });
+      if (uch && layerHasLatLngs(layer)) {
+        try {
+          layer.bindTooltip(String(uch), {
+            permanent: true,
+            direction: "center",
+            className: "parcel-label"
+          });
+        } catch (e) {
+          console.warn("Tooltip skipped:", uch, e);
+        }
+      }
     }
-  } catch (e) {
-    console.warn("Tooltip skipped:", uch, e);
-  }
-}
-
   }).addTo(map);
 
-  map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
+  // ✅ fitBounds только если реально есть геометрия
+  try {
+    const b = parcelsLayer.getBounds();
+    if (b && b.isValid && b.isValid()) {
+      map.fitBounds(b, { padding: [20, 20], maxZoom: 18 });
+    }
+  } catch (e) {
+    console.warn("fitBounds skipped:", e);
+  }
 
 })
 .catch(err => {
   console.error("LOAD ERROR:", err);
 });
-
-})();
 </script>
 </body>
 </html>
