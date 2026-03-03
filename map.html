@@ -314,16 +314,19 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
   const type = feature?.geometry?.type;
 
   if (
-    uch &&
-    (type === "Polygon" || type === "MultiPolygon") &&
-    feature.geometry.coordinates &&
-    feature.geometry.coordinates.length
-  ) {
+  uch &&
+  layer instanceof L.Polygon &&
+  layer.getLatLngs &&
+  layer.getLatLngs().length > 0
+) {
+  try {
     layer.bindTooltip(String(uch), {
       permanent: true,
       direction: "center",
       className: "parcel-label"
     });
+  } catch (e) {
+    console.warn("Tooltip skipped:", uch);
   }
 }
     }).addTo(map);
