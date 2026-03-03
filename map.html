@@ -328,11 +328,9 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
           }
         }
       }
-    }).addTo(map);
+        }).addTo(map);
 
-    // 🔥 автоподсветка
     parcelsLayer.eachLayer(async (layer) => {
-
       const feature = layer.feature;
       if (!feature) return;
 
@@ -345,7 +343,6 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
       } catch (e) {
         console.warn("Color load failed:", plotKey);
       }
-
     });
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
