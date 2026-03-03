@@ -294,8 +294,15 @@
 
 
 fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-  .then(r => r.json())
-  .then(data => {
+  .then(async r => {
+    if (!r.ok) {
+      const text = await r.text();
+      console.error("SERVER ERROR:", text);
+      throw new Error(text);
+    }
+    return r.json();
+  })
+  .then(async data => {   // ← async здесь обязательно
 
     const parcelsLayer = L.geoJSON(data, {
       filter: isLandParcel,
@@ -306,48 +313,30 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
         weight: 2
       },
       onEachFeature: (feature, layer) => {
+        bindPopupLogic(layer, feature);
+      }
+    }).addTo(map);
 
-  bindPopupLogic(layer, feature);
+    // пример если есть общий запрос
+    const allPlots = await fetch(`/api/plot/all?token=${encodeURIComponent(token)}`)
+      .then(r => r.json());
 
-  const uch = feature?.properties?.uch_num;
-
-  if (uch && layer.getBounds) {
-    try {
-      const center = layer.getBounds().getCenter();
-
-      L.marker(center, {
-        icon: L.divIcon({
-          className: "parcel-label",
-          html: String(uch)
-        })
-      }).addTo(map);
-
-    } catch (e) {
-      console.warn("Label skipped:", uch);
-    }
-  }
-
-}
-
-}).addTo(map);
-
-    parcelsLayer.eachLayer(async (layer) => {
+    parcelsLayer.eachLayer((layer) => {
       const feature = layer.feature;
       if (!feature) return;
 
       const plotKey = getPlotKey(feature);
+      const data = allPlots[plotKey];
+      if (!data) return;
 
-      try {
-        const data = await apiGetPlot(plotKey);
-        const style = getPlotStyle(data?.fio, data?.phone);
-        layer.setStyle(style);
-      } catch (e) {
-        console.warn("Color load failed:", plotKey);
-      }
+      layer.setStyle(getPlotStyle(data.fio, data.phone));
     });
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
 
+  })
+  .catch(err => {
+    console.error("LOAD ERROR:", err);
   });
 
 })();
