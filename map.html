@@ -293,51 +293,43 @@
 }
 
 
-fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
-  .then(async r => {
-    if (!r.ok) {
-      const text = await r.text();
-      console.error("SERVER ERROR:", text);
-      throw new Error(text);
-    }
+const geojsonUrl = `Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`;
+const allUrl = `/api/plot/all?token=${encodeURIComponent(token)}`;
+
+Promise.all([
+  fetch(geojsonUrl).then(async r => {
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }),
+  fetch(allUrl).then(async r => {
+    if (!r.ok) throw new Error(await r.text());
     return r.json();
   })
-  .then(async data => {   // ← async здесь обязательно
+])
+.then(([geojson, allPlots]) => {
 
-    const parcelsLayer = L.geoJSON(data, {
-      filter: isLandParcel,
-      style: {
-        color: "#cc0000",
-        fillColor: "#ff0000",
-        fillOpacity: 0.3,
-        weight: 2
-      },
-      onEachFeature: (feature, layer) => {
-        bindPopupLogic(layer, feature);
-      }
-    }).addTo(map);
+  const parcelsLayer = L.geoJSON(geojson, {
+    filter: isLandParcel,
 
-    // пример если есть общий запрос
-    const allPlots = await fetch(`/api/plot/all?token=${encodeURIComponent(token)}`)
-      .then(r => r.json());
-
-    parcelsLayer.eachLayer((layer) => {
-      const feature = layer.feature;
-      if (!feature) return;
-
+    // 🔥 цвет сразу при создании слоя
+    style: (feature) => {
       const plotKey = getPlotKey(feature);
       const data = allPlots[plotKey];
-      if (!data) return;
+      return getPlotStyle(data?.fio, data?.phone);
+    },
 
-      layer.setStyle(getPlotStyle(data.fio, data.phone));
-    });
+    onEachFeature: (feature, layer) => {
+      bindPopupLogic(layer, feature);
+    }
 
-    map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
+  }).addTo(map);
 
-  })
-  .catch(err => {
-    console.error("LOAD ERROR:", err);
-  });
+  map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
+
+})
+.catch(err => {
+  console.error("LOAD ERROR:", err);
+});
 
 })();
 </script>
