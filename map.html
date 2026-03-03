@@ -116,7 +116,7 @@
   const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
   const snt = m ? m[1] : "0";
 
-  return `${snt}-${uch}`;   // ← ТОЛЬКО ТАК
+  return `${snt}-${uch}`;   // ← ВАЖНО: дефис
 }
 
   async function apiGetPlot(plotKey) {
