@@ -111,12 +111,12 @@
   }
 
   function getPlotKey(feature) {
-  const uch = String(feature?.properties?.uch_num || "").trim() || "0";
+  const uch = String(feature?.properties?.uch_num || "").trim();
   const card = String(feature?.properties?.card_final || "");
   const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
   const snt = m ? m[1] : "0";
 
-  return `${snt}_${uch}`;  // используем _
+  return `${snt}-${uch}`;   // ← ТОЛЬКО ТАК
 }
 
   async function apiGetPlot(plotKey) {
@@ -207,6 +207,8 @@
   layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
   layer.on("popupopen", async (e) => {
+
+    console.log("PLOT KEY:", plotKey);
 
     map.dragging.disable();
     map.scrollWheelZoom.disable();
