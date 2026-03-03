@@ -89,6 +89,21 @@ async def get_plot_data(plot_key: str, token: str):
 
     return dict(row)
 
+@app.get("/api/plot/all")
+async def get_all_plots(token: str):
+    await require_admin(token)
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    rows = await conn.fetch("""
+        SELECT plot_key, fio, phone
+        FROM plot_cards
+    """)
+
+    await conn.close()
+
+    return {row["plot_key"]: dict(row) for row in rows}
+
 
 @app.post("/api/plot/{plot_key}")
 async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
@@ -112,12 +127,6 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
         data.phone,
         data.note
     )
-
-    await conn.close()
-
-    return {"status": "ok", "plot_key": plot_key}
-
-
 
     await conn.close()
 
