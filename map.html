@@ -169,6 +169,37 @@
     `;
   }
 
+  function getPlotStyle(fio, phone) {
+
+  const hasFio = !!fio?.trim();
+  const hasPhone = !!phone?.trim();
+
+  if (hasFio && hasPhone) {
+    return {
+      color: "#008000",
+      fillColor: "#00cc00",
+      fillOpacity: 0.5,
+      weight: 2
+    };
+  }
+
+  if (hasFio || hasPhone) {
+    return {
+      color: "#cc7a00",
+      fillColor: "#ff9900",
+      fillOpacity: 0.5,
+      weight: 2
+    };
+  }
+
+  return {
+    color: "#cc0000",
+    fillColor: "#ff0000",
+    fillOpacity: 0.3,
+    weight: 2
+  };
+}
+  
   function bindPopupLogic(layer, feature) {
   const rawCard = String(feature?.properties?.card_final || "").trim();
   const plotKey = getPlotKey(feature);
@@ -203,6 +234,9 @@
         if (fioEl) fioEl.value = data?.fio ?? "";
         if (phoneEl) phoneEl.value = data?.phone ?? "";
         if (noteEl) noteEl.value = data?.note ?? "";
+        // 🎨 применяем цвет
+        const style = getPlotStyle(data?.fio, data?.phone);
+        layer.setStyle(style);
         setStatus("✅ Загружено");
       } catch (err) {
         console.error(err);
@@ -233,6 +267,12 @@
             note: noteEl?.value?.trim() || null,
           });
           setStatus("✅ Сохранено");
+          // 🎨 обновляем цвет после сохранения
+          const style = getPlotStyle(
+            fioEl?.value,
+            phoneEl?.value
+          );
+          layer.setStyle(style);
         } catch (err) {
           console.error(err);
           setStatus("❌ Ошибка сохранения");
@@ -257,7 +297,12 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
 
     const parcelsLayer = L.geoJSON(data, {
       filter: isLandParcel,
-      style: { color: "#ff0000", weight: 2, fillOpacity: 0.2 },
+      style: {
+        color: "#cc0000",
+        fillColor: "#ff0000",
+        fillOpacity: 0.3,
+        weight: 2
+      },
       onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
     }).addTo(map);
 
