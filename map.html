@@ -330,6 +330,25 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
   }
 }
     }).addTo(map);
+    // 🔥 Автоматическая подсветка всех участков при загрузке
+parcelsLayer.eachLayer(async (layer) => {
+
+  const feature = layer.feature;
+  if (!feature) return;
+
+  const plotKey = getPlotKey(feature);
+
+  try {
+    const data = await apiGetPlot(plotKey);
+
+    const style = getPlotStyle(data?.fio, data?.phone);
+    layer.setStyle(style);
+
+  } catch (e) {
+    console.warn("Color load failed:", plotKey);
+  }
+
+});
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
   });
