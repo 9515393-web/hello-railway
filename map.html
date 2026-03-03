@@ -305,7 +305,19 @@ fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
         fillOpacity: 0.3,
         weight: 2
       },
-      onEachFeature: (feature, layer) => bindPopupLogic(layer, feature)
+      onEachFeature: (feature, layer) => {
+        bindPopupLogic(layer, feature);
+
+        const uch = feature?.properties?.uch_num;
+
+        if (uch) {
+          layer.bindTooltip(String(uch), {
+            permanent: true,
+            direction: "center",
+            className: "parcel-label"
+          });
+        }
+      }
     }).addTo(map);
 
     map.fitBounds(parcelsLayer.getBounds(), { padding: [20,20], maxZoom: 18 });
