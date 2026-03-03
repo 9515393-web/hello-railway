@@ -142,21 +142,3 @@ async def _dev_extend_token(token: str):
     return {"status": "ok", "result": result}
 
 
-@app.get("/_fix_table")
-async def fix_table():
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    await conn.execute("""
-        DROP TABLE IF EXISTS plot_cards;
-
-        CREATE TABLE plot_cards (
-            plot_key TEXT PRIMARY KEY,
-            fio TEXT,
-            phone TEXT,
-            note TEXT,
-            updated_at TIMESTAMP DEFAULT NOW()
-        );
-    """)
-
-    await conn.close()
-    return {"status": "ok"}
