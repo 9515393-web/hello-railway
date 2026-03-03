@@ -174,7 +174,12 @@
 
     layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
-    layer.on("popupopen", async (e) => {
+layer.on("popupopen", async (e) => {
+
+  map.dragging.disable();
+  map.scrollWheelZoom.disable();
+  map.doubleClickZoom.disable();
+
   const container = e.popup.getElement();
   if (!container) return;
 
@@ -225,35 +230,41 @@
 
   // ✅ save
   if (saveBtn && !saveBtn._bound) {
-    console.log("SAVE BUTTON FOUND", plotKey);
 
-    L.DomEvent.on(saveBtn, "click", async (ev) => {
-      prevent(ev);
-      stop(ev);
-      console.log("SAVE CLICKED", plotKey);
+  console.log("SAVE BUTTON FOUND", plotKey);
 
-      try {
-        setStatus("💾 Сохраняю...");
-        await apiSavePlot(plotKey, {
-          fio: fioEl?.value?.trim() || null,
-          phone: phoneEl?.value?.trim() || null,
-          note: noteEl?.value?.trim() || null,
-        });
-        setStatus("✅ Сохранено");
-      } catch (err) {
-        console.error(err);
-        setStatus("❌ Ошибка сохранения");
-      }
-    });
+  L.DomEvent.on(saveBtn, "click", async (ev) => {
+    L.DomEvent.preventDefault(ev);
+    L.DomEvent.stopPropagation(ev);
 
-    saveBtn._bound = true;
-  }
+    console.log("SAVE CLICKED", plotKey);
+
+    try {
+      setStatus("💾 Сохраняю...");
+      await apiSavePlot(plotKey, {
+        fio: fioEl?.value?.trim() || null,
+        phone: phoneEl?.value?.trim() || null,
+        note: noteEl?.value?.trim() || null,
+      });
+      setStatus("✅ Сохранено");
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Ошибка сохранения");
+    }
+  });
+
+  saveBtn._bound = true;
+}
 
   await load();
 });
 
-    layer.on("click", () => layer.openPopup());
-  }
+// 👇 ВОТ ЭТО ОБЯЗАТЕЛЬНО
+layer.on("popupclose", () => {
+  map.dragging.enable();
+  map.scrollWheelZoom.enable();
+  map.doubleClickZoom.enable();
+});
 
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => r.json())
