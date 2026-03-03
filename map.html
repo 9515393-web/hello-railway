@@ -319,8 +319,25 @@ Promise.all([
     },
 
     onEachFeature: (feature, layer) => {
-      bindPopupLogic(layer, feature);
+  bindPopupLogic(layer, feature);
+
+  // ✅ НОМЕР УЧАСТКА
+  const uch = feature?.properties?.uch_num;
+  if (!uch) return;
+
+  try {
+    // Вариант 1 (рекомендую): tooltip по центру полигона
+    if (layer.getBounds) {
+      layer.bindTooltip(String(uch), {
+        permanent: true,
+        direction: "center",
+        className: "parcel-label"
+      });
     }
+  } catch (e) {
+    console.warn("Tooltip skipped:", uch, e);
+  }
+}
 
   }).addTo(map);
 
