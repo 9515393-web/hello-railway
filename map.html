@@ -266,6 +266,8 @@ layer.on("popupclose", () => {
   map.doubleClickZoom.enable();
 });
 
+}
+
   fetch(`Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`)
     .then(r => r.json())
     .then(data => {
