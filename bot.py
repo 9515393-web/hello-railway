@@ -1450,7 +1450,7 @@ async def help_cmd(message: types.Message):
     reply_markup=bot_kb,
     parse_mode=None
 )
-@dp.message()
+@dp.message(F.text & ~F.text.startswith("📊") & ~F.text.startswith("📣") & ~F.text.startswith("📜") & ~F.text.startswith("📁") & ~F.text.startswith("💬") & ~F.text.startswith("⬅"))
 async def debug_all(message: types.Message):
     if is_admin(message.from_user.id):
         print("DEBUG:", repr(message.text))
