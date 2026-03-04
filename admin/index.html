@@ -9,17 +9,19 @@
 
 body{
 margin:0;
-font-family:Arial;
-background:#0e1621;
-color:white;
+font-family:Arial, sans-serif;
+background:#f4f6f9;
 display:flex;
 height:100vh;
+color:#222;
 }
+
+/* левая панель */
 
 .sidebar{
 width:320px;
-background:#17212b;
-border-right:1px solid #0a1016;
+background:white;
+border-right:1px solid #e3e6eb;
 overflow:auto;
 }
 
@@ -27,23 +29,25 @@ overflow:auto;
 padding:20px;
 font-size:18px;
 font-weight:bold;
-border-bottom:1px solid #0a1016;
+border-bottom:1px solid #e3e6eb;
 }
 
 .item{
 padding:16px 20px;
 cursor:pointer;
-border-bottom:1px solid #0a1016;
+border-bottom:1px solid #f0f0f0;
 }
 
 .item:hover{
-background:#1f2c38;
+background:#f5f7fa;
 }
+
+/* рабочая зона */
 
 .content{
 flex:1;
-background:#0e1621;
 padding:40px;
+background:#f4f6f9;
 }
 
 button{
@@ -53,6 +57,11 @@ border-radius:6px;
 background:#2ea6ff;
 color:white;
 cursor:pointer;
+font-size:14px;
+}
+
+button:hover{
+background:#1f95ec;
 }
 
 </style>
@@ -101,6 +110,8 @@ cursor:pointer;
 <div class="content" id="content">
 
 <h1>Админ панель проекта Захожье</h1>
+
+<p>Выберите раздел слева.</p>
 
 </div>
 
