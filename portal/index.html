@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Деревня Захожье</title>
+<title>Проект Захожье</title>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
+font-family:Arial, sans-serif;
 background:#f4f6f9;
 color:#222;
 }
+
+/* верхняя панель */
 
 .header{
 background:white;
@@ -27,21 +30,25 @@ margin:0;
 font-size:22px;
 }
 
+/* основной контейнер */
+
 .container{
-max-width:1100px;
+max-width:1000px;
 margin:auto;
 padding:20px;
 }
 
-.message{
+/* блок как сообщение телеграм */
 
+.message{
 background:white;
 border-radius:10px;
 padding:20px;
 margin-bottom:20px;
-box-shadow:0 3px 10px rgba(0,0,0,0.05);
-
+box-shadow:0 2px 8px rgba(0,0,0,0.05);
 }
+
+/* кнопки */
 
 .buttons{
 display:flex;
@@ -51,7 +58,6 @@ margin-top:15px;
 }
 
 button{
-
 padding:12px 18px;
 border:none;
 border-radius:6px;
@@ -59,19 +65,21 @@ background:#2ea6ff;
 color:white;
 cursor:pointer;
 font-size:14px;
-
 }
 
 button:hover{
 background:#1f95ec;
 }
 
-.map-block{
+/* карта */
+
+.map-placeholder{
 
 background:#fff3cd;
 border:1px solid #ffeeba;
-padding:20px;
-border-radius:10px;
+padding:25px;
+border-radius:8px;
+margin-top:10px;
 
 }
 
@@ -84,6 +92,7 @@ border-radius:10px;
 <div class="header">
 <h1>Проект восстановления деревни Захожье</h1>
 </div>
+
 
 <div class="container">
 
@@ -125,20 +134,28 @@ Telegram бот
 
 </div>
 
+
 <div class="message">
 
 <h2>Карта массива Захожье</h2>
 
-<div class="map-block">
+<div class="map-placeholder">
 
-Карта массива содержит конфиденциальные данные  
-и временно недоступна для публичного просмотра.
+Публичная карта будет доступна после завершения подготовки данных.
+
+На карте будут отображаться:
+
+<br><br>
+
+• номер участка  
+• цвет участия в голосовании  
 
 </div>
 
 </div>
 
 </div>
+
 
 <script>
 
@@ -162,7 +179,7 @@ window.open(
 
 function openDocs(){
 
-alert("Документы будут доступны позже")
+alert("Раздел документов будет подключен позже")
 
 }
 
