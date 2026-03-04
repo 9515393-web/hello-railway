@@ -501,11 +501,6 @@ async def open_admin_map(message: types.Message):
         "🔐 Ссылка действует 10 минут:\n"
         f"{url}"
     )
-# ===== DEBUG: что реально приходит от кнопки =====
-@dp.message()
-async def _debug_text(message: types.Message):
-    if is_admin(message.from_user.id):
-        print("DEBUG TEXT =", repr(message.text))
 
 @dp.message(Command("whoami"))
 async def whoami(message: types.Message):
@@ -1458,7 +1453,7 @@ async def help_cmd(message: types.Message):
 @dp.message()
 async def debug_all(message: types.Message):
     if is_admin(message.from_user.id):
-        print("ПРИШЛО СООБЩЕНИЕ:", message.text)
+        print("DEBUG:", repr(message.text))
 
 # ===== ЗАПУСК =====
 async def main():
