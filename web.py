@@ -14,11 +14,8 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# папка портала
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
-
-# админ портал
-app.mount("/admin", StaticFiles(directory="admin"), name="admin")
+app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -225,3 +222,13 @@ async def extend_token(token: str):
         "status": "ok",
         "result": result
     }
+
+
+# ===== АДМИН ПОРТАЛ =====
+
+@app.get("/admin")
+async def admin_panel(token: str):
+
+    await require_admin(token)
+
+    return FileResponse("admin/index.html")
