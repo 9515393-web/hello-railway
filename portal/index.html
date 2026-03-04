@@ -1,24 +1,37 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Проект Захожье</title>
+
+<title>Деревня Захожье</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
 
 body{
-font-family:Arial;
 margin:0;
-background:#f2f2f2;
+font-family:Arial, sans-serif;
+background:#f4f6f9;
+color:#222;
 }
 
+/* верхняя панель */
+
 .header{
-background:#1f7ae0;
-color:white;
-text-align:center;
-padding:30px;
+background:white;
+padding:20px;
+border-bottom:1px solid #e5e7eb;
 }
+
+.header h1{
+margin:0;
+font-size:22px;
+}
+
+/* основной контейнер */
 
 .container{
 max-width:1100px;
@@ -26,33 +39,49 @@ margin:auto;
 padding:20px;
 }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-gap:20px;
+/* блок как сообщение телеграм */
+
+.message{
+
+background:white;
+border-radius:10px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+
 }
 
-.card{
-background:white;
-padding:20px;
-border-radius:12px;
-box-shadow:0 10px 25px rgba(0,0,0,0.1);
+/* кнопки как в боте */
+
+.buttons{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-top:15px;
 }
 
 button{
-margin-top:10px;
-width:100%;
-padding:12px;
+
+padding:12px 18px;
 border:none;
-border-radius:8px;
-background:#1f7ae0;
+border-radius:6px;
+background:#2ea6ff;
 color:white;
 cursor:pointer;
-font-size:16px;
+font-size:14px;
+
 }
 
 button:hover{
-background:#1665bb;
+background:#1f95ec;
+}
+
+/* карта */
+
+#map{
+height:500px;
+border-radius:10px;
+overflow:hidden;
 }
 
 </style>
@@ -61,53 +90,71 @@ background:#1665bb;
 
 <body>
 
-<header class="header">
-<h1>Деревня Захожье</h1>
-<p>Портал проекта восстановления</p>
-</header>
+<div class="header">
+<h1>Проект восстановления деревни Захожье</h1>
+</div>
 
 <div class="container">
 
-<div class="grid">
+<div class="message">
 
-<div class="card">
-<h2>🗳 Опрос жителей</h2>
-<p>Пройдите опрос о поддержке инициативы.</p>
-<button onclick="openSurvey()">Пройти опрос</button>
-</div>
+<p>
 
-<div class="card">
-<h2>🗺 Карта участков</h2>
-<p>Интерактивная карта массива Захожье.</p>
-<button onclick="openMap()">Открыть карту</button>
-</div>
+Инициативная группа проводит опрос жителей массива Захожье  
+о поддержке инициативы восстановления деревни.
 
-<div class="card">
-<h2>📊 Статистика</h2>
-<p>Здесь будет отображаться статистика проекта.</p>
-</div>
+</p>
 
-<div class="card">
-<h2>🤖 Telegram бот</h2>
-<p>Основной бот проекта.</p>
-<button onclick="openBot()">Открыть</button>
-</div>
+<p>
 
-<div class="card">
-<h2>📜 История</h2>
-<p>История деревни Захожье и материалы проекта.</p>
-</div>
+Для принятия решения необходимо собрать  
+<b>более половины голосов жителей.</b>
 
-<div class="card">
-<h2>📁 Документы</h2>
-<p>Нормативные и подготовленные документы.</p>
-</div>
+</p>
 
-</div>
+<div class="buttons">
+
+<button onclick="openSurvey()">
+Пройти опрос
+</button>
+
+<button onclick="openBot()">
+Telegram бот
+</button>
+
+<button onclick="openDocs()">
+Документы инициативной группы
+</button>
+
+<button onclick="openChat()">
+Чат жителей
+</button>
 
 </div>
+
+</div>
+
+<div class="message">
+
+<h2>Карта массива Захожье</h2>
+
+<div id="map"></div>
+
+</div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
+
+var map = L.map('map').setView([55.75, 37.6], 12)
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+maxZoom:19
+}).addTo(map)
 
 function openSurvey(){
 
@@ -118,16 +165,25 @@ window.open(
 
 }
 
-function openMap(){
-
-alert("Карта пока не подключена")
-
-}
-
 function openBot(){
 
 window.open(
 "https://t.me/Recreator_info_bot",
+"_blank"
+)
+
+}
+
+function openDocs(){
+
+alert("раздел документов будет подключен")
+
+}
+
+function openChat(){
+
+window.open(
+"https://t.me/ВАШ_ЧАТ",
 "_blank"
 )
 
