@@ -1,50 +1,75 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
 <meta charset="utf-8">
 <title>Админ панель Захожье</title>
 
 <style>
 
 body{
-font-family:Arial;
 margin:0;
-background:#f0f0f0;
-}
-
-.header{
-background:#222;
+font-family:Arial;
+background:#0f1720;
 color:white;
-padding:20px;
+display:flex;
+height:100vh;
 }
 
-.container{
-max-width:1100px;
-margin:auto;
+.sidebar{
+
+width:260px;
+background:#111b26;
 padding:20px;
+box-sizing:border-box;
+border-right:1px solid #243447;
+
 }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-gap:20px;
+.logo{
+font-size:20px;
+margin-bottom:30px;
+font-weight:bold;
+}
+
+.menu-item{
+
+padding:12px;
+border-radius:8px;
+cursor:pointer;
+margin-bottom:6px;
+}
+
+.menu-item:hover{
+background:#1e2c3a;
+}
+
+.content{
+
+flex:1;
+background:#17212b;
+padding:30px;
+box-sizing:border-box;
 }
 
 .card{
-background:white;
+
+background:#111b26;
 padding:20px;
-border-radius:10px;
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
+border-radius:12px;
+margin-bottom:20px;
 }
 
 button{
-width:100%;
-padding:12px;
+
+padding:10px 15px;
 border:none;
-background:#1f7ae0;
+border-radius:6px;
+background:#2ea6ff;
 color:white;
-border-radius:8px;
 cursor:pointer;
+
 }
 
 </style>
@@ -53,63 +78,123 @@ cursor:pointer;
 
 <body>
 
-<div class="header">
+<div class="sidebar">
+
+<div class="logo">
+Захожье Admin
+</div>
+
+<div class="menu-item" onclick="openPage('map')">
+🗺 Карта участков
+</div>
+
+<div class="menu-item" onclick="openPage('residents')">
+👥 Жители
+</div>
+
+<div class="menu-item" onclick="openPage('stats')">
+📊 Аналитика
+</div>
+
+<div class="menu-item" onclick="openPage('docs')">
+📁 Документы
+</div>
+
+<div class="menu-item" onclick="openPage('settings')">
+⚙ Настройки
+</div>
+
+</div>
+
+
+<div class="content" id="content">
+
 <h1>Админ панель проекта Захожье</h1>
-</div>
 
-<div class="container">
-
-<div class="grid">
-
-<div class="card">
-<h2>🗺 Карта участков</h2>
-<button onclick="openMap()">Открыть</button>
-</div>
-
-<div class="card">
-<h2>📊 Аналитика</h2>
-<button onclick="openStats()">Открыть</button>
-</div>
-
-<div class="card">
-<h2>📁 Документы</h2>
-<button onclick="openDocs()">Открыть</button>
-</div>
-
-<div class="card">
-<h2>📣 Рассылки</h2>
-<button onclick="openBroadcast()">Открыть</button>
-</div>
-
-<div class="card">
-<h2>👥 База жителей</h2>
-<button onclick="openResidents()">Открыть</button>
-</div>
+<p>Выберите раздел слева</p>
 
 </div>
 
-</div>
 
 <script>
 
+function openPage(page){
+
+let content = document.getElementById("content")
+
+if(page=="map"){
+
+content.innerHTML = `
+<h2>Карта участков</h2>
+
+<div class="card">
+<button onclick="openMap()">Открыть карту</button>
+</div>
+`
+
+}
+
+if(page=="residents"){
+
+content.innerHTML = `
+<h2>База жителей</h2>
+
+<div class="card">
+Здесь будет список жителей
+</div>
+`
+
+}
+
+if(page=="stats"){
+
+content.innerHTML = `
+<h2>Аналитика</h2>
+
+<div class="card">
+Статистика проекта
+</div>
+`
+
+}
+
+if(page=="docs"){
+
+content.innerHTML = `
+<h2>Документы</h2>
+
+<div class="card">
+Документы проекта
+</div>
+`
+
+}
+
+if(page=="settings"){
+
+content.innerHTML = `
+<h2>Настройки</h2>
+
+<div class="card">
+Настройки системы
+</div>
+`
+
+}
+
+}
+
 function openMap(){
-window.location="/?token="+localStorage.token
+
+window.location="/?token="+getToken()
+
 }
 
-function openStats(){
-alert("аналитика скоро")
-}
+function getToken(){
 
-function openDocs(){
-alert("документы скоро")
-}
+const urlParams = new URLSearchParams(window.location.search)
+return urlParams.get('token')
 
-function openBroadcast(){
-alert("рассылки скоро")
-}
-
-function openResidents(){
-alert("база скоро")
 }
 
 </script>
