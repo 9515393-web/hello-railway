@@ -17,7 +17,7 @@ background:#f4f6f9;
 color:#222;
 }
 
-/* верхняя панель */
+/* шапка */
 
 .header{
 background:white;
@@ -30,7 +30,7 @@ margin:0;
 font-size:22px;
 }
 
-/* основной контейнер */
+/* контейнер */
 
 .container{
 max-width:1000px;
@@ -38,37 +38,52 @@ margin:auto;
 padding:20px;
 }
 
-/* блок как сообщение телеграм */
+/* блок сообщения */
 
 .message{
 background:white;
-border-radius:10px;
-padding:20px;
+border-radius:12px;
+padding:25px;
 margin-bottom:20px;
-box-shadow:0 2px 8px rgba(0,0,0,0.05);
+box-shadow:0 5px 15px rgba(0,0,0,0.05);
 }
 
-/* кнопки */
+/* сетка кнопок */
 
 .buttons{
-display:flex;
-flex-wrap:wrap;
-gap:10px;
-margin-top:15px;
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+margin-top:20px;
 }
 
-button{
-padding:12px 18px;
+/* стиль кнопок */
+
+.btn{
+
+padding:18px;
 border:none;
-border-radius:6px;
+border-radius:10px;
 background:#2ea6ff;
 color:white;
+font-size:15px;
 cursor:pointer;
-font-size:14px;
+display:flex;
+align-items:center;
+gap:10px;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+
+transition:all 0.2s;
+
 }
 
-button:hover{
+.btn:hover{
+
 background:#1f95ec;
+transform:translateY(-2px);
+box-shadow:0 6px 16px rgba(0,0,0,0.15);
+
 }
 
 /* карта */
@@ -78,7 +93,7 @@ background:#1f95ec;
 background:#fff3cd;
 border:1px solid #ffeeba;
 padding:25px;
-border-radius:8px;
+border-radius:10px;
 margin-top:10px;
 
 }
@@ -112,22 +127,23 @@ margin-top:10px;
 
 </p>
 
+
 <div class="buttons">
 
-<button onclick="openSurvey()">
-Пройти опрос
+<button class="btn" onclick="openSurvey()">
+🗳 Пройти опрос
 </button>
 
-<button onclick="openBot()">
-Telegram бот
+<button class="btn" onclick="openBot()">
+🤖 Telegram бот
 </button>
 
-<button onclick="openDocs()">
-Документы инициативной группы
+<button class="btn" onclick="openDocs()">
+📁 Документы инициативной группы
 </button>
 
-<button onclick="openChat()">
-Чат жителей
+<button class="btn" onclick="openChat()">
+💬 Чат жителей
 </button>
 
 </div>
@@ -143,9 +159,11 @@ Telegram бот
 
 Публичная карта будет доступна после завершения подготовки данных.
 
+<br><br>
+
 На карте будут отображаться:
 
-<br><br>
+<br>
 
 • номер участка  
 • цвет участия в голосовании  
