@@ -2,74 +2,57 @@
 <html lang="ru">
 
 <head>
-
 <meta charset="utf-8">
-<title>Админ панель Захожье</title>
+<title>Админ панель</title>
 
 <style>
 
 body{
 margin:0;
 font-family:Arial;
-background:#0f1720;
+background:#0e1621;
 color:white;
 display:flex;
 height:100vh;
 }
 
 .sidebar{
+width:320px;
+background:#17212b;
+border-right:1px solid #0a1016;
+overflow:auto;
+}
 
-width:260px;
-background:#111b26;
+.title{
 padding:20px;
-box-sizing:border-box;
-border-right:1px solid #243447;
-
-}
-
-.logo{
-font-size:20px;
-margin-bottom:30px;
+font-size:18px;
 font-weight:bold;
+border-bottom:1px solid #0a1016;
 }
 
-.menu-item{
-
-padding:12px;
-border-radius:8px;
+.item{
+padding:16px 20px;
 cursor:pointer;
-margin-bottom:6px;
+border-bottom:1px solid #0a1016;
 }
 
-.menu-item:hover{
-background:#1e2c3a;
+.item:hover{
+background:#1f2c38;
 }
 
 .content{
-
 flex:1;
-background:#17212b;
-padding:30px;
-box-sizing:border-box;
-}
-
-.card{
-
-background:#111b26;
-padding:20px;
-border-radius:12px;
-margin-bottom:20px;
+background:#0e1621;
+padding:40px;
 }
 
 button{
-
-padding:10px 15px;
+padding:12px 20px;
 border:none;
 border-radius:6px;
 background:#2ea6ff;
 color:white;
 cursor:pointer;
-
 }
 
 </style>
@@ -80,28 +63,36 @@ cursor:pointer;
 
 <div class="sidebar">
 
-<div class="logo">
-Захожье Admin
+<div class="title">
+Админ панель
 </div>
 
-<div class="menu-item" onclick="openPage('map')">
-🗺 Карта участков
+<div class="item" onclick="openStats()">
+Админ: статистика
 </div>
 
-<div class="menu-item" onclick="openPage('residents')">
-👥 Жители
+<div class="item" onclick="openMap()">
+Открыть админ-карту
 </div>
 
-<div class="menu-item" onclick="openPage('stats')">
-📊 Аналитика
+<div class="item" onclick="openBroadcast()">
+Админ: рассылка
 </div>
 
-<div class="menu-item" onclick="openPage('docs')">
-📁 Документы
+<div class="item" onclick="openBroadcastHistory()">
+История рассылок
 </div>
 
-<div class="menu-item" onclick="openPage('settings')">
-⚙ Настройки
+<div class="item" onclick="openDocs()">
+Документы инициативной группы
+</div>
+
+<div class="item" onclick="openChat()">
+Чат инициативной группы
+</div>
+
+<div class="item" onclick="openMenu()">
+Главное меню
 </div>
 
 </div>
@@ -111,76 +102,15 @@ cursor:pointer;
 
 <h1>Админ панель проекта Захожье</h1>
 
-<p>Выберите раздел слева</p>
-
 </div>
 
 
 <script>
 
-function openPage(page){
+function getToken(){
 
-let content = document.getElementById("content")
-
-if(page=="map"){
-
-content.innerHTML = `
-<h2>Карта участков</h2>
-
-<div class="card">
-<button onclick="openMap()">Открыть карту</button>
-</div>
-`
-
-}
-
-if(page=="residents"){
-
-content.innerHTML = `
-<h2>База жителей</h2>
-
-<div class="card">
-Здесь будет список жителей
-</div>
-`
-
-}
-
-if(page=="stats"){
-
-content.innerHTML = `
-<h2>Аналитика</h2>
-
-<div class="card">
-Статистика проекта
-</div>
-`
-
-}
-
-if(page=="docs"){
-
-content.innerHTML = `
-<h2>Документы</h2>
-
-<div class="card">
-Документы проекта
-</div>
-`
-
-}
-
-if(page=="settings"){
-
-content.innerHTML = `
-<h2>Настройки</h2>
-
-<div class="card">
-Настройки системы
-</div>
-`
-
-}
+const params = new URLSearchParams(window.location.search)
+return params.get("token")
 
 }
 
@@ -190,10 +120,43 @@ window.location="/?token="+getToken()
 
 }
 
-function getToken(){
+function openStats(){
 
-const urlParams = new URLSearchParams(window.location.search)
-return urlParams.get('token')
+document.getElementById("content").innerHTML=
+"<h2>Админ: статистика</h2>"
+
+}
+
+function openBroadcast(){
+
+document.getElementById("content").innerHTML=
+"<h2>Админ: рассылка</h2>"
+
+}
+
+function openBroadcastHistory(){
+
+document.getElementById("content").innerHTML=
+"<h2>История рассылок</h2>"
+
+}
+
+function openDocs(){
+
+document.getElementById("content").innerHTML=
+"<h2>Документы инициативной группы</h2>"
+
+}
+
+function openChat(){
+
+window.open("https://t.me/ВАШ_ЧАТ","_blank")
+
+}
+
+function openMenu(){
+
+window.location="/site"
 
 }
 
