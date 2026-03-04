@@ -17,6 +17,9 @@ app = FastAPI()
 # папка портала
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
 
+# админ портал
+app.mount("/admin", StaticFiles(directory="admin"), name="admin")
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
