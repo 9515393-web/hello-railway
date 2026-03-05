@@ -2,22 +2,17 @@
 <html lang="ru">
 
 <head>
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Проект Захожье</title>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial, sans-serif;
+font-family:Arial;
 background:#f4f6f9;
-color:#222;
 }
-
-/* верхняя панель */
 
 .header{
 background:white;
@@ -25,39 +20,17 @@ padding:20px;
 border-bottom:1px solid #e5e7eb;
 }
 
-.header h1{
-margin:0;
-font-size:22px;
-}
-
-/* контейнер */
-
 .container{
 max-width:1100px;
 margin:auto;
 padding:20px;
 }
 
-/* блок */
-
-.message{
-background:white;
-border-radius:12px;
-padding:25px;
-margin-bottom:20px;
-box-shadow:0 5px 15px rgba(0,0,0,0.05);
-}
-
-/* сетка кнопок */
-
-.buttons{
+.grid{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:12px;
-margin-top:20px;
 }
-
-/* кнопки */
 
 .btn{
 
@@ -68,34 +41,14 @@ background:#2ea6ff;
 color:white;
 font-size:15px;
 cursor:pointer;
-display:flex;
-align-items:center;
-gap:10px;
-
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
-
-transition:all 0.2s;
+display:block;
+text-align:left;
+text-decoration:none;
 
 }
 
 .btn:hover{
-
 background:#1f95ec;
-transform:translateY(-2px);
-box-shadow:0 6px 16px rgba(0,0,0,0.15);
-
-}
-
-/* карта */
-
-.map-placeholder{
-
-background:#fff3cd;
-border:1px solid #ffeeba;
-padding:25px;
-border-radius:10px;
-margin-top:10px;
-
 }
 
 </style>
@@ -108,100 +61,35 @@ margin-top:10px;
 <h1>Проект восстановления деревни Захожье</h1>
 </div>
 
-
 <div class="container">
 
-<div class="message">
+<div class="grid">
 
-<p>
+<a class="btn" href="/portal/about.html">🏡 О проекте</a>
 
-Инициативная группа проводит опрос жителей массива Захожье  
-о поддержке инициативы восстановления деревни.
+<a class="btn" href="/portal/faq.html">❓ Вопросы и ответы</a>
 
-</p>
+<a class="btn" href="/portal/history.html">📜 История деревни</a>
 
-<p>
+<a class="btn" href="/portal/maps.html">🗺 Карты</a>
 
-Для принятия решения необходимо собрать  
-<b>более половины голосов жителей.</b>
+<a class="btn" href="/portal/roadmap.html">🛣 Дорожная карта</a>
 
-</p>
+<a class="btn" href="/portal/stats.html">📊 Статистика</a>
 
+<a class="btn" href="/portal/survey.html">🗳 Опрос</a>
 
-<div class="buttons">
+<a class="btn" href="/portal/documents.html">📁 Документы</a>
 
-<button class="btn">🏡 О проекте</button>
+<a class="btn" href="/portal/chat.html">💬 Чат жителей</a>
 
-<button class="btn">❓ Вопросы и ответы (FAQ)</button>
+<a class="btn" href="/portal/help.html">🤝 Как помочь</a>
 
-<button class="btn">📜 История деревни Захожье</button>
-
-<button class="btn">🗺 Карты</button>
-
-<button class="btn">🛣 Дорожная карта</button>
-
-<button class="btn">📊 Статистика</button>
-
-<button class="btn" onclick="openSurvey()">🗳 Опрос</button>
-
-<button class="btn">📁 Документы по проекту</button>
-
-<button class="btn" onclick="openChat()">💬 Чат жителей</button>
-
-<button class="btn">🤝 Как помочь</button>
-
-<button class="btn">🌍 Интерактивная карта</button>
+<a class="btn" href="/portal/interactive_map.html">🌍 Интерактивная карта</a>
 
 </div>
 
 </div>
-
-
-<div class="message">
-
-<h2>Карта массива Захожье</h2>
-
-<div class="map-placeholder">
-
-Интерактивная карта будет доступна после завершения подготовки данных.
-
-<br><br>
-
-На карте будут отображаться:
-
-<br>
-
-• номер участка  
-• цвет участия в голосовании  
-
-</div>
-
-</div>
-
-</div>
-
-
-<script>
-
-function openSurvey(){
-
-window.open(
-"https://docs.google.com/forms/d/e/1FAIpQLScIlQHkjAVnb1L6-Nmpsoc8vUSKXjBUK24BKQIV3phAXVJy_g/viewform",
-"_blank"
-)
-
-}
-
-function openChat(){
-
-window.open(
-"https://t.me/ВАШ_ЧАТ",
-"_blank"
-)
-
-}
-
-</script>
 
 </body>
 </html>
