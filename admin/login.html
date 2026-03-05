@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="utf-8">
+<title>Вход администратора</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#1e293b;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.box{
+background:#334155;
+padding:40px;
+border-radius:10px;
+width:320px;
+}
+
+input{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:6px;
+}
+
+button{
+margin-top:15px;
+width:100%;
+padding:12px;
+border:none;
+background:#38bdf8;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Админ вход</h2>
+
+<input id="password" type="password" placeholder="Введите пароль">
+
+<button onclick="login()">Войти</button>
+
+</div>
+
+<script>
+
+async function login(){
+
+const password=document.getElementById("password").value
+
+const response=await fetch("/api/admin_login",{
+
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({password})
+
+})
+
+const data=await response.json()
+
+if(data.token){
+
+window.location="/admin_panel?token="+data.token
+
+}else{
+
+alert("Неверный пароль")
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
