@@ -269,3 +269,28 @@ async def admin_login(data: dict):
     await conn.close()
 
     return {"token": token}
+
+# ===============================
+# СТРАНИЦЫ ПОРТАЛА
+# ===============================
+
+@app.get("/api/page/{slug}")
+async def get_page(slug: str):
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    row = await conn.fetchrow(
+        """
+        SELECT title, content
+        FROM pages
+        WHERE slug = $1
+        """,
+        slug
+    )
+
+    await conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404)
+
+    return dict(row)
