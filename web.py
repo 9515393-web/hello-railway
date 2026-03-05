@@ -260,8 +260,8 @@ async def admin_login(data: dict):
 
     await conn.execute(
         """
-        INSERT INTO admin_sessions (token, expires_at)
-        VALUES ($1, NOW() + INTERVAL '7 days')
+        INSERT INTO admin_sessions (token, admin_id, expires_at)
+        VALUES ($1, 1, NOW() + INTERVAL '7 days')
         """,
         token
     )
