@@ -2,66 +2,128 @@
 <html lang="ru">
 
 <head>
+
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Админ панель</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 
 body{
 margin:0;
-font-family:Arial, sans-serif;
-background:#f4f6f9;
-display:flex;
-height:100vh;
-color:#222;
+font-family:Inter, Arial;
+background:#1e293b;
+color:white;
 }
 
-/* левая панель */
+/* верхнее меню */
 
-.sidebar{
-width:320px;
-background:white;
-border-right:1px solid #e3e6eb;
-overflow:auto;
+.navbar{
+background:#0f172a;
+border-bottom:1px solid #334155;
+}
+
+.nav-container{
+max-width:1100px;
+margin:auto;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:16px;
+}
+
+.logo{
+font-size:20px;
+font-weight:600;
+}
+
+.menu{
+display:flex;
+gap:20px;
+}
+
+.menu a{
+text-decoration:none;
+color:#cbd5f5;
+}
+
+.menu a:hover{
+color:#38bdf8;
+}
+
+/* описание */
+
+.hero{
+background:#0f172a;
+padding:40px 20px;
+border-bottom:1px solid #334155;
+}
+
+.hero-container{
+max-width:1100px;
+margin:auto;
+}
+
+.hero h1{
+margin:0;
+font-size:28px;
+}
+
+.hero p{
+margin-top:10px;
+color:#94a3b8;
+}
+
+/* карточки */
+
+.cards{
+max-width:1100px;
+margin:30px auto;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:16px;
+}
+
+.card{
+
+background:#334155;
+border-radius:12px;
+padding:20px;
+text-decoration:none;
+color:white;
+transition:0.2s;
+
+}
+
+.card:hover{
+transform:translateY(-4px);
+background:#475569;
+}
+
+.icon{
+font-size:28px;
+margin-bottom:10px;
 }
 
 .title{
-padding:20px;
-font-size:18px;
-font-weight:bold;
-border-bottom:1px solid #e3e6eb;
+font-weight:600;
+margin-bottom:6px;
 }
 
-.item{
-padding:16px 20px;
-cursor:pointer;
-border-bottom:1px solid #f0f0f0;
-}
-
-.item:hover{
-background:#f5f7fa;
-}
-
-/* рабочая зона */
-
-.content{
-flex:1;
-padding:40px;
-background:#f4f6f9;
-}
-
-button{
-padding:12px 20px;
-border:none;
-border-radius:6px;
-background:#2ea6ff;
-color:white;
-cursor:pointer;
+.desc{
 font-size:14px;
+color:#cbd5f5;
 }
 
-button:hover{
-background:#1f95ec;
+/* подвал */
+
+.footer{
+text-align:center;
+padding:20px;
+color:#94a3b8;
 }
 
 </style>
@@ -70,48 +132,111 @@ background:#1f95ec;
 
 <body>
 
-<div class="sidebar">
+<div class="navbar">
 
-<div class="title">
+<div class="nav-container">
+
+<div class="logo">
 Админ панель
 </div>
 
-<div class="item" onclick="openStats()">
-Админ: статистика
+<div class="menu">
+
+<a href="/admin">Главная</a>
+<a href="/?token=TOKEN">Админ карта</a>
+
 </div>
 
-<div class="item" onclick="openMap()">
-Открыть админ-карту
-</div>
-
-<div class="item" onclick="openBroadcast()">
-Админ: рассылка
-</div>
-
-<div class="item" onclick="openBroadcastHistory()">
-История рассылок
-</div>
-
-<div class="item" onclick="openDocs()">
-Документы инициативной группы
-</div>
-
-<div class="item" onclick="openChat()">
-Чат инициативной группы
-</div>
-
-<div class="item" onclick="openMenu()">
-Главное меню
 </div>
 
 </div>
 
 
-<div class="content" id="content">
+<div class="hero">
 
-<h1>Админ панель проекта Захожье</h1>
+<div class="hero-container">
 
-<p>Выберите раздел слева.</p>
+<h1>Управление проектом Захожье</h1>
+
+<p>
+Административный раздел инициативной группы
+</p>
+
+</div>
+
+</div>
+
+
+<div class="cards">
+
+<a class="card">
+
+<div class="icon">📊</div>
+<div class="title">Админ: статистика</div>
+<div class="desc">Аналитика опроса жителей</div>
+
+</a>
+
+
+<a class="card" onclick="openMap()">
+
+<div class="icon">🗺</div>
+<div class="title">Открыть админ-карту</div>
+<div class="desc">Редактирование участков</div>
+
+</a>
+
+
+<a class="card">
+
+<div class="icon">📣</div>
+<div class="title">Админ: рассылка</div>
+<div class="desc">Отправка сообщений жителям</div>
+
+</a>
+
+
+<a class="card">
+
+<div class="icon">🕓</div>
+<div class="title">История рассылок</div>
+<div class="desc">Просмотр отправленных сообщений</div>
+
+</a>
+
+
+<a class="card">
+
+<div class="icon">📁</div>
+<div class="title">Документы инициативной группы</div>
+<div class="desc">Рабочие материалы проекта</div>
+
+</a>
+
+
+<a class="card" onclick="openChat()">
+
+<div class="icon">💬</div>
+<div class="title">Чат инициативной группы</div>
+<div class="desc">Рабочий чат</div>
+
+</a>
+
+
+<a class="card" onclick="openMenu()">
+
+<div class="icon">🏠</div>
+<div class="title">Главное меню</div>
+<div class="desc">Вернуться на портал</div>
+
+</a>
+
+</div>
+
+
+<div class="footer">
+
+Админ панель проекта Захожье
 
 </div>
 
@@ -131,37 +256,12 @@ window.location="/?token="+getToken()
 
 }
 
-function openStats(){
-
-document.getElementById("content").innerHTML=
-"<h2>Админ: статистика</h2>"
-
-}
-
-function openBroadcast(){
-
-document.getElementById("content").innerHTML=
-"<h2>Админ: рассылка</h2>"
-
-}
-
-function openBroadcastHistory(){
-
-document.getElementById("content").innerHTML=
-"<h2>История рассылок</h2>"
-
-}
-
-function openDocs(){
-
-document.getElementById("content").innerHTML=
-"<h2>Документы инициативной группы</h2>"
-
-}
-
 function openChat(){
 
-window.open("https://t.me/ВАШ_ЧАТ","_blank")
+window.open(
+"https://t.me/ВАШ_ЧАТ",
+"_blank"
+)
 
 }
 
@@ -174,4 +274,5 @@ window.location="/site"
 </script>
 
 </body>
+
 </html>
