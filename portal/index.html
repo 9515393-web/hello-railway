@@ -17,7 +17,7 @@ background:#f4f6f9;
 color:#222;
 }
 
-/* шапка */
+/* верхняя панель */
 
 .header{
 background:white;
@@ -33,12 +33,12 @@ font-size:22px;
 /* контейнер */
 
 .container{
-max-width:1000px;
+max-width:1100px;
 margin:auto;
 padding:20px;
 }
 
-/* блок сообщения */
+/* блок */
 
 .message{
 background:white;
@@ -52,16 +52,16 @@ box-shadow:0 5px 15px rgba(0,0,0,0.05);
 
 .buttons{
 display:grid;
-grid-template-columns:repeat(2,1fr);
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:12px;
 margin-top:20px;
 }
 
-/* стиль кнопок */
+/* кнопки */
 
 .btn{
 
-padding:18px;
+padding:16px;
 border:none;
 border-radius:10px;
 background:#2ea6ff;
@@ -130,21 +130,27 @@ margin-top:10px;
 
 <div class="buttons">
 
-<button class="btn" onclick="openSurvey()">
-🗳 Пройти опрос
-</button>
+<button class="btn">🏡 О проекте</button>
 
-<button class="btn" onclick="openBot()">
-🤖 Telegram бот
-</button>
+<button class="btn">❓ Вопросы и ответы (FAQ)</button>
 
-<button class="btn" onclick="openDocs()">
-📁 Документы инициативной группы
-</button>
+<button class="btn">📜 История деревни Захожье</button>
 
-<button class="btn" onclick="openChat()">
-💬 Чат жителей
-</button>
+<button class="btn">🗺 Карты</button>
+
+<button class="btn">🛣 Дорожная карта</button>
+
+<button class="btn">📊 Статистика</button>
+
+<button class="btn" onclick="openSurvey()">🗳 Опрос</button>
+
+<button class="btn">📁 Документы по проекту</button>
+
+<button class="btn" onclick="openChat()">💬 Чат жителей</button>
+
+<button class="btn">🤝 Как помочь</button>
+
+<button class="btn">🌍 Интерактивная карта</button>
 
 </div>
 
@@ -157,7 +163,7 @@ margin-top:10px;
 
 <div class="map-placeholder">
 
-Публичная карта будет доступна после завершения подготовки данных.
+Интерактивная карта будет доступна после завершения подготовки данных.
 
 <br><br>
 
@@ -183,21 +189,6 @@ window.open(
 "https://docs.google.com/forms/d/e/1FAIpQLScIlQHkjAVnb1L6-Nmpsoc8vUSKXjBUK24BKQIV3phAXVJy_g/viewform",
 "_blank"
 )
-
-}
-
-function openBot(){
-
-window.open(
-"https://t.me/Recreator_info_bot",
-"_blank"
-)
-
-}
-
-function openDocs(){
-
-alert("Раздел документов будет подключен позже")
 
 }
 
