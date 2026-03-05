@@ -224,11 +224,48 @@ async def extend_token(token: str):
     }
 
 
-# ===== АДМИН ПОРТАЛ =====
+# ===== СТРАНИЦА ВХОДА =====
 
 @app.get("/admin")
+async def admin_login_page():
+    return FileResponse("admin/login.html")
+
+
+# ===== АДМИН ПАНЕЛЬ =====
+
+@app.get("/admin_panel")
 async def admin_panel(token: str):
 
     await require_admin(token)
 
     return FileResponse("admin/index.html")
+
+
+import secrets
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+
+@app.post("/api/admin_login")
+async def admin_login(data: dict):
+
+    password = data.get("password")
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="wrong password")
+
+    token = secrets.token_hex(32)
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    await conn.execute(
+        """
+        INSERT INTO admin_sessions (token, expires_at)
+        VALUES ($1, NOW() + INTERVAL '7 days')
+        """,
+        token
+    )
+
+    await conn.close()
+
+    return {"token": token}
