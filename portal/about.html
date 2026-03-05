@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="utf-8">
+<title>О проекте</title>
+
+<style>
+
+body{
+font-family:Arial;
+max-width:900px;
+margin:auto;
+padding:40px;
+line-height:1.6;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1 id="title"></h1>
+
+<div id="content"></div>
+
+<script>
+
+async function load(){
+
+const r = await fetch("/api/page/about")
+
+const data = await r.json()
+
+document.getElementById("title").innerText = data.title
+document.getElementById("content").innerHTML = data.content
+
+}
+
+load()
+
+</script>
+
+</body>
+
+</html>
