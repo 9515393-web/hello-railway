@@ -295,3 +295,28 @@ async def get_page(slug: str):
         raise HTTPException(status_code=404)
 
     return dict(row)
+
+# ===============================
+# СТАТИСТИКА ДЛЯ ПОРТАЛА
+# ===============================
+
+@app.get("/api/stats")
+async def get_stats():
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    total_votes = await conn.fetchval(
+        "SELECT COUNT(*) FROM votes"
+    )
+
+    unique_users = await conn.fetchval(
+        "SELECT COUNT(DISTINCT user_id) FROM votes"
+    )
+
+    await conn.close()
+
+    return {
+        "votes": total_votes,
+        "people": unique_users,
+        "target": 1600
+    }
