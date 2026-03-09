@@ -1,209 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>История деревни Захожье</title>
+
 <style>
 
-.history{
-max-width:900px;
-margin:auto;
-font-family:Arial;
+body{
+font-family: Arial;
+background:#f4f6f8;
+margin:0;
+padding:40px;
 line-height:1.7;
-color:#333;
 }
 
-.history h1{
-text-align:center;
-font-size:34px;
-margin-bottom:20px;
-}
-
-.history .intro{
-background:#f5f7fa;
-padding:25px;
+.container{
+max-width:1000px;
+margin:auto;
+background:white;
+padding:40px;
 border-radius:10px;
-margin-bottom:40px;
-font-size:17px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
 }
+
+h1{
+text-align:center;
+font-size:36px;
+margin-bottom:30px;
+}
+
+h2{
+margin-top:50px;
+border-bottom:2px solid #eee;
+padding-bottom:10px;
+}
+
+/* Таймлайн */
 
 .timeline{
+margin:40px 0;
+position:relative;
+padding-left:40px;
 border-left:4px solid #4CAF50;
-padding-left:30px;
 }
 
 .event{
-margin-bottom:40px;
+margin-bottom:35px;
 position:relative;
 }
 
-.event:before{
+.event::before{
 content:"";
 width:16px;
 height:16px;
 background:#4CAF50;
 border-radius:50%;
 position:absolute;
-left:-38px;
-top:5px;
+left:-48px;
+top:6px;
 }
 
-.event h3{
-margin-top:0;
+.year{
+font-weight:bold;
 color:#2c3e50;
+margin-bottom:5px;
+font-size:18px;
 }
 
-.event p{
-margin:8px 0;
-}
+/* карты */
 
-.cards{
+.maps{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-gap:20px;
-margin-top:30px;
-}
-
-.card{
-background:#f8f9fb;
-padding:20px;
-border-radius:10px;
+grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
+gap:30px;
+margin-top:40px;
 }
 
 .map{
-margin-top:30px;
 text-align:center;
+}
+
+.map img{
+max-width:100%;
+border-radius:10px;
+box-shadow:0 8px 20px rgba(0,0,0,0.2);
+cursor:pointer;
+transition:0.3s;
+}
+
+.map img:hover{
+transform:scale(1.03);
+}
+
+.map-title{
+font-weight:bold;
+margin-bottom:10px;
+}
+
+/* модальное окно */
+
+.modal{
+display:none;
+position:fixed;
+z-index:1000;
+left:0;
+top:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.9);
+}
+
+.modal img{
+display:block;
+margin:auto;
+max-width:90%;
+max-height:90%;
+margin-top:40px;
+}
+
+.close{
+position:absolute;
+top:20px;
+right:40px;
+font-size:40px;
+color:white;
+cursor:pointer;
 }
 
 </style>
 
+</head>
 
-<div class="history">
+<body>
+
+<div class="container">
 
 <h1>История деревни Захожье</h1>
 
-<div class="intro">
+<p>
 Деревня Захожье — одно из старинных поселений Ингерманландии.
-Её история насчитывает более <b>500 лет</b> и отражает судьбу
-многих деревень Северо-Запада России.
-<br><br>
-За это время поселение пережило смену государств,
-войны, реформы и административные изменения,
-прежде чем исчезнуть с официальных карт в конце XX века.
-</div>
+Её история насчитывает более <strong>500 лет</strong>.
+</p>
 
+<p>
+На протяжении веков поселение пережило смену государств,
+войны и административные реформы,
+прежде чем исчезнуть с официальных карт в конце XX века.
+</p>
+
+
+<h2>Хронология истории</h2>
 
 <div class="timeline">
 
 <div class="event">
-<h3>1500 год — первые упоминания</h3>
-<p>
-В «Переписной окладной книге Водской пятины» зафиксированы
-деревни «Захожаи» и «за Хожаи».
-Это одно из самых ранних упоминаний поселения.
-</p>
+<div class="year">1500</div>
+<p>Первое упоминание деревни в переписной книге Водской пятины.</p>
 </div>
 
 <div class="event">
-<h3>XVII век — шведский период</h3>
-<p>
-После Столбовского мира 1617 года территория оказалась
-под властью Швеции. Многие поселения переживали упадок,
-однако Захонье продолжало существовать.
-</p>
+<div class="year">1617</div>
+<p>Столбовский мир. Территория переходит под власть Швеции.</p>
 </div>
 
 <div class="event">
-<h3>XVIII век — возвращение в Россию</h3>
-<p>
-Во время Северной войны Пётр I вернул Ингерманландию
-в состав Российского государства.
-На карте Санкт-Петербургской губернии 1792 года
-деревня обозначена как «М. Захонье».
-</p>
+<div class="year">1700–1721</div>
+<p>Северная война. Ингерманландия возвращается в состав России.</p>
 </div>
 
 <div class="event">
-<h3>XIX век — формирование названия Захожье</h3>
-<p>
-Название постепенно меняется:
-</p>
-
-<ul>
-<li>1810 — Захонья</li>
-<li>1816 — Захонье</li>
-<li>1834 — Захожье</li>
-</ul>
-
-<p>
-Именно название «Захожье» закрепляется на картах
-и используется вплоть до XX века.
-</p>
+<div class="year">1792</div>
+<p>На карте Санкт-Петербургской губернии деревня обозначена как М. Захонье.</p>
 </div>
 
 <div class="event">
-<h3>XIX век — развитие деревни</h3>
-<p>
-Деревня насчитывала до 150 жителей,
-основой хозяйства было молочное животноводство.
-Захожье входило в сельскую сеть,
-обеспечивавшую Санкт-Петербург продовольствием.
-</p>
+<div class="year">1834</div>
+<p>Закрепляется современное название — Захожье.</p>
 </div>
 
 <div class="event">
-<h3>XX век — железная дорога и война</h3>
-<p>
-На военно-топографической карте 1917 года
-деревня имеет около 25 дворов.
-Рядом проходит железнодорожная линия.
-</p>
-
-<p>
-Во время Великой Отечественной войны
-территория находилась в зоне оккупации.
-</p>
+<div class="year">1885</div>
+<p>План деревни фиксирует около 23–24 дворов.</p>
 </div>
 
 <div class="event">
-<h3>1996 год — официальное упразднение</h3>
-<p>
-Постановлением Правительства Ленинградской области
-деревня была исключена из учётных данных
-из-за отсутствия постоянного населения.
-</p>
+<div class="year">1917</div>
+<p>Военно-топографическая карта показывает около 25 дворов.</p>
+</div>
+
+<div class="event">
+<div class="year">1941–1943</div>
+<p>Территория находится в зоне боевых действий Великой Отечественной войны.</p>
+</div>
+
+<div class="event">
+<div class="year">1996</div>
+<p>Деревня официально исключена из учётных данных Ленинградской области.</p>
 </div>
 
 </div>
 
-
-<h2>Где располагалась деревня</h2>
-
-<div class="cards">
-
-<div class="card">
-<b>Расположение</b>
-<p>к востоку от реки Тосна</p>
-</div>
-
-<div class="card">
-<b>Ближайший город</b>
-<p>Никольское (около 8 км)</p>
-</div>
-
-<div class="card">
-<b>Координаты</b>
-<p>59°42′43″ N<br>30°48′44″ E</p>
-</div>
-
-</div>
-
-
-<div class="map">
 
 <h2>Исторические карты</h2>
 
-<p>Карта Санкт-Петербургской губернии 1792 года</p>
+<div class="maps">
 
-<p>План деревни Захожье 1885 года</p>
+<div class="map">
+<div class="map-title">Карта Санкт-Петербургской губернии (1792)</div>
+<img src="/maps/map_1792.jpg" onclick="openMap(this.src)">
+</div>
 
-<p>План деревни Захожье 1941 года</p>
+<div class="map">
+<div class="map-title">План деревни Захожье (1885)</div>
+<img src="/maps/map_1885.jpg" onclick="openMap(this.src)">
+</div>
 
+<div class="map">
+<div class="map-title">План деревни Захожье (1941)</div>
+<img src="/maps/map_1941.jpg" onclick="openMap(this.src)">
+</div>
+
+<div class="map">
+<div class="map-title">Современное положение территории</div>
+<img src="/maps/map_now.jpg" onclick="openMap(this.src)">
 </div>
 
 </div>
+
+
+<h2>География</h2>
+
+<p>
+Историческая деревня располагалась:
+</p>
+
+<ul>
+<li>к востоку от реки Тосна</li>
+<li>у истока Святновского ручья</li>
+<li>примерно в 8 км от Никольского</li>
+</ul>
+
+<p>
+Координаты центра бывшей деревни:
+<strong>59°42′43″ N, 30°48′44″ E</strong>
+</p>
+
+
+</div>
+
+
+<!-- модальное окно -->
+
+<div id="mapModal" class="modal">
+
+<span class="close" onclick="closeMap()">×</span>
+
+<img id="modalImage">
+
+</div>
+
+
+<script>
+
+function openMap(src){
+document.getElementById("mapModal").style.display="block";
+document.getElementById("modalImage").src=src;
+}
+
+function closeMap(){
+document.getElementById("mapModal").style.display="none";
+}
+
+</script>
+
+
+</body>
+</html>
