@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Статистика проекта</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6fb;
+margin:0;
+padding:0;
+}
+
+.header{
+background:#2a5bd7;
+color:white;
+padding:30px;
+text-align:center;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:40px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:25px;
+margin-top:30px;
+}
+
+.card{
+background:white;
+padding:35px;
+border-radius:14px;
+text-align:center;
+box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.card-number{
+font-size:48px;
+font-weight:bold;
+color:#2a5bd7;
+}
+
+.card-title{
+margin-top:10px;
+font-size:18px;
+}
+
+.progress{
+height:14px;
+background:#eee;
+border-radius:10px;
+overflow:hidden;
+margin-top:20px;
+}
+
+.progress-bar{
+height:100%;
+background:#2a5bd7;
+width:0%;
+}
+
+.back{
+display:inline-block;
+margin-top:40px;
+text-decoration:none;
+background:#2a5bd7;
+color:white;
+padding:14px 25px;
+border-radius:8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>Статистика инициативы</h1>
+</div>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card">
+<div class="card-number" id="votes">0</div>
+<div class="card-title">Переходов к опросу</div>
+</div>
+
+<div class="card">
+<div class="card-number" id="people">0</div>
+<div class="card-title">Уникальных участников</div>
+</div>
+
+<div class="card">
+<div class="card-number">1600</div>
+<div class="card-title">Цель жителей</div>
+</div>
+
+</div>
+
+<div class="progress">
+<div class="progress-bar" id="progress"></div>
+</div>
+
+<a href="index.html" class="back">← Главное меню</a>
+
+</div>
+
+<script>
+
+async function loadStats(){
+
+const res = await fetch("/api/stats")
+const data = await res.json()
+
+document.getElementById("votes").innerText = data.votes
+document.getElementById("people").innerText = data.people
+
+let percent = (data.people / data.target) * 100
+
+document.getElementById("progress").style.width = percent + "%"
+
+}
+
+loadStats()
+
+</script>
+
+</body>
+</html>
