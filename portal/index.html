@@ -4,55 +4,45 @@
 <head>
 
 <meta charset="UTF-8">
-<title>Захожье — портал проекта</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Захожье — портал проекта</title>
 
 <style>
 
 body{
-
 margin:0;
 font-family:Arial, sans-serif;
-
-background:
-linear-gradient(120deg,#e9f0ff,#f6f8ff,#eef2ff);
-
-min-height:100vh;
-
-display:flex;
-flex-direction:column;
-
+background:linear-gradient(120deg,#e9f0ff,#f6f8ff,#eef2ff);
 }
 
+/* HEADER */
+
 .header{
-
 text-align:center;
-padding:60px 20px;
-
+padding:40px 20px;
 }
 
 .header h1{
-
-font-size:42px;
 margin:0;
-
+font-size:36px;
 }
 
 .header p{
-
 color:#555;
-margin-top:10px;
-
+margin-top:8px;
 }
+
+/* MENU GRID */
 
 .menu{
 
-max-width:900px;
+max-width:1100px;
 margin:auto;
 
 display:grid;
-grid-template-columns:1fr 1fr;
+grid-template-columns:repeat(3,1fr);
+
 gap:20px;
 
 padding:20px;
@@ -66,78 +56,105 @@ flex-direction:column;
 align-items:center;
 justify-content:center;
 
+background:white;
+
+border-radius:14px;
+
+padding:30px;
+
 text-decoration:none;
-
-background:rgba(255,255,255,0.85);
-
-backdrop-filter:blur(10px);
-
-padding:35px;
-
-border-radius:16px;
-
-font-size:20px;
 
 color:#333;
 
-box-shadow:
-0 10px 25px rgba(0,0,0,0.1);
+font-size:18px;
 
-transition:0.3s;
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
+
+transition:0.25s;
 
 }
 
 .menu a:hover{
-
-transform:translateY(-6px);
-
+transform:translateY(-5px);
 }
 
 .menu span{
-
-font-size:34px;
+font-size:32px;
 margin-bottom:10px;
-
 }
 
 /* БОЛЬШАЯ КНОПКА ОПРОСА */
 
 .vote-btn{
 
-grid-column:span 2;
+grid-column:span 3;
 
-background:#2a5bd7 !important;
+background:#2a5bd7;
 
-color:white !important;
+color:white;
 
-font-size:24px;
+font-size:22px;
 
 }
 
 .vote-btn:hover{
-
-background:#1e46b8 !important;
-
-transform:translateY(-6px) scale(1.02);
-
+background:#1e46b8;
 }
 
-/* СЧЕТЧИК */
+/* ТЕКСТ ПОД КНОПКОЙ */
 
 .counter{
-
 font-size:14px;
-margin-top:6px;
+margin-top:8px;
 opacity:0.9;
+}
+
+/* FOOTER */
+
+.footer{
+text-align:center;
+padding:25px;
+color:#666;
+font-size:14px;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+
+/* планшет */
+
+@media (max-width:900px){
+
+.menu{
+grid-template-columns:repeat(2,1fr);
+}
+
+.vote-btn{
+grid-column:span 2;
+}
 
 }
 
-.footer{
+/* смартфон */
 
-text-align:center;
-padding:30px;
-color:#666;
-font-size:14px;
+@media (max-width:600px){
+
+.header h1{
+font-size:28px;
+}
+
+.menu{
+grid-template-columns:1fr;
+}
+
+.menu a{
+font-size:20px;
+padding:25px;
+}
+
+.vote-btn{
+grid-column:span 1;
+font-size:24px;
+}
 
 }
 
@@ -151,89 +168,64 @@ font-size:14px;
 
 <h1>Деревня Захожье</h1>
 
-<p>
-Информационный портал инициативы жителей
-</p>
+<p>Информационный портал инициативы жителей</p>
 
 </div>
-
 
 <div class="menu">
 
 <a href="about.html">
-
 <span>🏡</span>
 О проекте
-
 </a>
 
 <a href="faq.html">
-
 <span>❓</span>
 FAQ
-
 </a>
 
 <a href="history.html">
-
 <span>📜</span>
 История
-
 </a>
 
 <a href="roadmap.html">
-
 <span>🗺</span>
 Дорожная карта
-
 </a>
 
-<!-- БОЛЬШАЯ КНОПКА -->
+<a href="stats.html">
+<span>📊</span>
+Статистика
+</a>
+
+<a href="docs.html">
+<span>📁</span>
+Документы
+</a>
 
 <a href="vote.html" class="vote-btn">
 
 <span>🗳</span>
-
 Пройти опрос
 
 <div class="counter">
-
-523 жителей уже поддержали
-
+Опрос жителей продолжается
 </div>
-
-</a>
-
-<a href="stats.html">
-
-<span>📊</span>
-Статистика
-
-</a>
-
-<a href="docs.html">
-
-<span>📁</span>
-Документы
 
 </a>
 
 <a href="chat.html">
-
 <span>💬</span>
 Чат
-
 </a>
 
 <a href="help.html">
-
 <span>🤝</span>
 Как помочь
-
 </a>
 
 </div>
-
 
 <div class="footer">
 
@@ -242,4 +234,5 @@ FAQ
 </div>
 
 </body>
+
 </html>
