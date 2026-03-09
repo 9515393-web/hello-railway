@@ -15,6 +15,7 @@ from pydantic import BaseModel
 app = FastAPI()
 
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
+app.mount("/maps", StaticFiles(directory="maps"), name="maps")
 app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
