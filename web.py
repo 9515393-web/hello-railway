@@ -111,15 +111,11 @@ async def portal_site():
 # АДМИН КАРТА
 # ===============================
 
+from fastapi.responses import RedirectResponse
+
 @app.get("/")
-async def index(request: Request, token: str | None = None):
-
-    if not token:
-        raise HTTPException(status_code=403, detail="Token required")
-
-    await require_admin(token)
-
-    return FileResponse("map.html", media_type="text/html")
+async def root():
+    return RedirectResponse("/portal")
 
 
 # ===============================
