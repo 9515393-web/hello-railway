@@ -1466,7 +1466,7 @@ async def main():
     # 🔴 КРИТИЧЕСКИ ВАЖНО
     await bot.delete_webhook(drop_pending_updates=True)
 
-    async def start_bot():
+async def start_bot():
 
     await init_db()
     await debug_bot(bot)
