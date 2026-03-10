@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import UploadFile, File, Form
 
+import os
 import asyncpg
 from datetime import datetime
 from pydantic import BaseModel
@@ -321,8 +322,6 @@ async def get_stats():
         "people": unique_users,
         "target": 1600
     }
-
-import os
 
 DOCS_PATH = "docs"
 
