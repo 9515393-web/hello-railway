@@ -363,7 +363,7 @@ async def get_stats():
         "target": 1600
     }
 
-DOCS_PATH = "docs"
+DOCS_PATH = BASE_DOCS
 
 
 @app.get("/api/documents")
