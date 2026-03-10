@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import UploadFile, File, Form
 
-import os
 import asyncpg
 from datetime import datetime
 from pydantic import BaseModel
@@ -360,8 +360,6 @@ async def get_documents():
 
     return result
 
-from fastapi import UploadFile, File, Form
-
 @app.post("/api/admin_upload_doc")
 async def upload_document(
     token: str = Form(...),
@@ -371,13 +369,15 @@ async def upload_document(
 
     await require_admin(token)
 
-    folder = os.path.join("docs", category)
+    folder = os.path.join(DOCS_PATH, category)
 
     os.makedirs(folder, exist_ok=True)
 
-    path = os.path.join(folder, file.filename)
+    filepath = os.path.join(folder, file.filename)
 
-    with open(path, "wb") as buffer:
-        buffer.write(await file.read())
+    contents = await file.read()
+
+    with open(filepath, "wb") as f:
+        f.write(contents)
 
     return {"status": "ok"}
