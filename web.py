@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -9,6 +9,8 @@ import asyncio
 
 from datetime import datetime
 from bot import start_bot
+
+# ===== ПАПКА ДОКУМЕНТОВ (Railway Volume) =====
 
 BASE_DOCS = "/data/docs"
 
@@ -20,14 +22,49 @@ os.makedirs(BASE_DOCS + "/initiative", exist_ok=True)
 
 app = FastAPI()
 
+# ===== API СПИСОК ДОКУМЕНТОВ =====
+
+@app.get("/api/docs/{category}")
+async def list_docs(category: str):
+
+    folder = os.path.join(BASE_DOCS, category)
+
+    if not os.path.exists(folder):
+        return JSONResponse({"files": []})
+
+    files = [
+        f for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f))
+    ]
+
+    return {"files": files}
+
+# ===== СКАЧИВАНИЕ ДОКУМЕНТА =====
+
+@app.get("/docs/{category}/{filename}")
+async def download_doc(category: str, filename: str):
+
+    path = os.path.join(BASE_DOCS, category, filename)
+
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404)
+
+    return FileResponse(path)
+
+# ===== ЗАПУСК БОТА =====
+
 @app.on_event("startup")
 async def start_services():
     asyncio.create_task(start_bot())
 
+# ===== СТАТИЧЕСКИЕ ФАЙЛЫ =====
+
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
 app.mount("/maps", StaticFiles(directory="maps"), name="maps")
-app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
+
+# ⚠️ УБРАЛИ старый mount docs, потому что теперь документы идут через API
+# app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
