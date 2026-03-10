@@ -1455,20 +1455,23 @@ async def debug_all(message: types.Message):
     if is_admin(message.from_user.id):
         print("DEBUG:", repr(message.text))
 
-# ===== ЗАПУСК =====
-async def main():
-    bot = Bot(
-        API_TOKEN,
-        default=DefaultBotProperties(parse_mode="HTML"),
-        timeout=30
-    )
+# ===== СОЗДАНИЕ БОТА =====
 
-    # 🔴 КРИТИЧЕСКИ ВАЖНО
-    await bot.delete_webhook(drop_pending_updates=True)
+bot = Bot(
+    API_TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML"),
+    timeout=30
+)
+
+# ===== ЗАПУСК =====
 
 async def start_bot():
 
     await init_db()
+
+    # удаляем старый webhook
+    await bot.delete_webhook(drop_pending_updates=True)
+
     await debug_bot(bot)
 
     await dp.start_polling(bot)
