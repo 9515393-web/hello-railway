@@ -61,10 +61,8 @@ async def start_services():
 
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
 app.mount("/maps", StaticFiles(directory="maps"), name="maps")
+app.mount("/docs", StaticFiles(directory="/data/docs"), name="docs")
 app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
-
-# ⚠️ УБРАЛИ старый mount docs, потому что теперь документы идут через API
-# app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
