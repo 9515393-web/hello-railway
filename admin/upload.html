@@ -90,8 +90,14 @@ font-size:18px;
 
 <script>
 
-const dropZone = document.getElementById("dropZone")
+const params = new URLSearchParams(window.location.search)
+const urlToken = params.get("token")
 
+if(urlToken){
+localStorage.setItem("admin_token", urlToken)
+}
+
+const dropZone = document.getElementById("dropZone")
 const fileInput = document.getElementById("fileInput")
 
 dropZone.onclick = () => fileInput.click()
@@ -108,22 +114,26 @@ dropZone.classList.remove("dragover")
 })
 
 dropZone.addEventListener("drop", e=>{
-
 e.preventDefault()
-
 dropZone.classList.remove("dragover")
-
 const file = e.dataTransfer.files[0]
-
 upload(file)
-
 })
 
 async function upload(file){
 
-const category = document.getElementById("category").value
+if(!file){
+document.getElementById("status").innerText = "Файл не выбран"
+return
+}
 
+const category = document.getElementById("category").value
 const token = localStorage.getItem("admin_token")
+
+if(!token){
+document.getElementById("status").innerText = "Ошибка: нет токена администратора"
+return
+}
 
 const form = new FormData()
 
@@ -139,13 +149,9 @@ body:form
 })
 
 if(res.ok){
-
 document.getElementById("status").innerText = "Файл загружен ✔"
-
 }else{
-
 document.getElementById("status").innerText = "Ошибка загрузки"
-
 }
 
 }
