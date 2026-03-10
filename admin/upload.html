@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Загрузка документов</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6fb;
+margin:0;
+padding:40px;
+text-align:center;
+}
+
+h1{
+margin-bottom:30px;
+}
+
+.drop-zone{
+
+border:3px dashed #4a7cff;
+
+border-radius:15px;
+
+padding:60px;
+
+font-size:20px;
+
+color:#4a7cff;
+
+background:white;
+
+cursor:pointer;
+
+transition:0.2s;
+
+}
+
+.drop-zone.dragover{
+background:#eef3ff;
+}
+
+select{
+
+margin-top:30px;
+
+padding:10px;
+
+font-size:16px;
+
+}
+
+#status{
+margin-top:20px;
+font-size:18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>📁 Загрузка документов</h1>
+
+<select id="category">
+
+<option value="normative">Нормативные</option>
+<option value="prepared">Подготовленные</option>
+<option value="incoming">Входящие</option>
+<option value="outgoing">Исходящие</option>
+<option value="initiative">Инициативная группа</option>
+
+</select>
+
+<div class="drop-zone" id="dropZone">
+
+Перетащите файл сюда  
+или кликните для выбора
+
+</div>
+
+<input type="file" id="fileInput" hidden>
+
+<div id="status"></div>
+
+<script>
+
+const dropZone = document.getElementById("dropZone")
+
+const fileInput = document.getElementById("fileInput")
+
+dropZone.onclick = () => fileInput.click()
+
+fileInput.onchange = () => upload(fileInput.files[0])
+
+dropZone.addEventListener("dragover", e=>{
+e.preventDefault()
+dropZone.classList.add("dragover")
+})
+
+dropZone.addEventListener("dragleave", ()=>{
+dropZone.classList.remove("dragover")
+})
+
+dropZone.addEventListener("drop", e=>{
+
+e.preventDefault()
+
+dropZone.classList.remove("dragover")
+
+const file = e.dataTransfer.files[0]
+
+upload(file)
+
+})
+
+async function upload(file){
+
+const category = document.getElementById("category").value
+
+const token = localStorage.getItem("admin_token")
+
+const form = new FormData()
+
+form.append("file", file)
+form.append("category", category)
+form.append("token", token)
+
+document.getElementById("status").innerText = "Загрузка..."
+
+const res = await fetch("/api/admin_upload_doc",{
+method:"POST",
+body:form
+})
+
+if(res.ok){
+
+document.getElementById("status").innerText = "Файл загружен ✔"
+
+}else{
+
+document.getElementById("status").innerText = "Ошибка загрузки"
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
