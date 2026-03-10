@@ -120,8 +120,6 @@ font-size:14px;
 
 /* ===== АДАПТИВНОСТЬ ===== */
 
-/* планшет */
-
 @media (max-width:900px){
 
 .menu{
@@ -133,8 +131,6 @@ grid-column:span 2;
 }
 
 }
-
-/* смартфон */
 
 @media (max-width:600px){
 
@@ -233,22 +229,23 @@ FAQ
 
 </div>
 
+
 <script>
 
-/* ID Google таблицы */
+/* ID таблицы Google Sheets */
 const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
 
-/* имя листа */
-const sheetName = "Form Responses 1";
-
-/* API */
-const url = `https://opensheet.elk.sh/${sheetID}/${sheetName}`;
+/* API Google */
+const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
 
 fetch(url)
-.then(res => res.json())
+.then(res => res.text())
 .then(data => {
 
-const total = data.length;
+const json = JSON.parse(data.substring(47).slice(0,-2));
+const rows = json.table.rows;
+
+const total = rows.length;
 
 document.getElementById("counter").innerText =
 total + " жителей уже приняли участие";
