@@ -1467,11 +1467,17 @@ bot = Bot(
 
 async def start_bot():
 
-    await init_db()
+    await asyncio.sleep(3)
 
-    # удаляем старый webhook
-    await bot.delete_webhook(drop_pending_updates=True)
+    try:
+        await init_db()
 
-    await debug_bot(bot)
+        await bot.delete_webhook(drop_pending_updates=True)
 
-    await dp.start_polling(bot)
+        await debug_bot(bot)
+
+        await dp.start_polling(bot)
+
+    except Exception as e:
+        print("BOT CRASH:", repr(e))
+        await asyncio.sleep(5)
