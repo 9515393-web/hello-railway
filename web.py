@@ -1,19 +1,22 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import UploadFile, File, Form
+from pydantic import BaseModel
 
 import os
 import asyncpg
 import asyncio
-from bot import start_bot
+
 from datetime import datetime
-from pydantic import BaseModel
+from bot import start_bot
 
+BASE_DOCS = "/data/docs"
 
-# ===============================
-# СОЗДАНИЕ ПРИЛОЖЕНИЯ
-# ===============================
+os.makedirs(BASE_DOCS + "/normative", exist_ok=True)
+os.makedirs(BASE_DOCS + "/prepared", exist_ok=True)
+os.makedirs(BASE_DOCS + "/incoming", exist_ok=True)
+os.makedirs(BASE_DOCS + "/outgoing", exist_ok=True)
+os.makedirs(BASE_DOCS + "/initiative", exist_ok=True)
 
 app = FastAPI()
 
