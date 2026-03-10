@@ -321,3 +321,63 @@ async def get_stats():
         "people": unique_users,
         "target": 1600
     }
+
+import os
+
+DOCS_PATH = "docs"
+
+
+@app.get("/api/documents")
+async def get_documents():
+
+    result = {}
+
+    folders = [
+        "normative",
+        "prepared",
+        "incoming",
+        "outgoing",
+        "initiative"
+    ]
+
+    for folder in folders:
+
+        path = os.path.join(DOCS_PATH, folder)
+
+        if not os.path.exists(path):
+            continue
+
+        files = []
+
+        for f in os.listdir(path):
+
+            files.append({
+                "name": f,
+                "url": f"/docs/{folder}/{f}"
+            })
+
+        result[folder] = files
+
+    return result
+
+from fastapi import UploadFile, File, Form
+
+@app.post("/api/admin_upload_doc")
+async def upload_document(
+    token: str = Form(...),
+    category: str = Form(...),
+    file: UploadFile = File(...)
+):
+
+    await require_admin(token)
+
+    folder = os.path.join("docs", category)
+
+    os.makedirs(folder, exist_ok=True)
+
+    path = os.path.join(folder, file.filename)
+
+    with open(path, "wb") as buffer:
+        buffer.write(await file.read())
+
+    return {"status": "ok"}
