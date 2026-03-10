@@ -5,6 +5,8 @@ from fastapi import UploadFile, File, Form
 
 import os
 import asyncpg
+import asyncio
+from bot import start_bot
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -14,6 +16,10 @@ from pydantic import BaseModel
 # ===============================
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def start_services():
+    asyncio.create_task(start_bot())
 
 app.mount("/portal", StaticFiles(directory="portal"), name="portal")
 app.mount("/maps", StaticFiles(directory="maps"), name="maps")
