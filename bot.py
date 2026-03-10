@@ -1466,10 +1466,9 @@ async def main():
     # 🔴 КРИТИЧЕСКИ ВАЖНО
     await bot.delete_webhook(drop_pending_updates=True)
 
+    async def start_bot():
+
     await init_db()
     await debug_bot(bot)
 
     await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
