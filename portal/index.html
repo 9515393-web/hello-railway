@@ -101,7 +101,7 @@ font-size:22px;
 background:#1e46b8;
 }
 
-/* ТЕКСТ ПОД КНОПКОЙ */
+/* СЧЁТЧИК */
 
 .counter{
 font-size:14px;
@@ -209,8 +209,8 @@ FAQ
 <span>🗳</span>
 Пройти опрос
 
-<div class="counter">
-Опрос жителей продолжается
+<div class="counter" id="counter">
+Загрузка статистики...
 </div>
 
 </a>
@@ -233,6 +233,35 @@ FAQ
 
 </div>
 
-</body>
+<script>
 
+/* ID Google таблицы */
+const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
+
+/* имя листа */
+const sheetName = "Form Responses 1";
+
+/* API */
+const url = `https://opensheet.elk.sh/${sheetID}/${sheetName}`;
+
+fetch(url)
+.then(res => res.json())
+.then(data => {
+
+const total = data.length;
+
+document.getElementById("counter").innerText =
+total + " жителей уже приняли участие";
+
+})
+.catch(() => {
+
+document.getElementById("counter").innerText =
+"Опрос жителей продолжается";
+
+});
+
+</script>
+
+</body>
 </html>
