@@ -367,35 +367,22 @@ DOCS_PATH = BASE_DOCS
 
 
 @app.get("/api/documents")
-async def get_documents():
-
+async def all_documents():
+    categories = ["normative","prepared","incoming","outgoing","initiative"]
     result = {}
 
-    folders = [
-        "normative",
-        "prepared",
-        "incoming",
-        "outgoing",
-        "initiative"
-    ]
-
-    for folder in folders:
-
-        path = os.path.join(DOCS_PATH, folder)
-
-        if not os.path.exists(path):
-            continue
-
+    for cat in categories:
+        folder = os.path.join(BASE_DOCS, cat)
         files = []
 
-        for f in os.listdir(path):
+        if os.path.exists(folder):
+            for f in os.listdir(folder):
+                files.append({
+                    "name": f,
+                    "url": f"/docs/{cat}/{f}"
+                })
 
-            files.append({
-                "name": f,
-                "url": f"/docs/{folder}/{f}"
-            })
-
-        result[folder] = files
+        result[cat] = files
 
     return result
 
