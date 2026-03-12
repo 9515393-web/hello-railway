@@ -102,9 +102,11 @@ async def require_admin(token: str):
 # ПОРТАЛ САЙТА
 # ===============================
 
+from fastapi.responses import RedirectResponse
+
 @app.get("/site")
 async def portal_site():
-    return FileResponse("portal/index.html")
+    return RedirectResponse("/portal/index.html")
 
 
 # ===============================
