@@ -113,8 +113,8 @@ async def portal_site():
 
 from fastapi.responses import RedirectResponse
 
-@app.get("/")
-async def root():
+@app.get("/site")
+async def portal_site():
     return RedirectResponse("/portal/index.html")
 
 
