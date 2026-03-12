@@ -115,7 +115,7 @@ from fastapi.responses import RedirectResponse
 
 @app.get("/")
 async def root():
-    return RedirectResponse("/portal")
+    return RedirectResponse("/portal/index.html")
 
 
 # ===============================
