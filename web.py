@@ -59,7 +59,7 @@ async def start_services():
 
 # ===== СТАТИЧЕСКИЕ ФАЙЛЫ =====
 
-app.mount("/portal", StaticFiles(directory="portal"), name="portal")
+app.mount("/", StaticFiles(directory="portal", html=True), name="portal")
 app.mount("/maps", StaticFiles(directory="maps"), name="maps")
 app.mount("/docs", StaticFiles(directory="/data/docs"), name="docs")
 app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
@@ -112,10 +112,6 @@ async def portal_site():
 # ===============================
 
 from fastapi.responses import RedirectResponse
-
-@app.get("/")
-async def root():
-    return RedirectResponse("/portal/index.html")
 
 
 # ===============================
