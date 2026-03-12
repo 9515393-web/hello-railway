@@ -111,7 +111,7 @@ async def portal_site():
 # АДМИН КАРТА
 # ===============================
 
-from fastapi.responses import RedirectResponsefrom fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse
 
 @app.get("/")
 async def root():
