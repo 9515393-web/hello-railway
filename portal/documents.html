@@ -2,7 +2,6 @@
 <html lang="ru">
 
 <head>
-
 <meta charset="UTF-8">
 <title>Документы проекта</title>
 
@@ -76,73 +75,69 @@ border-radius:8px;
 <div class="container">
 
 <div class="section">
-
 <h2>📜 Нормативные документы</h2>
-
-<a class="doc" href="/docs/normative/131-ФЗ.pdf" target="_blank">
-Федеральный закон №131
-</a>
-
-<a class="doc" href="/docs/normative/порядок_образования.pdf" target="_blank">
-Порядок образования населённых пунктов
-</a>
-
+<div id="normative"></div>
 </div>
 
-
 <div class="section">
-
 <h2>📄 Подготовленные документы</h2>
-
-<a class="doc" href="/docs/prepared/концепция.docx" target="_blank">
-Концепция восстановления деревни
-</a>
-
-<a class="doc" href="/docs/prepared/обоснование.docx" target="_blank">
-Обоснование проекта
-</a>
-
+<div id="prepared"></div>
 </div>
 
-
 <div class="section">
-
 <h2>📥 Входящие документы</h2>
-
-<a class="doc" href="/docs/incoming/ответ_администрации.pdf" target="_blank">
-Ответ администрации
-</a>
-
+<div id="incoming"></div>
 </div>
 
-
 <div class="section">
-
 <h2>📤 Исходящие документы</h2>
-
-<a class="doc" href="/docs/outgoing/обращение.pdf" target="_blank">
-Обращение жителей
-</a>
-
+<div id="outgoing"></div>
 </div>
-
 
 <div class="section">
-
 <h2>🤝 Документы инициативной группы</h2>
-
-<a class="doc" href="/docs/initiative/протокол.pdf" target="_blank">
-Протокол собрания инициативной группы
-</a>
-
+<div id="initiative"></div>
 </div>
-
 
 <a class="back" href="index.html">
 ← Вернуться на главную
 </a>
 
 </div>
+
+<script>
+
+async function loadDocuments(){
+
+const res = await fetch("/api/documents");
+const data = await res.json();
+
+const categories = ["normative","prepared","incoming","outgoing","initiative"];
+
+categories.forEach(cat => {
+
+const container = document.getElementById(cat);
+container.innerHTML = "";
+
+data[cat].forEach(doc => {
+
+const link = document.createElement("a");
+link.href = doc.url;
+link.textContent = doc.name;
+link.target = "_blank";
+link.className = "doc";
+
+container.appendChild(link);
+
+});
+
+});
+
+}
+
+loadDocuments();
+
+</script>
 
 </body>
 </html>
