@@ -1,16 +1,20 @@
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import os
 import asyncpg
 import asyncio
+import secrets
 
 from datetime import datetime
 from bot import start_bot
 
-# ===== ПАПКА ДОКУМЕНТОВ (Railway Volume) =====
+
+# ===============================
+# ПАПКА ДОКУМЕНТОВ (Railway Volume)
+# ===============================
 
 BASE_DOCS = "/data/docs"
 
@@ -20,9 +24,55 @@ os.makedirs(BASE_DOCS + "/incoming", exist_ok=True)
 os.makedirs(BASE_DOCS + "/outgoing", exist_ok=True)
 os.makedirs(BASE_DOCS + "/initiative", exist_ok=True)
 
+DOCS_PATH = BASE_DOCS
+
 app = FastAPI()
 
-# ===== API СПИСОК ДОКУМЕНТОВ =====
+
+# ===============================
+# СТАТИЧЕСКИЕ ФАЙЛЫ
+# ===============================
+
+app.mount("/portal", StaticFiles(directory="portal"), name="portal")
+app.mount("/maps", StaticFiles(directory="maps"), name="maps")
+app.mount("/docs", StaticFiles(directory="/data/docs"), name="docs")
+app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
+
+
+# ===============================
+# РЕДИРЕКТ ДОКУМЕНТОВ ПОРТАЛА
+# ===============================
+
+@app.get("/documents.html")
+async def documents_redirect():
+    return RedirectResponse("/portal/documents.html")
+
+@app.get("/documents")
+async def documents_redirect_short():
+    return RedirectResponse("/portal/documents.html")
+
+
+# ===============================
+# КОРНЕВАЯ СТРАНИЦА
+# ===============================
+
+@app.get("/")
+async def root():
+    return RedirectResponse("/portal")
+
+
+# ===============================
+# ПОРТАЛ САЙТА
+# ===============================
+
+@app.get("/site")
+async def portal_site():
+    return FileResponse("portal/index.html")
+
+
+# ===============================
+# API СПИСОК ДОКУМЕНТОВ
+# ===============================
 
 @app.get("/api/docs/{category}")
 async def list_docs(category: str):
@@ -39,7 +89,39 @@ async def list_docs(category: str):
 
     return {"files": files}
 
-# ===== СКАЧИВАНИЕ ДОКУМЕНТА =====
+
+# ===============================
+# ВСЕ ДОКУМЕНТЫ (ДЛЯ ПОРТАЛА)
+# ===============================
+
+@app.get("/api/documents")
+async def all_documents():
+
+    categories = ["normative","prepared","incoming","outgoing","initiative"]
+    result = {}
+
+    for cat in categories:
+
+        folder = os.path.join(BASE_DOCS, cat)
+        files = []
+
+        if os.path.exists(folder):
+
+            for f in os.listdir(folder):
+
+                files.append({
+                    "name": f,
+                    "url": f"/docs/{cat}/{f}"
+                })
+
+        result[cat] = files
+
+    return result
+
+
+# ===============================
+# СКАЧИВАНИЕ ДОКУМЕНТА
+# ===============================
 
 @app.get("/docs/{category}/{filename}")
 async def download_doc(category: str, filename: str):
@@ -51,20 +133,18 @@ async def download_doc(category: str, filename: str):
 
     return FileResponse(path)
 
-# ===== ЗАПУСК БОТА =====
+
+# ===============================
+# ЗАПУСК БОТА
+# ===============================
 
 @app.on_event("startup")
 async def start_services():
     asyncio.create_task(start_bot())
 
-# ===== СТАТИЧЕСКИЕ ФАЙЛЫ =====
-
-app.mount("/portal", StaticFiles(directory="portal"), name="portal")
-app.mount("/maps", StaticFiles(directory="maps"), name="maps")
-app.mount("/docs", StaticFiles(directory="/data/docs"), name="docs")
-app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 
 # ===============================
@@ -99,26 +179,6 @@ async def require_admin(token: str):
 
 
 # ===============================
-# ПОРТАЛ САЙТА
-# ===============================
-
-@app.get("/site")
-async def portal_site():
-    return FileResponse("portal/index.html")
-
-
-# ===============================
-# АДМИН КАРТА
-# ===============================
-
-from fastapi.responses import RedirectResponse
-
-@app.get("/")
-async def root():
-    return RedirectResponse("/portal")
-
-
-# ===============================
 # GEOJSON КАРТЫ
 # ===============================
 
@@ -128,7 +188,7 @@ async def get_geojson(token: str):
     await require_admin(token)
 
     if not os.path.exists("Zahozhe_final_2026.geojson"):
-        raise HTTPException(status_code=500, detail="GeoJSON file not found")
+        raise HTTPException(status_code=500)
 
     return FileResponse(
         "Zahozhe_final_2026.geojson",
@@ -182,7 +242,7 @@ async def get_plot_data(plot_key: str, token: str):
 
 
 # ===============================
-# ВСЕ УЧАСТКИ (ДЛЯ КАРТЫ)
+# ВСЕ УЧАСТКИ
 # ===============================
 
 @app.get("/api/plot/all")
@@ -235,14 +295,11 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
 
     await conn.close()
 
-    return {
-        "status": "ok",
-        "plot_key": plot_key
-    }
+    return {"status": "ok"}
 
 
 # ===============================
-# DEV ФУНКЦИЯ (ПРОДЛЕНИЕ ТОКЕНА)
+# DEV ПРОДЛЕНИЕ ТОКЕНА
 # ===============================
 
 @app.get("/_dev_extend_token")
@@ -261,20 +318,21 @@ async def extend_token(token: str):
 
     await conn.close()
 
-    return {
-        "status": "ok",
-        "result": result
-    }
+    return {"status": "ok", "result": result}
 
 
-# ===== СТРАНИЦА ВХОДА =====
+# ===============================
+# СТРАНИЦА ВХОДА
+# ===============================
 
 @app.get("/admin")
 async def admin_login_page():
     return FileResponse("admin/login.html")
 
 
-# ===== АДМИН ПАНЕЛЬ =====
+# ===============================
+# АДМИН ПАНЕЛЬ
+# ===============================
 
 @app.get("/admin_panel")
 async def admin_panel(token: str):
@@ -284,10 +342,9 @@ async def admin_panel(token: str):
     return FileResponse("admin/index.html")
 
 
-import secrets
-
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-
+# ===============================
+# ЛОГИН АДМИНА
+# ===============================
 
 @app.post("/api/admin_login")
 async def admin_login(data: dict):
@@ -295,7 +352,7 @@ async def admin_login(data: dict):
     password = data.get("password")
 
     if password != ADMIN_PASSWORD:
-        raise HTTPException(status_code=403, detail="wrong password")
+        raise HTTPException(status_code=403)
 
     token = secrets.token_hex(32)
 
@@ -313,78 +370,10 @@ async def admin_login(data: dict):
 
     return {"token": token}
 
-# ===============================
-# СТРАНИЦЫ ПОРТАЛА
-# ===============================
-
-@app.get("/api/page/{slug}")
-async def get_page(slug: str):
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    row = await conn.fetchrow(
-        """
-        SELECT title, content
-        FROM pages
-        WHERE slug = $1
-        """,
-        slug
-    )
-
-    await conn.close()
-
-    if not row:
-        raise HTTPException(status_code=404)
-
-    return dict(row)
 
 # ===============================
-# СТАТИСТИКА ДЛЯ ПОРТАЛА
+# ЗАГРУЗКА ДОКУМЕНТА
 # ===============================
-
-@app.get("/api/stats")
-async def get_stats():
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    total_votes = await conn.fetchval(
-        "SELECT COUNT(*) FROM votes"
-    )
-
-    unique_users = await conn.fetchval(
-        "SELECT COUNT(DISTINCT user_id) FROM votes"
-    )
-
-    await conn.close()
-
-    return {
-        "votes": total_votes,
-        "people": unique_users,
-        "target": 1600
-    }
-
-DOCS_PATH = BASE_DOCS
-
-
-@app.get("/api/documents")
-async def all_documents():
-    categories = ["normative","prepared","incoming","outgoing","initiative"]
-    result = {}
-
-    for cat in categories:
-        folder = os.path.join(BASE_DOCS, cat)
-        files = []
-
-        if os.path.exists(folder):
-            for f in os.listdir(folder):
-                files.append({
-                    "name": f,
-                    "url": f"/docs/{cat}/{f}"
-                })
-
-        result[cat] = files
-
-    return result
 
 @app.post("/api/admin_upload_doc")
 async def upload_document(
