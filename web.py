@@ -315,6 +315,13 @@ async def admin_login(data: dict):
 
     return {"token": token}
 
+@app.get("/map.html")
+async def admin_map(token: str):
+
+    await require_admin(token)
+
+    return FileResponse("map.html")
+
 # ===============================
 # СТРАНИЦЫ ПОРТАЛА
 # ===============================
