@@ -396,3 +396,31 @@ async def upload_document(
         f.write(contents)
 
     return {"status": "ok"}
+
+PAGES = {
+    "about": {
+        "title": "О проекте",
+        "content": """
+        <p>
+        Проект инициативной группы жителей деревни Захожье направлен
+        на развитие территории, сохранение исторического наследия
+        и улучшение качества жизни жителей.
+        </p>
+
+        <p>
+        На портале публикуются документы проекта,
+        результаты опросов жителей и дорожная карта развития.
+        </p>
+        """
+    }
+}
+
+@app.get("/api/page/{name}")
+async def get_page(name: str):
+
+    page = PAGES.get(name)
+
+    if not page:
+        return {"title": "", "content": ""}
+
+    return page
