@@ -320,7 +320,7 @@ async def admin_map(token: str):
 
     await require_admin(token)
 
-    return FileResponse("map.html")
+    return FileResponse("./map.html")
 
 # ===============================
 # СТРАНИЦЫ ПОРТАЛА
