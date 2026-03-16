@@ -439,7 +439,7 @@ async def portal_index():
     return FileResponse("portal/index.html")
 
 
-@app.get("/{page}")
+@app.get("/{page}.html")
 async def portal_pages(page: str):
 
     path = f"portal/{page}.html"
@@ -474,8 +474,14 @@ async def get_chat_messages(after: int = 0):
     return [dict(r) for r in rows]
 
 
-@app.post("/api/chat/send")
+@app.post("/api/chat")
 async def send_chat_message(data: dict):
+
+    username = data.get("username")
+    message = data.get("message")
+
+    if not username or not message:
+        raise HTTPException(status_code=400, detail="empty message")
 
     conn = await asyncpg.connect(DATABASE_URL)
 
@@ -484,10 +490,87 @@ async def send_chat_message(data: dict):
         INSERT INTO chat_messages (username, message)
         VALUES ($1,$2)
         """,
-        data.get("user"),
-        data.get("text")
+        username,
+        message
     )
 
     await conn.close()
 
     return {"status": "ok"}
+    
+# ===============================
+# WEBSOCKET ЧАТ ЖИТЕЛЕЙ
+# ===============================
+
+from fastapi import WebSocket, WebSocketDisconnect
+
+connections = []
+
+
+@app.websocket("/ws/chat")
+async def websocket_chat(ws: WebSocket):
+
+    await ws.accept()
+    connections.append(ws)
+
+    try:
+        while True:
+
+            data = await ws.receive_json()
+
+            username = data.get("username")
+            message = data.get("message")
+
+            if not username or not message:
+                continue
+
+            conn = await asyncpg.connect(DATABASE_URL)
+
+            row = await conn.fetchrow(
+                """
+                INSERT INTO chat_messages (username, message)
+                VALUES ($1,$2)
+                RETURNING id, created_at
+                """,
+                username,
+                message
+            )
+
+            await conn.close()
+
+            payload = {
+                "id": row["id"],
+                "username": username,
+                "message": message,
+                "created_at": str(row["created_at"])
+            }
+
+            for c in connections:
+                await c.send_json(payload)
+
+    except WebSocketDisconnect:
+        connections.remove(ws)
+
+
+# ===============================
+# ЗАГРУЗКА ИСТОРИИ ЧАТА
+# ===============================
+
+@app.get("/api/chat")
+async def get_chat_history():
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    rows = await conn.fetch(
+        """
+        SELECT id, username, message, created_at
+        FROM chat_messages
+        WHERE COALESCE(deleted,FALSE)=FALSE
+        ORDER BY id DESC
+        LIMIT 50
+        """
+    )
+
+    await conn.close()
+
+    return [dict(r) for r in rows[::-1]]
