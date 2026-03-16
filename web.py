@@ -102,23 +102,9 @@ async def require_admin(token: str):
 # ПОРТАЛ САЙТА
 # ===============================
 
-from fastapi.responses import RedirectResponse
-
 @app.get("/site")
 async def portal_site():
     return RedirectResponse("/portal/index.html")
-
-
-# ===============================
-# АДМИН КАРТА
-# ===============================
-
-from fastapi.responses import RedirectResponse
-
-@app.get("/site")
-async def portal_site():
-    return RedirectResponse("/portal/index.html")
-
 
 # ===============================
 # GEOJSON КАРТЫ
@@ -405,7 +391,6 @@ async def upload_document(
     await require_admin(token)
 
     folder = os.path.join(DOCS_PATH, category)
-
     os.makedirs(folder, exist_ok=True)
 
     filepath = os.path.join(folder, file.filename)
@@ -416,3 +401,22 @@ async def upload_document(
         f.write(contents)
 
     return {"status": "ok"}
+
+# ===============================
+# СТРАНИЦЫ ПОРТАЛА (чистые URL)
+# ===============================
+
+@app.get("/")
+async def portal_index():
+    return FileResponse("portal/index.html")
+
+
+@app.get("/{page}")
+async def portal_pages(page: str):
+
+    path = f"portal/{page}.html"
+
+    if os.path.exists(path):
+        return FileResponse(path)
+
+    raise HTTPException(status_code=404)
