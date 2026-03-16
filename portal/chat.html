@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Чат жителей</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f7fb;
+margin:0;
+}
+
+.container{
+max-width:800px;
+margin:auto;
+padding:20px;
+}
+
+#chat{
+background:white;
+border-radius:10px;
+padding:15px;
+height:400px;
+overflow-y:auto;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.message{
+margin-bottom:10px;
+}
+
+.user{
+font-weight:bold;
+}
+
+input{
+padding:10px;
+width:70%;
+}
+
+button{
+padding:10px 20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>💬 Чат жителей</h2>
+
+<div id="chat"></div>
+
+<br>
+
+<input id="name" placeholder="Ваше имя">
+<input id="msg" placeholder="Сообщение">
+
+<button onclick="send()">Отправить</button>
+
+</div>
+
+<script>
+
+async function load(){
+
+const r = await fetch("/api/chat")
+const data = await r.json()
+
+const html = data.reverse().map(m=>`
+<div class="message">
+<span class="user">${m.username}</span>: ${m.message}
+</div>
+`).join("")
+
+document.getElementById("chat").innerHTML = html
+
+}
+
+async function send(){
+
+const user = document.getElementById("name").value
+const text = document.getElementById("msg").value
+
+if(!user || !text) return
+
+await fetch("/api/chat/send",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+user:user,
+text:text
+})
+})
+
+document.getElementById("msg").value=""
+
+load()
+
+}
+
+setInterval(load,3000)
+
+load()
+
+</script>
+
+</body>
+</html>
