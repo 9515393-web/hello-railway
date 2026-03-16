@@ -448,3 +448,44 @@ async def portal_pages(page: str):
         return FileResponse(path)
 
     raise HTTPException(status_code=404)
+
+# ===============================
+# ЧАТ ЖИТЕЛЕЙ
+# ===============================
+
+@app.get("/api/chat")
+async def get_chat_messages():
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    rows = await conn.fetch(
+        """
+        SELECT username, message, created_at
+        FROM chat_messages
+        ORDER BY created_at DESC
+        LIMIT 50
+        """
+    )
+
+    await conn.close()
+
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/chat/send")
+async def send_chat_message(data: dict):
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    await conn.execute(
+        """
+        INSERT INTO chat_messages (username, message)
+        VALUES ($1,$2)
+        """,
+        data.get("user"),
+        data.get("text")
+    )
+
+    await conn.close()
+
+    return {"status":"ok"}
