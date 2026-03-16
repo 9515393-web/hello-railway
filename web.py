@@ -97,6 +97,23 @@ async def require_admin(token: str):
 
     return row
 
+async def audit_log(admin_id: int, action: str, target: str, payload: dict):
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    await conn.execute(
+        """
+        INSERT INTO admin_audit_log (admin_id, action, target, payload)
+        VALUES ($1, $2, $3, $4)
+        """,
+        admin_id,
+        action,
+        target,
+        payload
+    )
+
+    await conn.close()
+
 
 # ===============================
 # ПОРТАЛ САЙТА
@@ -199,7 +216,7 @@ async def get_all_plots(token: str):
 @app.post("/api/plot/{plot_key}")
 async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
 
-    await require_admin(token)
+    admin = await require_admin(token)
 
     conn = await asyncpg.connect(DATABASE_URL)
 
@@ -222,6 +239,17 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
     )
 
     await conn.close()
+
+    await audit_log(
+        admin["admin_id"],
+        "edit_plot",
+        plot_key,
+        {
+            "fio": data.fio,
+            "phone": data.phone,
+            "note": data.note
+        }
+    )
 
     return {
         "status": "ok",
