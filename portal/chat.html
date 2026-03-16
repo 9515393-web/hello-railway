@@ -7,17 +7,17 @@
 <style>
 
 body{
-font-family:Arial;
-background:#e6ecf0;
 margin:0;
+font-family:Arial;
+background:#e9edf2;
 }
 
 .container{
 max-width:700px;
 margin:auto;
+height:100vh;
 display:flex;
 flex-direction:column;
-height:100vh;
 }
 
 .header{
@@ -41,7 +41,7 @@ max-width:70%;
 padding:10px 14px;
 border-radius:12px;
 background:white;
-box-shadow:0 2px 6px rgba(0,0,0,0.1);
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .me{
@@ -51,8 +51,15 @@ background:#d2e3ff;
 
 .user{
 font-size:12px;
-opacity:0.7;
-margin-bottom:4px;
+opacity:.7;
+margin-bottom:3px;
+}
+
+.time{
+font-size:10px;
+opacity:.5;
+margin-top:4px;
+text-align:right;
 }
 
 .input{
@@ -69,13 +76,8 @@ border:1px solid #ccc;
 border-radius:6px;
 }
 
-#name{
-width:150px;
-}
-
-#msg{
-flex:1;
-}
+#name{width:140px;}
+#msg{flex:1;}
 
 button{
 background:#2a5bd7;
@@ -93,16 +95,13 @@ cursor:pointer;
 
 <div class="container">
 
-<div class="header">
-💬 Чат жителей
-</div>
+<div class="header">💬 Чат жителей</div>
 
 <div id="chat"></div>
 
 <div class="input">
 
 <input id="name" placeholder="Имя">
-
 <input id="msg" placeholder="Сообщение">
 
 <button onclick="send()">Отправить</button>
@@ -115,57 +114,54 @@ cursor:pointer;
 
 const chat = document.getElementById("chat")
 
+let lastId = 0
+
 // сохранить имя
+const saved = localStorage.getItem("chat_name")
+if(saved) document.getElementById("name").value = saved
 
-const savedName = localStorage.getItem("chat_name")
+document.getElementById("name").addEventListener("change",()=>{
+localStorage.setItem("chat_name",document.getElementById("name").value)
+})
 
-if(savedName){
-document.getElementById("name").value = savedName
-}
-
-function saveName(){
-const name = document.getElementById("name").value
-localStorage.setItem("chat_name",name)
-}
-
-document.getElementById("name").addEventListener("change",saveName)
-
+// загрузка сообщений
 async function load(){
 
-const r = await fetch("/api/chat")
+const r = await fetch(`/api/chat?after=${lastId}`)
 const data = await r.json()
 
 if(!Array.isArray(data)) return
 
 const name = document.getElementById("name").value
 
-chat.innerHTML = ""
+data.forEach(m=>{
 
-data.reverse().forEach(m=>{
+lastId = m.id
 
 const div = document.createElement("div")
+div.className="msg"
 
-div.className = "msg"
+if(m.username===name) div.classList.add("me")
 
-if(m.username === name){
-div.classList.add("me")
-}
+const time = new Date(m.created_at).toLocaleTimeString()
 
-div.innerHTML = `
+div.innerHTML=`
 <div class="user">${m.username}</div>
 ${m.message}
+<div class="time">${time}</div>
 `
 
 chat.appendChild(div)
 
 })
 
-// автоскролл
-
+if(data.length>0){
 chat.scrollTop = chat.scrollHeight
+}
 
 }
 
+// отправка
 async function send(){
 
 const user = document.getElementById("name").value
@@ -188,14 +184,9 @@ load()
 
 }
 
-// Enter отправляет сообщение
-
-document.getElementById("msg").addEventListener("keypress",function(e){
-
-if(e.key==="Enter"){
-send()
-}
-
+// Enter отправка
+document.getElementById("msg").addEventListener("keypress",e=>{
+if(e.key==="Enter") send()
 })
 
 setInterval(load,2000)
