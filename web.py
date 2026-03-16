@@ -454,17 +454,18 @@ async def portal_pages(page: str):
 # ===============================
 
 @app.get("/api/chat")
-async def get_chat_messages():
+async def get_chat_messages(after: int = 0):
 
     conn = await asyncpg.connect(DATABASE_URL)
 
     rows = await conn.fetch(
         """
-        SELECT username, message, created_at
+        SELECT id, username, message, created_at
         FROM chat_messages
-        ORDER BY created_at DESC
-        LIMIT 50
-        """
+        WHERE id > $1
+        ORDER BY id ASC
+        """,
+        after
     )
 
     await conn.close()
@@ -488,8 +489,4 @@ async def send_chat_message(data: dict):
 
     await conn.close()
 
-    return {"status":"ok"}
-
-    await conn.close()
-
-    return {"status":"ok"}
+    return {"status": "ok"}
