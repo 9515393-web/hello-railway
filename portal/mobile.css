@@ -1,0 +1,82 @@
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+
+@media (max-width:700px){
+
+body{
+font-size:16px;
+line-height:1.5;
+}
+
+/* заголовки */
+
+h1{font-size:26px;}
+h2{font-size:22px;}
+h3{font-size:18px;}
+
+/* текст */
+
+p{
+font-size:16px;
+}
+
+/* контейнеры */
+
+.container{
+padding:10px;
+}
+
+/* карточки */
+
+.card{
+padding:15px;
+}
+
+/* меню */
+
+.menu{
+grid-template-columns:1fr !important;
+}
+
+/* кнопки */
+
+button{
+width:100%;
+padding:12px;
+font-size:16px;
+}
+
+/* ссылки */
+
+a{
+font-size:16px;
+}
+
+/* таблицы */
+
+table{
+display:block;
+overflow-x:auto;
+}
+
+/* перенос текста */
+
+*{
+word-break:break-word;
+}
+
+/* изображения */
+
+img{
+max-width:100%;
+height:auto;
+}
+
+/* формы */
+
+input, textarea{
+width:100%;
+font-size:16px;
+padding:10px;
+}
+
+}
