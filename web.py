@@ -489,3 +489,7 @@ async def send_chat_message(data: dict):
     await conn.close()
 
     return {"status":"ok"}
+
+    await conn.close()
+
+    return {"status":"ok"}
