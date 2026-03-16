@@ -71,6 +71,8 @@ async function load(){
 const r = await fetch("/api/chat")
 const data = await r.json()
 
+if(!Array.isArray(data)) return
+
 const html = data.reverse().map(m=>`
 <div class="message">
 <span class="user">${m.username}</span>: ${m.message}
