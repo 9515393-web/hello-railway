@@ -8,40 +8,82 @@
 
 body{
 font-family:Arial;
-background:#f5f7fb;
+background:#e6ecf0;
 margin:0;
 }
 
 .container{
-max-width:800px;
+max-width:700px;
 margin:auto;
-padding:20px;
+display:flex;
+flex-direction:column;
+height:100vh;
+}
+
+.header{
+background:#2a5bd7;
+color:white;
+padding:15px;
+font-size:20px;
 }
 
 #chat{
-background:white;
-border-radius:10px;
-padding:15px;
-height:400px;
+flex:1;
 overflow-y:auto;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:10px;
 }
 
-.message{
-margin-bottom:10px;
+.msg{
+max-width:70%;
+padding:10px 14px;
+border-radius:12px;
+background:white;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.me{
+align-self:flex-end;
+background:#d2e3ff;
 }
 
 .user{
-font-weight:bold;
+font-size:12px;
+opacity:0.7;
+margin-bottom:4px;
+}
+
+.input{
+display:flex;
+gap:10px;
+padding:10px;
+background:white;
+border-top:1px solid #ddd;
 }
 
 input{
 padding:10px;
-width:70%;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+#name{
+width:150px;
+}
+
+#msg{
+flex:1;
 }
 
 button{
-padding:10px 20px;
+background:#2a5bd7;
+color:white;
+border:0;
+padding:10px 18px;
+border-radius:6px;
+cursor:pointer;
 }
 
 </style>
@@ -51,20 +93,42 @@ padding:10px 20px;
 
 <div class="container">
 
-<h2>💬 Чат жителей</h2>
+<div class="header">
+💬 Чат жителей
+</div>
 
 <div id="chat"></div>
 
-<br>
+<div class="input">
 
-<input id="name" placeholder="Ваше имя">
+<input id="name" placeholder="Имя">
+
 <input id="msg" placeholder="Сообщение">
 
 <button onclick="send()">Отправить</button>
 
 </div>
 
+</div>
+
 <script>
+
+const chat = document.getElementById("chat")
+
+// сохранить имя
+
+const savedName = localStorage.getItem("chat_name")
+
+if(savedName){
+document.getElementById("name").value = savedName
+}
+
+function saveName(){
+const name = document.getElementById("name").value
+localStorage.setItem("chat_name",name)
+}
+
+document.getElementById("name").addEventListener("change",saveName)
 
 async function load(){
 
@@ -73,13 +137,32 @@ const data = await r.json()
 
 if(!Array.isArray(data)) return
 
-const html = data.reverse().map(m=>`
-<div class="message">
-<span class="user">${m.username}</span>: ${m.message}
-</div>
-`).join("")
+const name = document.getElementById("name").value
 
-document.getElementById("chat").innerHTML = html
+chat.innerHTML = ""
+
+data.reverse().forEach(m=>{
+
+const div = document.createElement("div")
+
+div.className = "msg"
+
+if(m.username === name){
+div.classList.add("me")
+}
+
+div.innerHTML = `
+<div class="user">${m.username}</div>
+${m.message}
+`
+
+chat.appendChild(div)
+
+})
+
+// автоскролл
+
+chat.scrollTop = chat.scrollHeight
 
 }
 
@@ -105,7 +188,17 @@ load()
 
 }
 
-setInterval(load,3000)
+// Enter отправляет сообщение
+
+document.getElementById("msg").addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+send()
+}
+
+})
+
+setInterval(load,2000)
 
 load()
 
