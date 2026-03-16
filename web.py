@@ -462,7 +462,8 @@ async def get_chat_messages(after: int = 0):
         """
         SELECT id, username, message, created_at
         FROM chat_messages
-        WHERE id > $1
+        WHERE COALESCE(deleted, FALSE) = FALSE
+        AND id > $1
         ORDER BY id ASC
         """,
         after
