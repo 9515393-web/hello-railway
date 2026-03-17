@@ -478,8 +478,8 @@ async def send_chat_message(request: Request):
 
     data = await request.json()
 
-    user = data.get("user", "Аноним")
-    text = data.get("text", "")
+    user = data.get("user","Житель")
+    text = data.get("text","")
 
     if not text:
         return {"status":"empty"}
@@ -497,7 +497,7 @@ async def send_chat_message(request: Request):
 
     await conn.close()
 
-    return {"status": "ok"}
+    return {"status":"ok"}
     
 # ===============================
 # WEBSOCKET ЧАТ ЖИТЕЛЕЙ
