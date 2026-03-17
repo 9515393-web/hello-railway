@@ -64,6 +64,7 @@ padding:12px;
 display:flex;
 flex-direction:column;
 gap:10px;
+padding-bottom:80px;
 }
 
 /* MESSAGE */
@@ -153,6 +154,12 @@ cursor:pointer;
 <div id="chat" class="chat"></div>
 
 <div class="input">
+
+<textarea id="text" placeholder="Напишите сообщение..." rows="2"></textarea>
+
+<button onclick="send()">Отправить</button>
+
+</div>
 
 <script>
 
