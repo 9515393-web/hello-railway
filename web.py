@@ -474,15 +474,13 @@ async def get_chat_messages(after: int = 0):
 
 
 @app.post("/api/chat/send")
-async def send_chat_message(request: Request):
+async def send_chat_message(data: dict):
 
-    data = await request.json()
+    text = data.get("text","")[:500]
+    user = data.get("user")
 
-    user = data.get("user","Житель")
-    text = data.get("text","")
-
-    if not text:
-        return {"status":"empty"}
+    if not text.strip():
+        raise HTTPException(status_code=400)
 
     conn = await asyncpg.connect(DATABASE_URL)
 
