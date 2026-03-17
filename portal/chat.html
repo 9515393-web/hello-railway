@@ -24,6 +24,22 @@ display:flex;
 flex-direction:column;
 height:100vh;
 }
+
+/* затемнение фона */
+
+body::before{
+content:"";
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+
+background:rgba(255,255,255,0.55);
+
+pointer-events:none;
+}
+
 /* HEADER */
 
 .header{
@@ -31,10 +47,8 @@ background:#2a5bd7;
 color:white;
 padding:14px;
 font-size:18px;
-display:flex;
-justify-content:space-between;
-align-items:center;
 }
+
 
 .online{
 font-size:13px;
