@@ -108,27 +108,30 @@ margin-bottom:3px;
 
 .input{
 display:flex;
+flex-direction:column;
 gap:8px;
 padding:10px;
 background:white;
 border-top:1px solid #ddd;
 }
 
-.input input{
-flex:1;
+.input textarea{
+width:100%;
 padding:12px;
 font-size:16px;
-border-radius:20px;
+border-radius:10px;
 border:1px solid #ccc;
+resize:none;
 }
 
 .input button{
 background:#2a5bd7;
 color:white;
 border:none;
-border-radius:20px;
-padding:0 16px;
-font-size:18px;
+border-radius:10px;
+padding:12px;
+font-size:16px;
+cursor:pointer;
 }
 
 </style>
@@ -150,12 +153,6 @@ font-size:18px;
 <div id="chat" class="chat"></div>
 
 <div class="input">
-
-<input id="text" placeholder="Напишите сообщение...">
-
-<button onclick="send()">➤</button>
-
-</div>
 
 <script>
 
@@ -264,6 +261,17 @@ if(Notification.permission!=="granted"){
 Notification.requestPermission()
 
 }
+
+document.getElementById("text").addEventListener("keydown", function(e){
+
+if(e.key==="Enter" && !e.shiftKey){
+
+e.preventDefault()
+send()
+
+}
+
+})
 
 </script>
 
