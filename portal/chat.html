@@ -163,71 +163,50 @@ cursor:pointer;
 
 <script>
 
-/* имя пользователя */
-
 let username = localStorage.getItem("chat_name")
 
 if(!username){
-
 username = prompt("Введите имя")
-
 localStorage.setItem("chat_name", username)
-
 }
-
-/* аватар */
 
 function avatar(name){
-
 return name.charAt(0).toUpperCase()
-
 }
-
-/* состояние */
 
 let lastId = 0
 
-/* загрузка сообщений */
+async function load(){
 
-async function send(){
+const r = await fetch("/api/chat?after="+lastId)
 
-const text = document.getElementById("text").value
+const data = await r.json()
 
-if(!text) return
+data.forEach(m=>{
 
-await fetch("/api/chat/send",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-user:username,
-text:text
+lastId = m.id
+
+const msg = document.createElement("div")
+msg.className="msg"
+
+msg.innerHTML = `
+<div class="avatar">${avatar(m.username)}</div>
+<div class="bubble">
+<div class="name">${m.username}</div>
+${m.message}
+</div>
+`
+
+document.getElementById("chat").appendChild(msg)
+
 })
-})
-
-document.getElementById("text").value=""
-
-load()
-
-}
 
 if(data.length){
-
 document.getElementById("chat").scrollTop =
 document.getElementById("chat").scrollHeight
-
-}
-
-/* уведомление */
-
-if(document.hidden && data.length){
-
-new Notification("Новое сообщение")
-
 }
 
 }
-
-/* отправка */
 
 async function send(){
 
@@ -249,29 +228,10 @@ document.getElementById("text").value=""
 load()
 
 }
-
-/* polling */
 
 setInterval(load,3000)
 
-/* уведомления */
-
-if(Notification.permission!=="granted"){
-
-Notification.requestPermission()
-
-}
-
-document.getElementById("text").addEventListener("keydown", function(e){
-
-if(e.key==="Enter" && !e.shiftKey){
-
-e.preventDefault()
-send()
-
-}
-
-})
+load()
 
 </script>
 
