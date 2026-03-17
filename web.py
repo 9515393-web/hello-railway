@@ -473,14 +473,16 @@ async def get_chat(after:int=0):
     return [dict(r) for r in rows]
 
 
-@app.post("/api/chat")
-async def send_chat_message(data: dict):
+@app.post("/api/chat/send")
+async def send_chat_message(request: Request):
 
-    username = data.get("username")
-    message = data.get("message")
+    data = await request.json()
 
-    if not username or not message:
-        raise HTTPException(status_code=400, detail="empty message")
+    user = data.get("user", "Аноним")
+    text = data.get("text", "")
+
+    if not text:
+        return {"status":"empty"}
 
     conn = await asyncpg.connect(DATABASE_URL)
 
@@ -489,8 +491,8 @@ async def send_chat_message(data: dict):
         INSERT INTO chat_messages (username, message)
         VALUES ($1,$2)
         """,
-        username,
-        message
+        user,
+        text
     )
 
     await conn.close()
