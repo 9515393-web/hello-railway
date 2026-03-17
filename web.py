@@ -575,3 +575,35 @@ async def get_chat_history():
     await conn.close()
 
     return [dict(r) for r in rows[::-1]]
+
+@app.post("/api/chat/delete")
+async def delete_chat_message(request: Request):
+
+    data = await request.json()
+
+    msg_id = data.get("id")
+    user = data.get("user")
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    row = await conn.fetchrow(
+        "SELECT username FROM chat_messages WHERE id=$1",
+        msg_id
+    )
+
+    if not row:
+        await conn.close()
+        return {"status":"not_found"}
+
+    if row["username"] != user:
+        await conn.close()
+        return {"status":"forbidden"}
+
+    await conn.execute(
+        "UPDATE chat_messages SET deleted=TRUE WHERE id=$1",
+        msg_id
+    )
+
+    await conn.close()
+
+    return {"status":"ok"}
