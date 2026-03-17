@@ -454,17 +454,16 @@ async def portal_pages(page: str):
 # ===============================
 
 @app.get("/api/chat")
-async def get_chat_messages(after: int = 0):
+async def get_chat(after:int=0):
 
     conn = await asyncpg.connect(DATABASE_URL)
 
     rows = await conn.fetch(
         """
-        SELECT id, username, message, created_at
+        SELECT id, username, message
         FROM chat_messages
-        WHERE COALESCE(deleted, FALSE) = FALSE
-        AND id > $1
-        ORDER BY id ASC
+        WHERE id>$1
+        ORDER BY id
         """,
         after
     )
