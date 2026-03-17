@@ -75,9 +75,9 @@ border-top:1px solid #ddd;
 
 .input-area input{
 flex:1;
-padding:10px;
-font-size:16px;
-border-radius:8px;
+padding:14px;
+font-size:17px;
+border-radius:12px;
 border:1px solid #ccc;
 }
 
@@ -105,15 +105,20 @@ cursor:pointer;
 
 <div class="input-area">
 
-<input id="name" placeholder="Ваше имя">
-
-<input id="text" placeholder="Сообщение">
+<input id="text" placeholder="Напишите сообщение...">
 
 <button onclick="send()">➤</button>
 
 </div>
 
 <script>
+
+let username = localStorage.getItem("chat_name")
+
+if(!username){
+username = prompt("Введите ваше имя")
+localStorage.setItem("chat_name", username)
+}
 
 let lastId = 0
 
@@ -144,7 +149,6 @@ document.getElementById("chat").scrollHeight
 
 async function send(){
 
-const user=document.getElementById("name").value
 const text=document.getElementById("text").value
 
 if(!text)return
@@ -153,7 +157,7 @@ await fetch("/api/chat/send",{
 method:"POST",
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
-user:user||"Житель",
+user:username,
 text:text
 })
 })
