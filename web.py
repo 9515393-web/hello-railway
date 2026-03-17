@@ -454,16 +454,16 @@ async def portal_pages(page: str):
 # ===============================
 
 @app.get("/api/chat")
-async def get_chat(after:int=0):
+async def get_chat_messages(after: int = 0):
 
     conn = await asyncpg.connect(DATABASE_URL)
 
     rows = await conn.fetch(
         """
-        SELECT id, username, message
+        SELECT id, username, message, deleted
         FROM chat_messages
-        WHERE id>$1
-        ORDER BY id
+        WHERE id > $1
+        ORDER BY id ASC
         """,
         after
     )
@@ -577,9 +577,7 @@ async def get_chat_history():
     return [dict(r) for r in rows[::-1]]
 
 @app.post("/api/chat/delete")
-async def delete_chat_message(request: Request):
-
-    data = await request.json()
+async def delete_chat_message(data: dict):
 
     msg_id = data.get("id")
     user = data.get("user")
@@ -587,23 +585,32 @@ async def delete_chat_message(request: Request):
     conn = await asyncpg.connect(DATABASE_URL)
 
     row = await conn.fetchrow(
-        "SELECT username FROM chat_messages WHERE id=$1",
+        """
+        SELECT username
+        FROM chat_messages
+        WHERE id=$1
+        """,
         msg_id
     )
 
     if not row:
         await conn.close()
-        return {"status":"not_found"}
+        raise HTTPException(status_code=404)
 
+    # удалить может только автор
     if row["username"] != user:
         await conn.close()
-        return {"status":"forbidden"}
+        raise HTTPException(status_code=403)
 
     await conn.execute(
-        "UPDATE chat_messages SET deleted=TRUE WHERE id=$1",
+        """
+        UPDATE chat_messages
+        SET deleted = TRUE
+        WHERE id=$1
+        """,
         msg_id
     )
 
     await conn.close()
 
-    return {"status":"ok"}
+    return {"status":"deleted"}
