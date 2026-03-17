@@ -191,10 +191,22 @@ msg.className="msg"
 
 msg.innerHTML = `
 <div class="avatar">${avatar(m.username)}</div>
+
 <div class="bubble">
-<div class="name">${m.username}</div>
-${m.message}
+
+<div class="name">
+${m.username}
+
+${m.username === username ? 
+`<span class="delete" onclick="deleteMsg(${m.id})">✖</span>` : ""}
+
 </div>
+
+${m.deleted ? 
+"<i>сообщение удалено</i>" : m.message}
+
+</div>
+`
 `
 
 document.getElementById("chat").appendChild(msg)
