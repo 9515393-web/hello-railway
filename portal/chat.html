@@ -186,8 +186,11 @@ data.forEach(m=>{
 
 lastId = m.id
 
+if(document.getElementById("msg_"+m.id)) return
+
 const msg = document.createElement("div")
 msg.className="msg"
+msg.id="msg_"+m.id
 
 msg.innerHTML = `
 <div class="avatar">${avatar(m.username)}</div>
@@ -202,11 +205,9 @@ ${m.username === username ?
 
 </div>
 
-${m.deleted ? 
-"<i>сообщение удалено</i>" : m.message}
+${m.deleted ? "<i>сообщение удалено</i>" : m.message}
 
 </div>
-`
 `
 
 document.getElementById("chat").appendChild(msg)
@@ -239,6 +240,25 @@ text:text
 
 document.getElementById("text").value=""
 
+load()
+
+}
+
+async function deleteMsg(id){
+
+await fetch("/api/chat/delete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+id:id,
+user:username
+})
+})
+
+document.getElementById("chat").innerHTML=""
+lastId=0
 load()
 
 }
