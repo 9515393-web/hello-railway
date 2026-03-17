@@ -240,26 +240,26 @@ const text = document.getElementById("text").value
 if(!text) return
 
 await fetch("/api/chat/send",{
-
 method:"POST",
 headers:{'Content-Type':'application/json'},
-
 body:JSON.stringify({
-
 user:username,
 text:text
-
 })
-
 })
 
 document.getElementById("text").value=""
+
+lastId = 0
+document.getElementById("chat").innerHTML=""
+
+load()
 
 }
 
 /* polling */
 
-setInterval(load,1500)
+setInterval(load,3000)
 
 /* уведомления */
 
