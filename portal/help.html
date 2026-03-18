@@ -67,21 +67,33 @@ color:#555;
 font-size:14px;
 }
 
-/* кнопка */
+/* кнопки */
 
-.qr-button{
-display:inline-block;
+.button{
+display:block;
+width:100%;
 margin-top:18px;
-padding:12px 22px;
+padding:14px;
 background:#2a5bd7;
 color:white;
-text-decoration:none;
+border:none;
 border-radius:10px;
 font-size:16px;
+cursor:pointer;
+text-decoration:none;
+text-align:center;
 }
 
-.qr-button:hover{
+.button:hover{
 background:#1f46aa;
+}
+
+.button-secondary{
+background:#555;
+}
+
+.button-secondary:hover{
+background:#333;
 }
 
 /* шаги */
@@ -146,21 +158,20 @@ border-radius:6px;
 </div>
 
 <div class="qr-box">
-
 <img src="/portal/qr_portal.png">
-
 </div>
 
 <div class="qr-text">
 Отсканируйте QR-код камерой телефона  
-или нажмите кнопку ниже
+или воспользуйтесь кнопкой ниже
 </div>
 
-<a href="https://admin-map-web-production.up.railway.app"
-class="qr-button">
+<button class="button" onclick="sharePortal()">
+Поделиться порталом
+</button>
 
-Открыть портал
-
+<a href="/" class="button button-secondary">
+Вернуться в главное меню
 </a>
 
 </div>
@@ -213,6 +224,54 @@ class="qr-button">
 </div>
 
 </div>
+
+<script>
+
+function sharePortal(){
+
+const url = "https://admin-map-web-production.up.railway.app";
+const text = "Посмотрите портал проекта восстановления деревни Захожье";
+
+if(navigator.share){
+
+navigator.share({
+title:"Портал проекта Захожье",
+text:text,
+url:url
+});
+
+}else{
+
+const menu = `
+Поделиться ссылкой:
+
+1 — SMS
+2 — Telegram
+3 — Email
+`;
+
+const choice = prompt(menu);
+
+if(choice==1){
+window.location="sms:?body="+encodeURIComponent(text+" "+url);
+}
+
+if(choice==2){
+window.open(
+"https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text)
+);
+}
+
+if(choice==3){
+window.location=
+"mailto:?subject=Портал проекта Захожье&body="+encodeURIComponent(text+" "+url);
+}
+
+}
+
+}
+
+</script>
 
 </body>
 </html>
