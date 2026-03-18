@@ -20,39 +20,80 @@ background:#f5f7fb;
 line-height:1.6;
 }
 
+/* основной блок */
+
 .help{
-max-width:700px;
+max-width:720px;
 margin:auto;
 background:white;
 padding:25px;
-border-radius:12px;
-box-shadow:0 4px 14px rgba(0,0,0,0.08);
+border-radius:14px;
+box-shadow:0 4px 16px rgba(0,0,0,0.08);
 }
 
-h2{
-margin-top:0;
-}
+/* QR карточка */
 
-.qr{
+.qr-card{
 text-align:center;
-margin:25px 0;
+margin:30px auto;
+max-width:420px;
+padding:25px;
+background:white;
+border-radius:16px;
+box-shadow:0 6px 20px rgba(0,0,0,0.12);
 }
 
-.qr img{
-width:440px;
-max-width:100%;
-border-radius:10px;
+.qr-title{
+font-size:20px;
+font-weight:600;
+margin-bottom:15px;
 }
+
+.qr-box{
+background:white;
+padding:15px;
+border-radius:14px;
+display:inline-block;
+}
+
+.qr-box img{
+width:340px;
+max-width:100%;
+}
+
+.qr-text{
+margin-top:15px;
+color:#555;
+font-size:14px;
+}
+
+/* кнопка */
+
+.qr-button{
+display:inline-block;
+margin-top:18px;
+padding:12px 22px;
+background:#2a5bd7;
+color:white;
+text-decoration:none;
+border-radius:10px;
+font-size:16px;
+}
+
+.qr-button:hover{
+background:#1f46aa;
+}
+
+/* шаги */
 
 .steps{
-margin-top:20px;
+margin-top:30px;
 }
 
 .step{
 display:flex;
 gap:12px;
 margin-bottom:18px;
-align-items:flex-start;
 }
 
 .num{
@@ -70,7 +111,7 @@ flex-shrink:0;
 
 .note{
 margin-top:20px;
-padding:12px;
+padding:14px;
 background:#eef3ff;
 border-left:4px solid #3a6ea5;
 border-radius:6px;
@@ -96,13 +137,35 @@ border-radius:6px;
 Для этого достаточно выполнить несколько простых шагов.
 </p>
 
-<div class="qr">
+<!-- QR -->
+
+<div class="qr-card">
+
+<div class="qr-title">
+📱 Перейти на портал проекта
+</div>
+
+<div class="qr-box">
 
 <img src="/portal/qr_portal.png">
 
-<p><b>Отсканируйте QR-код для перехода на портал проекта</b></p>
+</div>
+
+<div class="qr-text">
+Отсканируйте QR-код камерой телефона  
+или нажмите кнопку ниже
+</div>
+
+<a href="https://admin-map-web-production.up.railway.app"
+class="qr-button">
+
+Открыть портал
+
+</a>
 
 </div>
+
+<!-- шаги -->
 
 <div class="steps">
 
@@ -126,7 +189,7 @@ border-radius:6px;
 <div class="num">3</div>
 <div>
 <strong>Используйте QR-код</strong><br>
-Отсканируйте код или отправьте ссылку на портал знакомым жителям.
+Отсканируйте код или отправьте ссылку знакомым жителям.
 </div>
 </div>
 
