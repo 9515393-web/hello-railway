@@ -118,37 +118,21 @@ const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
 const url =
 `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
 
-fetch(url)
+fetch("/api/stats")
 
-.then(res => res.text())
+.then(res => res.json())
 
 .then(data => {
 
-const json = JSON.parse(data.substring(47).slice(0,-2));
+const total = data.votes
+const support = data.people
+const other = total - support
 
-const rows = json.table.rows;
+document.getElementById("total").innerText = total
+document.getElementById("support").innerText = support
+document.getElementById("other").innerText = other
 
-let support = 0;
-let other = 0;
-
-rows.forEach(row => {
-
-const answer = row.c[1]?.v || "";
-
-if(answer.includes("Поддерживаю"))
-support++;
-else
-other++;
-
-});
-
-const total = rows.length;
-
-document.getElementById("total").innerText = total;
-document.getElementById("support").innerText = support;
-document.getElementById("other").innerText = other;
-
-const ctx = document.getElementById("chart");
+const ctx = document.getElementById("chart")
 
 new Chart(ctx,{
 
@@ -173,9 +157,9 @@ backgroundColor:[
 
 }
 
-});
+})
 
-});
+})
 
 </script>
 
