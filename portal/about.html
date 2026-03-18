@@ -14,32 +14,52 @@
 
 body{
 margin:0;
+padding:20px;
 font-family:Arial, sans-serif;
-line-height:1.5;
+line-height:1.6;
+background:#f5f7fb;
 }
 
-/* верхняя навигация */
-
-.top-nav{
-position:sticky;
-top:0;
+.container{
+max-width:800px;
+margin:auto;
 background:white;
-padding:10px;
-border-bottom:1px solid #ddd;
-z-index:1000;
+padding:25px;
+border-radius:14px;
+box-shadow:0 4px 14px rgba(0,0,0,0.08);
 }
 
-.back-btn{
-display:inline-block;
+h1{
+margin-top:0;
+}
+
+.section{
+margin-top:25px;
+}
+
+.section h2{
+border-bottom:2px solid #e5e5e5;
+padding-bottom:6px;
+}
+
+.bottom-home{
+margin-top:40px;
+text-align:center;
+}
+
+.home-btn{
+display:block;
+max-width:420px;
+margin:auto;
 background:#2a5bd7;
 color:white;
+padding:16px;
+border-radius:12px;
+font-size:18px;
 text-decoration:none;
-padding:10px 14px;
-border-radius:8px;
-font-size:14px;
 }
 
-.back-btn:active{
+.home-btn:active{
 background:#1f46aa;
 }
 
@@ -49,28 +69,133 @@ background:#1f46aa;
 
 <body>
 
-<script>
+<div class="container">
 
-async function load(){
+<h1>🏡 О проекте восстановления деревни Захожье</h1>
 
-const r = await fetch("/api/page/about")
+<p>
+Данный портал создан инициативной группой жителей массива СНТ «Захожье»
+для обсуждения возможности восстановления исторической деревни Захожье.
+</p>
 
-const data = await r.json()
+<p>
+Сайт является информационной площадкой,
+где жители могут ознакомиться с проектом,
+узнать подробности инициативы
+и принять участие в опросе.
+</p>
 
-document.getElementById("title").innerText = data.title
-document.getElementById("content").innerHTML = data.content
+<div class="section">
 
-}
+<h2>📌 Цель проекта</h2>
 
-load()
+<p>
+Основная цель инициативы — изучить возможность восстановления
+исторического населённого пункта Захожье
+на территории существующего массива садоводств.
+</p>
 
-</script>
+<p>
+Проект направлен на обсуждение перспектив развития территории,
+улучшение инфраструктуры и повышение качества жизни жителей.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>👥 Кто реализует проект</h2>
+
+<p>
+Проект реализуется инициативной группой жителей.
+</p>
+
+<p>
+Он не является официальным проектом органов власти
+и не принимает юридических решений.
+</p>
+
+<p>
+Все решения о создании населённых пунктов принимаются
+в установленном законодательством порядке
+органами государственной власти.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>📊 Зачем проводится опрос жителей</h2>
+
+<p>
+Опрос проводится для того, чтобы понять,
+поддерживают ли жители инициативу
+восстановления деревни Захожье.
+</p>
+
+<p>
+Результаты опроса помогут:
+</p>
+
+<ul>
+<li>оценить мнение жителей;</li>
+<li>понять количество постоянно проживающих;</li>
+<li>подготовить данные для дальнейшего обсуждения.</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>🗺 Как будет развиваться проект</h2>
+
+<p>
+Если инициатива получит поддержку жителей,
+инициативная группа сможет подготовить
+предложения и материалы для обсуждения
+на муниципальном уровне.
+</p>
+
+<p>
+Дальнейшее развитие проекта возможно только
+в рамках официальных процедур,
+предусмотренных законодательством.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>📢 Как принять участие</h2>
+
+<ul>
+<li>пройти опрос на сайте проекта;</li>
+<li>использовать Telegram-бот проекта;</li>
+<li>заполнить бумажную анкету.</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>📌 Принципы проекта</h2>
+
+<ul>
+<li>Никаких решений без жителей.</li>
+<li>Никаких обязательств без согласия.</li>
+<li>Открытое информирование жителей.</li>
+<li>Поэтапное развитие инициативы.</li>
+</ul>
+
+</div>
 
 <div class="bottom-home">
 
 <a href="/" class="home-btn">
 🏠 Вернуться в главное меню
 </a>
+
+</div>
 
 </div>
 
