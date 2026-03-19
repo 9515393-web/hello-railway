@@ -236,6 +236,12 @@ function send(){
     const text = document.getElementById("text").value.trim()
     if(!text) return
 
+    // ❗ проверка соединения
+    if (ws.readyState !== WebSocket.OPEN) {
+        alert("Нет соединения с сервером")
+        return
+    }
+
     ws.send(JSON.stringify({
         action: "send",
         user: username,
