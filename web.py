@@ -452,8 +452,10 @@ async def websocket_chat(ws: WebSocket):
             except:
                 continue
 
-            # ===== ОТПРАВКА =====
-            if data.get("action") == "send":
+            action = data.get("action")
+
+            # ===== SEND =====
+            if action == "send":
 
                 if not data.get("text"):
                     continue
@@ -475,8 +477,8 @@ async def websocket_chat(ws: WebSocket):
                 for c in connections:
                     await c.send_json(dict(row))
 
-            # ===== УДАЛЕНИЕ =====
-            elif data.get("action") == "delete":
+            # ===== DELETE =====
+            if action == "delete":
 
                 conn = await asyncpg.connect(DATABASE_URL)
 
