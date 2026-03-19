@@ -453,49 +453,6 @@ async def portal_pages(page: str):
 # ЧАТ ЖИТЕЛЕЙ
 # ===============================
 
-@app.get("/api/chat")
-async def get_chat_messages(after: int = 0):
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    rows = await conn.fetch(
-        """
-        SELECT id, username, message, deleted
-        FROM chat_messages
-        WHERE id > $1
-        ORDER BY id ASC
-        """,
-        after
-    )
-
-    await conn.close()
-
-    return [dict(r) for r in rows]
-
-
-@app.post("/api/chat/send")
-async def send_chat_message(data: dict):
-
-    text = data.get("text","")[:500]
-    user = data.get("user")
-
-    if not text.strip():
-        raise HTTPException(status_code=400)
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    await conn.execute(
-        """
-        INSERT INTO chat_messages (username, message)
-        VALUES ($1,$2)
-        """,
-        user,
-        text
-    )
-
-    await conn.close()
-
-    return {"status":"ok"}
     
 # ===============================
 # WEBSOCKET ЧАТ ЖИТЕЛЕЙ
@@ -516,63 +473,84 @@ async def websocket_chat(ws: WebSocket):
         while True:
 
             data = await ws.receive_json()
+            action = data.get("action")
 
-            username = data.get("username")
-            message = data.get("message")
+            # ===== ОТПРАВКА =====
+            if action == "send":
 
-            if not username or not message:
-                continue
+                username = data.get("user")
+                message = data.get("text")
 
-            conn = await asyncpg.connect(DATABASE_URL)
+                if not username or not message:
+                    continue
 
-            row = await conn.fetchrow(
-                """
-                INSERT INTO chat_messages (username, message)
-                VALUES ($1,$2)
-                RETURNING id, created_at
-                """,
-                username,
-                message
-            )
+                conn = await asyncpg.connect(DATABASE_URL)
 
-            await conn.close()
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO chat_messages (username, message)
+                    VALUES ($1,$2)
+                    RETURNING id, username, message, deleted
+                    """,
+                    username,
+                    message
+                )
 
-            payload = {
-                "id": row["id"],
-                "username": username,
-                "message": message,
-                "created_at": str(row["created_at"])
-            }
+                await conn.close()
 
-            for c in connections:
-                await c.send_json(payload)
+                for c in connections:
+                    await c.send_json(dict(row))
+
+            # ===== УДАЛЕНИЕ =====
+            elif action == "delete":
+
+                msg_id = data.get("id")
+                user = data.get("user")
+
+                conn = await asyncpg.connect(DATABASE_URL)
+
+                await conn.execute(
+                    """
+                    UPDATE chat_messages
+                    SET deleted = TRUE
+                    WHERE id=$1 AND username=$2
+                    """,
+                    msg_id,
+                    user
+                )
+
+                await conn.close()
+
+                for c in connections:
+                    await c.send_json({
+                        "id": msg_id,
+                        "deleted": True
+                    })
 
     except WebSocketDisconnect:
         connections.remove(ws)
-
 
 # ===============================
 # ЗАГРУЗКА ИСТОРИИ ЧАТА
 # ===============================
 
-@app.get("/api/chat")
+@app.get("/api/chat/history")
 async def get_chat_history():
 
     conn = await asyncpg.connect(DATABASE_URL)
 
     rows = await conn.fetch(
         """
-        SELECT id, username, message, created_at
+        SELECT id, username, message, deleted
         FROM chat_messages
-        WHERE COALESCE(deleted,FALSE)=FALSE
-        ORDER BY id DESC
+        ORDER BY id ASC
         LIMIT 50
         """
     )
 
     await conn.close()
 
-    return [dict(r) for r in rows[::-1]]
+    return [dict(r) for r in rows]
 
 @app.post("/api/chat/delete")
 async def delete_chat_message(data: dict):
