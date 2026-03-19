@@ -517,7 +517,10 @@ async def portal_pages(page: str):
     path = f"portal/{page}.html"
 
     if os.path.exists(path):
-        return FileResponse(path)
+        return FileResponse(
+            path,
+            headers={"Cache-Control": "no-store"}
+        )
 
     raise HTTPException(status_code=404)
 
