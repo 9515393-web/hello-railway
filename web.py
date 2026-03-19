@@ -462,7 +462,6 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 connections = []
 
-
 @app.websocket("/ws/chat")
 async def websocket_chat(ws: WebSocket):
 
@@ -473,16 +472,9 @@ async def websocket_chat(ws: WebSocket):
         while True:
 
             data = await ws.receive_json()
-            action = data.get("action")
 
-            # ===== ОТПРАВКА =====
-            if action == "send":
-
-                username = data.get("user")
-                message = data.get("text")
-
-                if not username or not message:
-                    continue
+            # ===== отправка =====
+            if data.get("action") == "send":
 
                 conn = await asyncpg.connect(DATABASE_URL)
 
@@ -492,8 +484,8 @@ async def websocket_chat(ws: WebSocket):
                     VALUES ($1,$2)
                     RETURNING id, username, message, deleted
                     """,
-                    username,
-                    message
+                    data.get("user"),
+                    data.get("text")
                 )
 
                 await conn.close()
@@ -501,11 +493,8 @@ async def websocket_chat(ws: WebSocket):
                 for c in connections:
                     await c.send_json(dict(row))
 
-            # ===== УДАЛЕНИЕ =====
-            elif action == "delete":
-
-                msg_id = data.get("id")
-                user = data.get("user")
+            # ===== удаление =====
+            elif data.get("action") == "delete":
 
                 conn = await asyncpg.connect(DATABASE_URL)
 
@@ -515,15 +504,15 @@ async def websocket_chat(ws: WebSocket):
                     SET deleted = TRUE
                     WHERE id=$1 AND username=$2
                     """,
-                    msg_id,
-                    user
+                    data.get("id"),
+                    data.get("user")
                 )
 
                 await conn.close()
 
                 for c in connections:
                     await c.send_json({
-                        "id": msg_id,
+                        "id": data.get("id"),
                         "deleted": True
                     })
 
