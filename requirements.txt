@@ -3,5 +3,5 @@ qrcode[pil]
 pillow
 asyncpg
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
