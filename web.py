@@ -505,6 +505,13 @@ async def websocket_chat(ws: WebSocket):
         if ws in connections:
             connections.remove(ws)
 
+@app.get("/portal/chat.html")
+async def chat_page():
+    return FileResponse(
+        "portal/chat.html",
+        headers={"Cache-Control": "no-store"}
+    )
+
 @app.get("/")
 async def portal_index():
     return FileResponse("portal/index.html")
