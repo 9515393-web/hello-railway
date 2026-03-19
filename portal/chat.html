@@ -221,51 +221,28 @@ document.getElementById("chat").scrollHeight
 
 }
 
-async function send(){
+function send(){
 
-const text = document.getElementById("text").value.trim()
+    const text = document.getElementById("text").value.trim()
+    if(!text) return
 
-if(!text) return
+    ws.send(JSON.stringify({
+        action: "send",
+        user: username,
+        text: text
+    }))
 
-await fetch("/api/chat/send",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-user:username,
-text:text
-})
-})
-
-document.getElementById("text").value=""
-
-load()
-
+    document.getElementById("text").value=""
 }
 
-async function deleteMsg(id){
+function deleteMsg(id){
 
-await fetch("/api/chat/delete",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-id:id,
-user:username
+    ws.send(JSON.stringify({
+        action: "delete",
+        id: id,
+        user: username
+    }))
 })
-})
-
-document.getElementById("chat").innerHTML=""
-lastId=0
-load()
-
-}
-
-setInterval(load,3000)
-
-load()
 
 </script>
 
