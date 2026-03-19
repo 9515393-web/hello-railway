@@ -193,6 +193,7 @@ ws.onerror = (e) => {
 }
 
 ws.onmessage = (event) => {
+    console.log("WS MESSAGE:", event.data)
     const m = JSON.parse(event.data)
 
     // удаление
