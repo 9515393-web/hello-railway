@@ -166,60 +166,70 @@ cursor:pointer;
 let username = localStorage.getItem("chat_name")
 
 if(!username){
-username = prompt("Введите имя")
-localStorage.setItem("chat_name", username)
+    username = prompt("Введите имя")
+    localStorage.setItem("chat_name", username)
 }
 
 function avatar(name){
-return name.charAt(0).toUpperCase()
+    return name.charAt(0).toUpperCase()
 }
 
-let lastId = 0
+/* ===== WebSocket ===== */
 
-async function load(){
+const ws = new WebSocket(
+    location.protocol === "https:"
+    ? "wss://" + location.host + "/ws/chat"
+    : "ws://" + location.host + "/ws/chat"
+)
 
-const r = await fetch("/api/chat?after="+lastId)
-
-const data = await r.json()
-
-data.forEach(m=>{
-
-lastId = m.id
-
-if(document.getElementById("msg_"+m.id)) return
-
-const msg = document.createElement("div")
-msg.className="msg"
-msg.id="msg_"+m.id
-
-msg.innerHTML = `
-<div class="avatar">${avatar(m.username)}</div>
-
-<div class="bubble">
-
-<div class="name">
-${m.username}
-
-${m.username === username ? 
-`<span class="delete" onclick="deleteMsg(${m.id})">✖</span>` : ""}
-
-</div>
-
-${m.deleted ? "<i>сообщение удалено</i>" : m.message}
-
-</div>
-`
-
-document.getElementById("chat").appendChild(msg)
-
-})
-
-if(data.length){
-document.getElementById("chat").scrollTop =
-document.getElementById("chat").scrollHeight
+ws.onopen = () => {
+    console.log("WS CONNECTED")
 }
 
+ws.onerror = (e) => {
+    console.log("WS ERROR", e)
 }
+
+ws.onmessage = (event) => {
+    const m = JSON.parse(event.data)
+
+    // удаление
+    if(m.deleted){
+        const el = document.getElementById("msg_"+m.id)
+        if(el){
+            el.querySelector(".bubble").innerHTML = "<i>сообщение удалено</i>"
+        }
+        return
+    }
+
+    // новое сообщение
+    if(document.getElementById("msg_"+m.id)) return
+
+    const msg = document.createElement("div")
+    msg.className="msg"
+    msg.id="msg_"+m.id
+
+    msg.innerHTML = `
+    <div class="avatar">${avatar(m.username)}</div>
+
+    <div class="bubble">
+        <div class="name">
+            ${m.username}
+            ${m.username === username ? 
+            `<span onclick="deleteMsg(${m.id})">✖</span>` : ""}
+        </div>
+
+        ${m.message}
+    </div>
+    `
+
+    document.getElementById("chat").appendChild(msg)
+
+    document.getElementById("chat").scrollTop =
+    document.getElementById("chat").scrollHeight
+}
+
+/* ===== отправка ===== */
 
 function send(){
 
@@ -235,6 +245,8 @@ function send(){
     document.getElementById("text").value=""
 }
 
+/* ===== удаление ===== */
+
 function deleteMsg(id){
 
     ws.send(JSON.stringify({
@@ -242,7 +254,21 @@ function deleteMsg(id){
         id: id,
         user: username
     }))
-})
+}
+
+/* ===== история ===== */
+
+async function loadHistory(){
+
+    const r = await fetch("/api/chat/history")
+    const data = await r.json()
+
+    data.forEach(m=>{
+        ws.onmessage({data: JSON.stringify(m)})
+    })
+}
+
+loadHistory()
 
 </script>
 
