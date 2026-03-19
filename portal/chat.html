@@ -163,6 +163,8 @@ cursor:pointer;
 
 <script>
 
+try {
+
 let username = localStorage.getItem("chat_name")
 
 if(!username){
@@ -171,10 +173,12 @@ if(!username){
 }
 
 function avatar(name){
-    return name.charAt(0).toUpperCase()
+    return name ? name.charAt(0).toUpperCase() : "?"
 }
 
 function renderMessage(m){
+
+    if(!m || !m.id) return
 
     if(document.getElementById("msg_"+m.id)) return
 
@@ -187,24 +191,25 @@ function renderMessage(m){
 
     <div class="bubble">
         <div class="name">
-            ${m.username}
+            ${m.username || "?"}
             ${m.username === username ? 
             `<span onclick="deleteMsg(${m.id})">✖</span>` : ""}
         </div>
 
-        ${m.deleted ? "<i>сообщение удалено</i>" : m.message}
+        ${m.deleted ? "<i>сообщение удалено</i>" : (m.message || "")}
     </div>
     `
 
-    document.getElementById("chat").appendChild(msg)
-
-    document.getElementById("chat").scrollTop =
-    document.getElementById("chat").scrollHeight
+    const chat = document.getElementById("chat")
+    if(chat){
+        chat.appendChild(msg)
+        chat.scrollTop = chat.scrollHeight
+    }
 }
 
 /* ===== WebSocket ===== */
 
-let ws;
+let ws = null
 
 function connectWS(){
 
@@ -229,8 +234,12 @@ function connectWS(){
     }
 
     ws.onmessage = (event) => {
-        const m = JSON.parse(event.data)
-        renderMessage(m)
+        try {
+            const m = JSON.parse(event.data)
+            renderMessage(m)
+        } catch(e){
+            console.log("PARSE ERROR", e)
+        }
     }
 }
 
@@ -238,7 +247,10 @@ function connectWS(){
 
 function send(){
 
-    const text = document.getElementById("text").value.trim()
+    const el = document.getElementById("text")
+    if(!el) return
+
+    const text = el.value.trim()
     if(!text) return
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -252,7 +264,7 @@ function send(){
         text: text
     }))
 
-    document.getElementById("text").value=""
+    el.value=""
 }
 
 /* ===== удаление ===== */
@@ -271,16 +283,22 @@ function deleteMsg(id){
 /* ===== история ===== */
 
 async function loadHistory(){
-
-    const r = await fetch("/api/chat/history")
-    const data = await r.json()
-
-    data.forEach(renderMessage)
+    try {
+        const r = await fetch("/api/chat/history")
+        const data = await r.json()
+        data.forEach(renderMessage)
+    } catch(e){
+        console.log("HISTORY ERROR", e)
+    }
 }
 
 /* ===== старт ===== */
 
 connectWS()
+
+} catch(e) {
+    console.log("GLOBAL ERROR", e)
+}
 
 </script>
 
