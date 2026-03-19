@@ -434,30 +434,6 @@ async def upload_document(
 # СТРАНИЦЫ ПОРТАЛА (чистые URL)
 # ===============================
 
-@app.get("/")
-async def portal_index():
-    return FileResponse("portal/index.html")
-
-
-@app.get("/{page}.html")
-async def portal_pages(page: str):
-
-    path = f"portal/{page}.html"
-
-    if os.path.exists(path):
-        return FileResponse(path)
-
-    raise HTTPException(status_code=404)
-
-# ===============================
-# ЧАТ ЖИТЕЛЕЙ
-# ===============================
-
-    
-# ===============================
-# WEBSOCKET ЧАТ ЖИТЕЛЕЙ
-# ===============================
-
 from fastapi import WebSocket, WebSocketDisconnect
 
 connections = []
@@ -498,6 +474,32 @@ async def websocket_chat(ws: WebSocket):
 
                 for c in connections:
                     await c.send_json(dict(row))
+
+
+@app.get("/")
+async def portal_index():
+    return FileResponse("portal/index.html")
+
+
+@app.get("/{page}.html")
+async def portal_pages(page: str):
+
+    path = f"portal/{page}.html"
+
+    if os.path.exists(path):
+        return FileResponse(path)
+
+    raise HTTPException(status_code=404)
+
+# ===============================
+# ЧАТ ЖИТЕЛЕЙ
+# ===============================
+
+    
+# ===============================
+# WEBSOCKET ЧАТ ЖИТЕЛЕЙ
+# ===============================
+
 
             # ===== удаление =====
             elif data.get("action") == "delete":
