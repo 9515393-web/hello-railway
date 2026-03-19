@@ -174,38 +174,8 @@ function avatar(name){
     return name.charAt(0).toUpperCase()
 }
 
-/* ===== WebSocket ===== */
+function renderMessage(m){
 
-const ws = new WebSocket(
-    location.protocol === "https:"
-    ? "wss://" + location.host + "/ws/chat"
-    : "ws://" + location.host + "/ws/chat"
-)
-
-ws.onopen = () => {
-    console.log("WS CONNECTED")
-
-    loadHistory()
-}
-
-ws.onerror = (e) => {
-    console.log("WS ERROR", e)
-}
-
-ws.onmessage = (event) => {
-    console.log("WS MESSAGE:", event.data)
-    const m = JSON.parse(event.data)
-
-    // удаление
-    if(m.deleted){
-        const el = document.getElementById("msg_"+m.id)
-        if(el){
-            el.querySelector(".bubble").innerHTML = "<i>сообщение удалено</i>"
-        }
-        return
-    }
-
-    // новое сообщение
     if(document.getElementById("msg_"+m.id)) return
 
     const msg = document.createElement("div")
@@ -222,7 +192,7 @@ ws.onmessage = (event) => {
             `<span onclick="deleteMsg(${m.id})">✖</span>` : ""}
         </div>
 
-        ${m.message}
+        ${m.deleted ? "<i>сообщение удалено</i>" : m.message}
     </div>
     `
 
@@ -232,6 +202,38 @@ ws.onmessage = (event) => {
     document.getElementById("chat").scrollHeight
 }
 
+/* ===== WebSocket ===== */
+
+let ws;
+
+function connectWS(){
+
+    ws = new WebSocket(
+        location.protocol === "https:"
+        ? "wss://" + location.host + "/ws/chat"
+        : "ws://" + location.host + "/ws/chat"
+    )
+
+    ws.onopen = () => {
+        console.log("WS CONNECTED")
+        loadHistory()
+    }
+
+    ws.onclose = () => {
+        console.log("WS CLOSED")
+        setTimeout(connectWS, 2000)
+    }
+
+    ws.onerror = (e) => {
+        console.log("WS ERROR", e)
+    }
+
+    ws.onmessage = (event) => {
+        const m = JSON.parse(event.data)
+        renderMessage(m)
+    }
+}
+
 /* ===== отправка ===== */
 
 function send(){
@@ -239,8 +241,7 @@ function send(){
     const text = document.getElementById("text").value.trim()
     if(!text) return
 
-    // ❗ проверка соединения
-    if (ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
         alert("Нет соединения с сервером")
         return
     }
@@ -258,6 +259,8 @@ function send(){
 
 function deleteMsg(id){
 
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
     ws.send(JSON.stringify({
         action: "delete",
         id: id,
@@ -272,11 +275,12 @@ async function loadHistory(){
     const r = await fetch("/api/chat/history")
     const data = await r.json()
 
-    data.forEach(m=>{
-        ws.onmessage({data: JSON.stringify(m)})
-    })
+    data.forEach(renderMessage)
 }
 
+/* ===== старт ===== */
+
+connectWS()
 
 </script>
 
