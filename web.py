@@ -446,16 +446,62 @@ async def websocket_chat(ws: WebSocket):
 
     try:
         while True:
-            data = await ws.receive_json()
 
+            try:
+                data = await ws.receive_json()
+            except:
+                continue
+
+            # ===== ОТПРАВКА =====
             if data.get("action") == "send":
-                ...
+
+                if not data.get("text"):
+                    continue
+
+                conn = await asyncpg.connect(DATABASE_URL)
+
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO chat_messages (username, message)
+                    VALUES ($1,$2)
+                    RETURNING id, username, message, deleted
+                    """,
+                    data.get("user"),
+                    data.get("text")
+                )
+
+                await conn.close()
+
+                for c in connections:
+                    await c.send_json(dict(row))
+
+            # ===== УДАЛЕНИЕ =====
+            elif data.get("action") == "delete":
+
+                conn = await asyncpg.connect(DATABASE_URL)
+
+                await conn.execute(
+                    """
+                    UPDATE chat_messages
+                    SET deleted = TRUE
+                    WHERE id=$1 AND username=$2
+                    """,
+                    data.get("id"),
+                    data.get("user")
+                )
+
+                await conn.close()
+
+                for c in connections:
+                    await c.send_json({
+                        "id": data.get("id"),
+                        "deleted": True
+                    })
 
     except Exception as e:
         print("WS ERROR:", e)
         if ws in connections:
             connections.remove(ws)
-
 
 @app.get("/")
 async def portal_index():
