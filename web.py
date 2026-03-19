@@ -471,10 +471,16 @@ async def websocket_chat(ws: WebSocket):
     try:
         while True:
 
-            data = await ws.receive_json()
+            try:
+                data = await ws.receive_json()
+            except:
+                continue
 
             # ===== отправка =====
             if data.get("action") == "send":
+
+                if not data.get("text"):
+                    continue
 
                 conn = await asyncpg.connect(DATABASE_URL)
 
@@ -516,8 +522,10 @@ async def websocket_chat(ws: WebSocket):
                         "deleted": True
                     })
 
-    except WebSocketDisconnect:
-        connections.remove(ws)
+    except Exception as e:
+        print("WS ERROR:", e)
+        if ws in connections:
+            connections.remove(ws)
 
 # ===============================
 # ЗАГРУЗКА ИСТОРИИ ЧАТА
