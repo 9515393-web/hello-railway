@@ -495,36 +495,47 @@ async def websocket_chat(ws: WebSocket):
 
                 await conn.close()
 
-                for c in connections:
-                    await c.send_json(dict(row))
+                dead = []
 
-            # ===== DELETE =====
-            if action == "delete":
+for c in connections:
+    try:
+        await c.send_json(dict(row))
+    except:
+        dead.append(c)
 
-                conn = await asyncpg.connect(DATABASE_URL)
+for c in dead:
+    if c in connections:
+        connections.remove(c)
 
-                await conn.execute(
-                    """
-                    UPDATE chat_messages
-                    SET deleted = TRUE
-                    WHERE id=$1 AND username=$2
-                    """,
-                    data.get("id"),
-                    data.get("user")
-                )
+           # ===== DELETE =====
+if action == "delete":
 
-                await conn.close()
+    conn = await get_conn()
 
-                for c in connections:
-                    await c.send_json({
-                        "id": data.get("id"),
-                        "deleted": True
-                    })
+    await conn.execute(
+        """
+        UPDATE chat_messages
+        SET deleted = TRUE
+        WHERE id=$1 AND username=$2
+        """,
+        data.get("id"),
+        data.get("user")
+    )
 
-    except Exception as e:
-        print("WS ERROR:", e)
-        if ws in connections:
-            connections.remove(ws)
+    dead = []
+
+    for c in connections:
+        try:
+            await c.send_json({
+                "id": data.get("id"),
+                "deleted": True
+            })
+        except:
+            dead.append(c)
+
+    for c in dead:
+        if c in connections:
+            connections.remove(c)
 
 
 @app.get("/")
