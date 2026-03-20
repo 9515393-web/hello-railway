@@ -8,7 +8,7 @@ import asyncpg
 import asyncio
 
 from datetime import datetime
-from bot import start_bot
+#from bot import start_bot
 
 # ===== ПАПКА ДОКУМЕНТОВ (Railway Volume) =====
 
@@ -53,7 +53,7 @@ async def download_doc(category: str, filename: str):
 
 # ===== ЗАПУСК БОТА =====
 
-@app.on_event("startup")
+#@app.on_event("startup")
 async def start_services():
     asyncio.create_task(start_bot())
 
