@@ -66,15 +66,19 @@ app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-conn = None
+db_pool = None
 
 async def get_conn():
-    global conn
+    global db_pool
 
-    try:
-        if conn is None:
-            conn = await asyncpg.connect(DATABASE_URL)
-            return conn
+    if db_pool is None:
+        db_pool = await asyncpg.create_pool(
+            DATABASE_URL,
+            min_size=1,
+            max_size=5
+        )
+
+    return await db_pool.acquire()
 
         # проверка соединения
         await conn.execute("SELECT 1")
@@ -94,29 +98,29 @@ async def get_conn():
 # ===============================
 
 async def require_admin(token: str):
-
     if not token:
         raise HTTPException(status_code=403, detail="token required")
 
     conn = await get_conn()
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT admin_id, expires_at
+            FROM admin_sessions
+            WHERE token = $1
+            """,
+            token
+        )
 
-    row = await conn.fetchrow(
-        """
-        SELECT admin_id, expires_at
-        FROM admin_sessions
-        WHERE token = $1
-        """,
-        token
-    )
+        if not row:
+            raise HTTPException(status_code=403, detail="invalid token")
 
+        if row["expires_at"] < datetime.utcnow():
+            raise HTTPException(status_code=403, detail="token expired")
 
-    if not row:
-        raise HTTPException(status_code=403, detail="invalid token")
-
-    if row["expires_at"] < datetime.utcnow():
-        raise HTTPException(status_code=403, detail="token expired")
-
-    return row
+        return row
+    finally:
+        await conn.close()
 
 async def audit_log(admin_id: int, action: str, target: str, payload: dict):
 
@@ -478,70 +482,74 @@ async def websocket_chat(ws: WebSocket):
             # ===== SEND =====
             if action == "send":
 
-                if not data.get("text"):
-                    continue
+    if not data.get("text"):
+        continue
 
-                try:
-                    conn = await get_conn()
+    try:
+        conn = await get_conn()
+        try:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO chat_messages (username, message)
+                VALUES ($1,$2)
+                RETURNING id, username, message, deleted
+                """,
+                data.get("user"),
+                data.get("text")
+            )
+        finally:
+            await conn.close()
 
-                    row = await conn.fetchrow(
-                        """
-                        INSERT INTO chat_messages (username, message)
-                        VALUES ($1,$2)
-                        RETURNING id, username, message, deleted
-                        """,
-                        data.get("user"),
-                        data.get("text")
-                    )
+        dead = []
 
-                    dead = []
+        for c in connections:
+            try:
+                await c.send_json(dict(row))
+            except:
+                dead.append(c)
 
-                    for c in connections:
-                        try:
-                            await c.send_json(dict(row))
-                        except:
-                            dead.append(c)
+        for c in dead:
+            if c in connections:
+                connections.remove(c)
 
-                    for c in dead:
-                        if c in connections:
-                            connections.remove(c)
-
-                except Exception as e:
-                    print("SEND ERROR:", e)
+    except Exception as e:
+        print("SEND ERROR:", e)
 
             # ===== DELETE =====
             if action == "delete":
 
-                try:
-                    conn = await get_conn()
+    try:
+        conn = await get_conn()
+        try:
+            await conn.execute(
+                """
+                UPDATE chat_messages
+                SET deleted = TRUE
+                WHERE id=$1 AND username=$2
+                """,
+                data.get("id"),
+                data.get("user")
+            )
+        finally:
+            await conn.close()
 
-                    await conn.execute(
-                        """
-                        UPDATE chat_messages
-                        SET deleted = TRUE
-                        WHERE id=$1 AND username=$2
-                        """,
-                        data.get("id"),
-                        data.get("user")
-                    )
+        dead = []
 
-                    dead = []
+        for c in connections:
+            try:
+                await c.send_json({
+                    "id": data.get("id"),
+                    "deleted": True
+                })
+            except:
+                dead.append(c)
 
-                    for c in connections:
-                        try:
-                            await c.send_json({
-                                "id": data.get("id"),
-                                "deleted": True
-                            })
-                        except:
-                            dead.append(c)
+        for c in dead:
+            if c in connections:
+                connections.remove(c)
 
-                    for c in dead:
-                        if c in connections:
-                            connections.remove(c)
-
-                except Exception as e:
-                    print("DELETE ERROR:", e)
+    except Exception as e:
+        print("DELETE ERROR:", e)
 
     except Exception as e:
         print("WS ERROR:", e)
@@ -579,42 +587,56 @@ async def portal_pages(page: str):
 
 @app.get("/api/chat/history")
 async def get_chat_history():
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    rows = await conn.fetch(
-        """
-        SELECT id, username, message, deleted
-        FROM chat_messages
-        ORDER BY id ASC
-        LIMIT 50
-        """
-    )
-
-    await conn.close()
+    conn = await get_conn()
+    try:
+        rows = await conn.fetch(
+            """
+            SELECT id, username, message, deleted
+            FROM chat_messages
+            ORDER BY id ASC
+            LIMIT 50
+            """
+        )
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
 
     return [dict(r) for r in rows]
 
 @app.post("/api/chat/delete")
 async def delete_chat_message(data: dict):
-
     msg_id = data.get("id")
     user = data.get("user")
 
-    conn = await asyncpg.connect(DATABASE_URL)
+    conn = await get_conn()
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT username
+            FROM chat_messages
+            WHERE id=$1
+            """,
+            msg_id
+        )
 
-    row = await conn.fetchrow(
-        """
-        SELECT username
-        FROM chat_messages
-        WHERE id=$1
-        """,
-        msg_id
-    )
+        if not row:
+            raise HTTPException(status_code=404)
 
-    if not row:
+        if row["username"] != user:
+            raise HTTPException(status_code=403)
+
+        await conn.execute(
+            """
+            UPDATE chat_messages
+            SET deleted = TRUE
+            WHERE id=$1
+            """,
+            msg_id
+        )
+
+        return {"status": "deleted"}
+    finally:
         await conn.close()
-        raise HTTPException(status_code=404)
 
     # удалить может только автор
     if row["username"] != user:
