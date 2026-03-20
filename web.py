@@ -555,6 +555,11 @@ async def portal_index():
     return FileResponse("portal/index.html")
 
 
+@app.get("/chat.html")
+async def chat_page():
+    return FileResponse("portal/chat.html")
+
+
 @app.get("/{page}.html")
 async def portal_pages(page: str):
 
