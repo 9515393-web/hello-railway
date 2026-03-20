@@ -469,74 +469,74 @@ async def websocket_chat(ws: WebSocket):
             # ===== SEND =====
             if action == "send":
 
-    if not data.get("text"):
-        continue
+                if not data.get("text"):
+                    continue
 
-    try:
-        conn = await get_conn()
-        try:
-            row = await conn.fetchrow(
-                """
-                INSERT INTO chat_messages (username, message)
-                VALUES ($1,$2)
-                RETURNING id, username, message, deleted
-                """,
-                data.get("user"),
-                data.get("text")
-            )
-        finally:
-            await conn.close()
+                try:
+                    conn = await get_conn()
+                    try:
+                        row = await conn.fetchrow(
+                            """
+                            INSERT INTO chat_messages (username, message)
+                            VALUES ($1,$2)
+                            RETURNING id, username, message, deleted
+                            """,
+                            data.get("user"),
+                            data.get("text")
+                        )
+                    finally:
+                        await conn.close()
 
-        dead = []
+                    dead = []
 
-        for c in connections:
-            try:
-                await c.send_json(dict(row))
-            except:
-                dead.append(c)
+                    for c in connections:
+                        try:
+                            await c.send_json(dict(row))
+                        except:
+                            dead.append(c)
 
-        for c in dead:
-            if c in connections:
-                connections.remove(c)
+                    for c in dead:
+                        if c in connections:
+                            connections.remove(c)
 
-    except Exception as e:
-        print("SEND ERROR:", e)
+                except Exception as e:
+                    print("SEND ERROR:", e)
 
             # ===== DELETE =====
             if action == "delete":
 
-    try:
-        conn = await get_conn()
-        try:
-            await conn.execute(
-                """
-                UPDATE chat_messages
-                SET deleted = TRUE
-                WHERE id=$1 AND username=$2
-                """,
-                data.get("id"),
-                data.get("user")
-            )
-        finally:
-            await conn.close()
+                try:
+                    conn = await get_conn()
+                    try:
+                        await conn.execute(
+                            """
+                            UPDATE chat_messages
+                            SET deleted = TRUE
+                            WHERE id=$1 AND username=$2
+                            """,
+                            data.get("id"),
+                            data.get("user")
+                        )
+                    finally:
+                        await conn.close()
 
-        dead = []
+                    dead = []
 
-        for c in connections:
-            try:
-                await c.send_json({
-                    "id": data.get("id"),
-                    "deleted": True
-                })
-            except:
-                dead.append(c)
+                    for c in connections:
+                        try:
+                            await c.send_json({
+                                "id": data.get("id"),
+                                "deleted": True
+                            })
+                        except:
+                            dead.append(c)
 
-        for c in dead:
-            if c in connections:
-                connections.remove(c)
+                    for c in dead:
+                        if c in connections:
+                            connections.remove(c)
 
-    except Exception as e:
-        print("DELETE ERROR:", e)
+                except Exception as e:
+                    print("DELETE ERROR:", e)
 
     except Exception as e:
         print("WS ERROR:", e)
