@@ -481,61 +481,73 @@ async def websocket_chat(ws: WebSocket):
                 if not data.get("text"):
                     continue
 
-                conn = await asyncpg.connect(DATABASE_URL)
+                try:
+                    conn = await get_conn()
 
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO chat_messages (username, message)
-                    VALUES ($1,$2)
-                    RETURNING id, username, message, deleted
-                    """,
-                    data.get("user"),
-                    data.get("text")
-                )
+                    row = await conn.fetchrow(
+                        """
+                        INSERT INTO chat_messages (username, message)
+                        VALUES ($1,$2)
+                        RETURNING id, username, message, deleted
+                        """,
+                        data.get("user"),
+                        data.get("text")
+                    )
 
-                await conn.close()
+                    dead = []
 
-                dead = []
+                    for c in connections:
+                        try:
+                            await c.send_json(dict(row))
+                        except:
+                            dead.append(c)
 
-for c in connections:
-    try:
-        await c.send_json(dict(row))
-    except:
-        dead.append(c)
+                    for c in dead:
+                        if c in connections:
+                            connections.remove(c)
 
-for c in dead:
-    if c in connections:
-        connections.remove(c)
+                except Exception as e:
+                    print("SEND ERROR:", e)
 
-           # ===== DELETE =====
-if action == "delete":
+            # ===== DELETE =====
+            if action == "delete":
 
-    conn = await get_conn()
+                try:
+                    conn = await get_conn()
 
-    await conn.execute(
-        """
-        UPDATE chat_messages
-        SET deleted = TRUE
-        WHERE id=$1 AND username=$2
-        """,
-        data.get("id"),
-        data.get("user")
-    )
+                    await conn.execute(
+                        """
+                        UPDATE chat_messages
+                        SET deleted = TRUE
+                        WHERE id=$1 AND username=$2
+                        """,
+                        data.get("id"),
+                        data.get("user")
+                    )
 
-    dead = []
+                    dead = []
 
-    for c in connections:
-        try:
-            await c.send_json({
-                "id": data.get("id"),
-                "deleted": True
-            })
-        except:
-            dead.append(c)
+                    for c in connections:
+                        try:
+                            await c.send_json({
+                                "id": data.get("id"),
+                                "deleted": True
+                            })
+                        except:
+                            dead.append(c)
 
-    for c in dead:
-        if c in connections:
-            connections.remove(c)
+                    for c in dead:
+                        if c in connections:
+                            connections.remove(c)
+
+                except Exception as e:
+                    print("DELETE ERROR:", e)
+
+    except Exception as e:
+        print("WS ERROR:", e)
+    finally:
+        if ws in connections:
+            connections.remove(ws)
 
 
 @app.get("/")
