@@ -66,6 +66,28 @@ app.mount("/admin_static", StaticFiles(directory="admin"), name="admin_static")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+conn = None
+
+async def get_conn():
+    global conn
+
+    try:
+        if conn is None:
+            conn = await asyncpg.connect(DATABASE_URL)
+            return conn
+
+        # проверка соединения
+        await conn.execute("SELECT 1")
+        return conn
+
+    except Exception:
+        try:
+            conn = await asyncpg.connect(DATABASE_URL)
+        except Exception as e:
+            print("RECONNECT FAILED:", e)
+            raise
+        return conn
+
 
 # ===============================
 # ПРОВЕРКА АДМИН ТОКЕНА
@@ -76,7 +98,7 @@ async def require_admin(token: str):
     if not token:
         raise HTTPException(status_code=403, detail="token required")
 
-    conn = await asyncpg.connect(DATABASE_URL)
+    conn = await get_conn()
 
     row = await conn.fetchrow(
         """
@@ -87,7 +109,6 @@ async def require_admin(token: str):
         token
     )
 
-    await conn.close()
 
     if not row:
         raise HTTPException(status_code=403, detail="invalid token")
