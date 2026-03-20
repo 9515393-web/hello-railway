@@ -213,11 +213,12 @@ let ws = null
 
 function connectWS(){
 
-    ws = new WebSocket(
-        location.protocol === "https:"
-        ? "wss://" + location.host + "/ws/chat"
-        : "ws://" + location.host + "/ws/chat"
-    )
+    const protocol = location.protocol === "https:" ? "wss://" : "ws://"
+    const wsUrl = protocol + location.host + "/ws/chat"
+
+    console.log("CONNECT TO:", wsUrl)
+
+    ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {
         console.log("WS CONNECTED")
@@ -226,7 +227,7 @@ function connectWS(){
 
     ws.onclose = () => {
         console.log("WS CLOSED")
-        setTimeout(connectWS, 2000)
+        setTimeout(connectWS, 3000)
     }
 
     ws.onerror = (e) => {
