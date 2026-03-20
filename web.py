@@ -80,19 +80,6 @@ async def get_conn():
 
     return await db_pool.acquire()
 
-        # проверка соединения
-        await conn.execute("SELECT 1")
-        return conn
-
-    except Exception:
-        try:
-            conn = await asyncpg.connect(DATABASE_URL)
-        except Exception as e:
-            print("RECONNECT FAILED:", e)
-            raise
-        return conn
-
-
 # ===============================
 # ПРОВЕРКА АДМИН ТОКЕНА
 # ===============================
