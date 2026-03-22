@@ -299,7 +299,7 @@ function handleTap(){
             .then(r => r.json())
             .then(data => {
 
-                if(data.token){
+                if(data.status === "ok"){
                     localStorage.setItem("admin_auth", "true");
                     window.location = "/admin_panel";
                 } else {
