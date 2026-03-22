@@ -313,29 +313,25 @@ import secrets
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 
+from fastapi import Response
+
 @app.post("/api/admin_login")
-async def admin_login(data: dict):
+async def admin_login(data: dict, response: Response):
 
     password = data.get("password")
 
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="wrong password")
 
-    token = secrets.token_hex(32)
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    await conn.execute(
-        """
-        INSERT INTO admin_sessions (token, admin_id, expires_at)
-        VALUES ($1, 1, NOW() + INTERVAL '7 days')
-        """,
-        token
+    # ставим cookie
+    response.set_cookie(
+        key="admin_auth",
+        value="1",
+        httponly=True,
+        max_age=60*60*8  # 8 часов
     )
 
-    await conn.close()
-
-    return {"token": token}
+    return {"status": "ok"}
 
 @app.get("/map.html")
 async def admin_map(token: str):
