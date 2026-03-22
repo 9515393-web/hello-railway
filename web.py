@@ -104,52 +104,6 @@ async def get_conn():
 
     return await db_pool.acquire()
 
-# ===============================
-# ПРОВЕРКА АДМИН ТОКЕНА
-# ===============================
-
-async def require_admin(token: str):
-    if not token:
-        raise HTTPException(status_code=403, detail="token required")
-
-    conn = await get_conn()
-    try:
-        row = await conn.fetchrow(
-            """
-            SELECT admin_id, expires_at
-            FROM admin_sessions
-            WHERE token = $1
-            """,
-            token
-        )
-
-        if not row:
-            raise HTTPException(status_code=403, detail="invalid token")
-
-        if row["expires_at"] < datetime.utcnow():
-            raise HTTPException(status_code=403, detail="token expired")
-
-        return row
-    finally:
-        await conn.close()
-
-async def audit_log(admin_id: int, action: str, target: str, payload: dict):
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    await conn.execute(
-        """
-        INSERT INTO admin_audit_log (admin_id, action, target, payload)
-        VALUES ($1, $2, $3, $4)
-        """,
-        admin_id,
-        action,
-        target,
-        payload
-    )
-
-    await conn.close()
-
 
 # ===============================
 # ПОРТАЛ САЙТА
@@ -164,9 +118,9 @@ async def portal_site():
 # ===============================
 
 @app.get("/Zahozhe_final_2026.geojson")
-async def get_geojson(token: str):
+async def get_geojson(request: Request):
 
-    await require_admin(token)
+    check_admin(request)
 
     if not os.path.exists("Zahozhe_final_2026.geojson"):
         raise HTTPException(status_code=500, detail="GeoJSON file not found")
@@ -197,8 +151,6 @@ class PlotDataIn(BaseModel):
 async def get_plot_data(plot_key: str, request: Request):
     check_admin(request)
 
-    await require_admin(token)
-
     conn = await asyncpg.connect(DATABASE_URL)
 
     row = await conn.fetchrow(
@@ -222,7 +174,6 @@ async def get_plot_data(plot_key: str, request: Request):
 
     return dict(row)
 
-
 # ===============================
 # ВСЕ УЧАСТКИ (ДЛЯ КАРТЫ)
 # ===============================
@@ -230,8 +181,6 @@ async def get_plot_data(plot_key: str, request: Request):
 @app.get("/api/plot/all")
 async def get_all_plots(request: Request):
     check_admin(request)
-
-    await require_admin(token)
 
     conn = await asyncpg.connect(DATABASE_URL)
 
@@ -245,7 +194,6 @@ async def get_all_plots(request: Request):
     await conn.close()
 
     return {row["plot_key"]: dict(row) for row in rows}
-
 
 # ===============================
 # СОХРАНЕНИЕ ДАННЫХ УЧАСТКА
@@ -291,32 +239,6 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
     return {
         "status": "ok",
         "plot_key": plot_key
-    }
-
-
-# ===============================
-# DEV ФУНКЦИЯ (ПРОДЛЕНИЕ ТОКЕНА)
-# ===============================
-
-@app.get("/_dev_extend_token")
-async def extend_token(token: str):
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    result = await conn.execute(
-        """
-        UPDATE admin_sessions
-        SET expires_at = NOW() + INTERVAL '7 days'
-        WHERE token = $1
-        """,
-        token
-    )
-
-    await conn.close()
-
-    return {
-        "status": "ok",
-        "result": result
     }
 
 
@@ -438,10 +360,12 @@ async def all_documents():
 
 @app.post("/api/admin_upload_doc")
 async def upload_document(
-    token: str = Form(...),
+    request: Request,
     category: str = Form(...),
     file: UploadFile = File(...)
 ):
+
+    check_admin(request)
 
     folder = os.path.join(DOCS_PATH, category)
     os.makedirs(folder, exist_ok=True)
