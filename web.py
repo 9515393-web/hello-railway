@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form, WebSocket
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -8,7 +8,35 @@ import asyncpg
 import asyncio
 
 from datetime import datetime
-#from bot import start_bot
+
+# ===== ИНИЦИАЛИЗАЦИЯ =====
+
+app = FastAPI()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+# ===== DB POOL =====
+
+db_pool = None
+
+async def get_conn():
+    global db_pool
+
+    if db_pool is None:
+        db_pool = await asyncpg.create_pool(
+            DATABASE_URL,
+            min_size=1,
+            max_size=5
+        )
+
+    return await db_pool.acquire()
+
+# ===== ПРОВЕРКА АДМИНА (COOKIE) =====
+
+def check_admin(request: Request):
+    if request.cookies.get("admin_auth") != "1":
+        raise HTTPException(status_code=403)
 
 # ===== ПАПКА ДОКУМЕНТОВ (Railway Volume) =====
 
@@ -301,12 +329,9 @@ async def admin_login_page():
 # ===== АДМИН ПАНЕЛЬ =====
 
 @app.get("/admin_panel")
-async def admin_panel(token: str):
-
-    await require_admin(token)
-
+async def admin_panel(request: Request):
+    check_admin(request)
     return FileResponse("admin/index.html")
-
 
 import secrets
 
@@ -321,23 +346,20 @@ async def admin_login(data: dict, response: Response):
     password = data.get("password")
 
     if password != ADMIN_PASSWORD:
-        raise HTTPException(status_code=403, detail="wrong password")
+        raise HTTPException(status_code=403)
 
-    # ставим cookie
     response.set_cookie(
         key="admin_auth",
         value="1",
         httponly=True,
-        max_age=60*60*8  # 8 часов
+        max_age=60*60*8
     )
 
     return {"status": "ok"}
 
 @app.get("/map.html")
-async def admin_map(token: str):
-
-    await require_admin(token)
-
+async def admin_map(request: Request):
+    check_admin(request)
     return FileResponse("./map.html")
 
 # ===============================
@@ -419,8 +441,6 @@ async def upload_document(
     category: str = Form(...),
     file: UploadFile = File(...)
 ):
-
-    await require_admin(token)
 
     folder = os.path.join(DOCS_PATH, category)
     os.makedirs(folder, exist_ok=True)
