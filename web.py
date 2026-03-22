@@ -194,7 +194,8 @@ class PlotDataIn(BaseModel):
 # ===============================
 
 @app.get("/api/plot/{plot_key}")
-async def get_plot_data(plot_key: str, token: str):
+async def get_plot_data(plot_key: str, request: Request):
+    check_admin(request)
 
     await require_admin(token)
 
@@ -227,7 +228,8 @@ async def get_plot_data(plot_key: str, token: str):
 # ===============================
 
 @app.get("/api/plot/all")
-async def get_all_plots(token: str):
+async def get_all_plots(request: Request):
+    check_admin(request)
 
     await require_admin(token)
 
@@ -250,9 +252,8 @@ async def get_all_plots(token: str):
 # ===============================
 
 @app.post("/api/plot/{plot_key}")
-async def save_plot_data(plot_key: str, data: PlotDataIn, token: str):
-
-    admin = await require_admin(token)
+async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
+    check_admin(request)
 
     conn = await asyncpg.connect(DATABASE_URL)
 
