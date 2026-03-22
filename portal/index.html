@@ -164,7 +164,7 @@ font-size:24px;
 
 <div class="header">
 
-<h1 onclick="alert('CLICK WORK')">Деревня Захожье</h1>
+<h1 id="secret-entry">Деревня Захожье</h1>
 
 <p>Информационный портал инициативы жителей</p>
 
@@ -238,70 +238,82 @@ FAQ
 
 const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
 
-const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
-
-fetch(url)
+fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`)
 .then(res => res.text())
 .then(data => {
 
     const json = JSON.parse(data.substring(47).slice(0,-2));
     const rows = json.table.rows;
 
-    const total = rows.length;
-
     document.getElementById("counter").innerText =
-    total + " жителей уже приняли участие";
+    rows.length + " жителей уже приняли участие";
 
 })
 .catch(() => {
-
     document.getElementById("counter").innerText =
     "Опрос жителей продолжается";
-
 });
 
 
-/* ===== СКРЫТЫЙ ВХОД В АДМИНКУ ===== */
+/* ===== СКРЫТЫЙ ВХОД (РАБОТАЕТ НА МОБИЛЕ) ===== */
 
-let tapCount = 0
+let taps = 0;
+let lastTap = 0;
 
-function secretTap(){
+const el = document.getElementById("secret-entry");
 
-    tapCount++
+if(el){
 
-    console.log("tap:", tapCount)
+    el.addEventListener("click", handleTap);
+    el.addEventListener("touchstart", handleTap); // мобилка
 
-    if(tapCount >= 5){
+}
 
-        tapCount = 0
+function handleTap(){
 
-        const password = prompt("Введите пароль администратора")
+    const now = Date.now();
 
-        if(!password) return
-
-        fetch("/api/admin_login",{
-            method:"POST",
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({password})
-        })
-        .then(r=>r.json())
-        .then(data=>{
-            if(data.token){
-                localStorage.setItem("admin_auth","true")
-                window.location="/admin_panel"
-            }else{
-                alert("Неверный пароль")
-            }
-        })
-        .catch(()=>{
-            alert("Ошибка соединения")
-        })
+    if(now - lastTap > 2000){
+        taps = 0;
     }
 
-    // сброс если клики медленные
-    setTimeout(()=>{
-        tapCount = 0
-    },2000)
+    taps++;
+    lastTap = now;
+
+    console.log("tap:", taps);
+
+    if(taps >= 5){
+        taps = 0;
+
+        setTimeout(() => {
+
+            const password = prompt("Введите пароль администратора");
+
+            if(!password) return;
+
+            fetch("/api/admin_login", {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({password})
+            })
+            .then(r => r.json())
+            .then(data => {
+
+                if(data.token){
+                    localStorage.setItem("admin_auth", "true");
+                    window.location = "/admin_panel";
+                } else {
+                    alert("Неверный пароль");
+                }
+
+            })
+            .catch(()=>{
+                alert("Ошибка соединения");
+            });
+
+        }, 100);
+
+    }
 }
 
 </script>
