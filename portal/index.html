@@ -164,7 +164,7 @@ font-size:24px;
 
 <div class="header">
 
-<h1>Деревня Захожье</h1>
+<h1 onclick="secretTap()">Деревня Захожье</h1>
 
 <p>Информационный портал инициативы жителей</p>
 
@@ -234,31 +234,75 @@ FAQ
 
 <script>
 
-/* ID таблицы Google Sheets */
+/* ===== СЧЁТЧИК GOOGLE ===== */
+
 const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
 
-/* API Google */
 const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
 
 fetch(url)
 .then(res => res.text())
 .then(data => {
 
-const json = JSON.parse(data.substring(47).slice(0,-2));
-const rows = json.table.rows;
+    const json = JSON.parse(data.substring(47).slice(0,-2));
+    const rows = json.table.rows;
 
-const total = rows.length;
+    const total = rows.length;
 
-document.getElementById("counter").innerText =
-total + " жителей уже приняли участие";
+    document.getElementById("counter").innerText =
+    total + " жителей уже приняли участие";
 
 })
 .catch(() => {
 
-document.getElementById("counter").innerText =
-"Опрос жителей продолжается";
+    document.getElementById("counter").innerText =
+    "Опрос жителей продолжается";
 
 });
+
+
+/* ===== СКРЫТЫЙ ВХОД В АДМИНКУ ===== */
+
+let tapCount = 0
+
+function secretTap(){
+
+    tapCount++
+
+    console.log("tap:", tapCount)
+
+    if(tapCount >= 5){
+
+        tapCount = 0
+
+        const password = prompt("Введите пароль администратора")
+
+        if(!password) return
+
+        fetch("/api/admin_login",{
+            method:"POST",
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({password})
+        })
+        .then(r=>r.json())
+        .then(data=>{
+            if(data.token){
+                localStorage.setItem("admin_auth","true")
+                window.location="/admin_panel"
+            }else{
+                alert("Неверный пароль")
+            }
+        })
+        .catch(()=>{
+            alert("Ошибка соединения")
+        })
+    }
+
+    // сброс если клики медленные
+    setTimeout(()=>{
+        tapCount = 0
+    },2000)
+}
 
 </script>
 
