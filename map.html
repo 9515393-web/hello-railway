@@ -85,10 +85,6 @@
 <script>
 (function () {
 
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  if (!token) { alert("Нет токена доступа"); throw new Error("No token"); }
-
   const map = L.map("map");
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
@@ -354,8 +350,8 @@ function addParcelLabel(layer, feature) {
   }
 }
 
-const geojsonUrl = `Zahozhe_final_2026.geojson?token=${encodeURIComponent(token)}`;
-const allUrl = `/api/plot/all?token=${encodeURIComponent(token)}`;
+const geojsonUrl = `Zahozhe_final_2026.geojson`;
+const allUrl = `/api/plot/all`;
 
 Promise.all([
   fetch(geojsonUrl).then(async r => {
