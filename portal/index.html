@@ -255,17 +255,24 @@ fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`)
 });
 
 
-/* ===== СКРЫТЫЙ ВХОД (РАБОТАЕТ НА МОБИЛЕ) ===== */
+/* ===== СКРЫТЫЙ ВХОД (УСИЛЕННЫЙ) ===== */
 
 let taps = 0;
 let lastTap = 0;
 
 const el = document.getElementById("secret-entry");
 
+// 👉 определяем устройство
+const isMobile = window.innerWidth < 768;
+
+// 👉 настройки
+const REQUIRED_TAPS = isMobile ? 8 : 5;   // мобила сложнее
+const RESET_TIME = 2000;                  // 2 сек
+
 if(el){
 
     el.addEventListener("click", handleTap);
-    el.addEventListener("touchstart", handleTap); // мобилка
+    el.addEventListener("touchstart", handleTap);
 
 }
 
@@ -273,7 +280,8 @@ function handleTap(){
 
     const now = Date.now();
 
-    if(now - lastTap > 2000){
+    // сброс если долго
+    if(now - lastTap > RESET_TIME){
         taps = 0;
     }
 
@@ -282,7 +290,8 @@ function handleTap(){
 
     console.log("tap:", taps);
 
-    if(taps >= 5){
+    if(taps >= REQUIRED_TAPS){
+
         taps = 0;
 
         setTimeout(() => {
@@ -300,7 +309,6 @@ function handleTap(){
             .then(data => {
 
                 if(data.status === "ok"){
-                    localStorage.setItem("admin_auth", "true");
                     window.location = "/admin_panel";
                 } else {
                     alert("Неверный пароль");
