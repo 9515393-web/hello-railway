@@ -145,11 +145,18 @@ function layerHasLatLngs(layer) {
 
   function getPlotKey(feature) {
   const uch = String(feature?.properties?.uch_num || "").trim();
+
+  // ❗ если нет номера — НЕ создаём ключ
+  if (!uch) {
+    console.warn("NO uch_num:", feature.properties);
+    return null;
+  }
+
   const card = String(feature?.properties?.card_final || "");
   const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
   const snt = m ? m[1] : "0";
 
-  return `${snt}-${uch}`;   // ← ВАЖНО: дефис
+  return `${snt}-${uch}`;
 }
 
   async function apiGetPlot(plotKey) {
@@ -209,7 +216,17 @@ function layerHasLatLngs(layer) {
     `;
   }
 
-  function getPlotStyle(fio, phone) {
+  function getPlotStyle(fio, phone, voted) {
+
+  // 🟢 главный приоритет
+  if (voted) {
+    return {
+      color: "#006400",
+      fillColor: "#00cc00",
+      fillOpacity: 0.6,
+      weight: 2
+    };
+  }
 
   const hasFio = !!fio?.trim();
   const hasPhone = !!phone?.trim();
@@ -218,7 +235,7 @@ function layerHasLatLngs(layer) {
     return {
       color: "#008000",
       fillColor: "#00cc00",
-      fillOpacity: 0.5,
+      fillOpacity: 0.4,
       weight: 2
     };
   }
@@ -279,7 +296,7 @@ function layerHasLatLngs(layer) {
         if (noteEl) noteEl.value = data?.note ?? "";
         if (votedEl) votedEl.checked = data?.voted ?? false;
         // 🎨 применяем цвет
-        const style = getPlotStyle(data?.fio, data?.phone);
+        const style = getPlotStyle(data?.fio, data?.phone, data?.voted);
         layer.setStyle(style);
         setStatus("✅ Загружено");
       } catch (err) {
@@ -296,6 +313,11 @@ function layerHasLatLngs(layer) {
       };
     }
 
+    if (!plotKey || plotKey.endsWith("-")) {
+      alert("❌ Некорректный участок (нет номера)");
+      return;
+    }
+    
     if (saveBtn) {
       saveBtn.onclick = async (ev) => {
         ev.preventDefault();
@@ -315,7 +337,8 @@ function layerHasLatLngs(layer) {
           // 🎨 обновляем цвет после сохранения
           const style = getPlotStyle(
             fioEl?.value,
-            phoneEl?.value
+            phoneEl?.value,
+            votedEl?.checked
           );
           layer.setStyle(style);
         } catch (err) {
@@ -380,7 +403,7 @@ Promise.all([
     style: (feature) => {
       const plotKey = getPlotKey(feature);
       const data = allPlots?.[plotKey];
-      return getPlotStyle(data?.fio, data?.phone);
+      return getPlotStyle(data?.fio, data?.phone, data?.voted);
     },
     onEachFeature: (feature, layer) => {
       bindPopupLogic(layer, feature);
