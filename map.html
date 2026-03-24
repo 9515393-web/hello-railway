@@ -277,6 +277,7 @@ function layerHasLatLngs(layer) {
         if (fioEl) fioEl.value = data?.fio ?? "";
         if (phoneEl) phoneEl.value = data?.phone ?? "";
         if (noteEl) noteEl.value = data?.note ?? "";
+        if (votedEl) votedEl.checked = data?.voted ?? false;
         // 🎨 применяем цвет
         const style = getPlotStyle(data?.fio, data?.phone);
         layer.setStyle(style);
@@ -305,9 +306,10 @@ function layerHasLatLngs(layer) {
         try {
           setStatus("💾 Сохраняю...");
           await apiSavePlot(plotKey, {
-            fio: fioEl?.value?.trim() || null,
-            phone: phoneEl?.value?.trim() || null,
-            note: noteEl?.value?.trim() || null,
+              fio: fioEl?.value?.trim() || null,
+              phone: phoneEl?.value?.trim() || null,
+              note: noteEl?.value?.trim() || null,
+              voted: votedEl?.checked || false
           });
           setStatus("✅ Сохранено");
           // 🎨 обновляем цвет после сохранения
