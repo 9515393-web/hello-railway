@@ -191,6 +191,13 @@ function layerHasLatLngs(layer) {
             <textarea id="note-${plotKey}" rows="3"></textarea>
           </div>
 
+          <div class="edit-row">
+            <label>
+              <input type="checkbox" id="voted-${plotKey}">
+              Проголосовал
+            </label>
+          </div>
+
           <div class="edit-actions">
             <button class="btn btn-reload" id="reload-${plotKey}">♻️ Обновить</button>
             <button class="btn btn-save" id="save-${plotKey}">💾 Сохранить</button>
@@ -256,6 +263,7 @@ function layerHasLatLngs(layer) {
     const fioEl = container.querySelector(`#fio-${plotKey}`);
     const phoneEl = container.querySelector(`#phone-${plotKey}`);
     const noteEl = container.querySelector(`#note-${plotKey}`);
+    const votedEl = container.querySelector(`#voted-${plotKey}`);
     const statusEl = container.querySelector(`#status-${plotKey}`);
     const saveBtn = container.querySelector(`#save-${plotKey}`);
     const reloadBtn = container.querySelector(`#reload-${plotKey}`);
