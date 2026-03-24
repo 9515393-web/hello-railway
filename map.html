@@ -144,6 +144,9 @@ function layerHasLatLngs(layer) {
 }
 
   function getPlotKey(feature) {
+
+  console.log("PROPS:", feature.properties); // 👈 ВОТ ЭТА СТРОКА
+
   const uch = String(feature?.properties?.uch_num || "").trim();
 
   // ❗ если нет номера — НЕ создаём ключ
