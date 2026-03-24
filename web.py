@@ -137,11 +137,41 @@ async def get_geojson(request: Request):
 # ===============================
 
 class PlotDataIn(BaseModel):
-
     fio: str | None = None
     phone: str | None = None
     note: str | None = None
+    voted: bool | None = None   # 👈 ВОТ ЭТО
 
+
+# ===============================
+# ВСЕ УЧАСТКИ (ДЛЯ КАРТЫ)
+# ===============================
+
+@app.get("/api/plot/all")
+async def get_all_plots(request: Request):
+    check_admin(request)
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    rows = await conn.fetch(
+        """
+        SELECT plot_key, fio, phone, note, voted
+        FROM plot_cards
+        """
+    )
+
+    await conn.close()
+
+    return {
+        row["plot_key"]: {
+            "plot_key": row["plot_key"],
+            "fio": row["fio"],
+            "phone": row["phone"],
+            "note": row["note"],
+            "voted": row["voted"]
+        }
+        for row in rows
+    }
 
 # ===============================
 # ПОЛУЧИТЬ ДАННЫЕ УЧАСТКА
@@ -174,26 +204,6 @@ async def get_plot_data(plot_key: str, request: Request):
 
     return dict(row)
 
-# ===============================
-# ВСЕ УЧАСТКИ (ДЛЯ КАРТЫ)
-# ===============================
-
-@app.get("/api/plot/all")
-async def get_all_plots(request: Request):
-    check_admin(request)
-
-    conn = await asyncpg.connect(DATABASE_URL)
-
-    rows = await conn.fetch(
-        """
-        SELECT plot_key, fio, phone
-        FROM plot_cards
-        """
-    )
-
-    await conn.close()
-
-    return {row["plot_key"]: dict(row) for row in rows}
 
 # ===============================
 # СОХРАНЕНИЕ ДАННЫХ УЧАСТКА
@@ -207,20 +217,22 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
 
     await conn.execute(
         """
-        INSERT INTO plot_cards (plot_key, fio, phone, note, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO plot_cards (plot_key, fio, phone, note, voted, updated_at)
+VALUES ($1, $2, $3, $4, $5, NOW())
 
-        ON CONFLICT (plot_key)
-        DO UPDATE SET
-            fio = EXCLUDED.fio,
-            phone = EXCLUDED.phone,
-            note = EXCLUDED.note,
-            updated_at = NOW()
+ON CONFLICT (plot_key)
+DO UPDATE SET
+    fio = EXCLUDED.fio,
+    phone = EXCLUDED.phone,
+    note = EXCLUDED.note,
+    voted = EXCLUDED.voted,
+    updated_at = NOW()
         """,
         plot_key,
-        data.fio,
-        data.phone,
-        data.note
+data.fio,
+data.phone,
+data.note,
+data.voted
     )
 
     await conn.close()
