@@ -237,16 +237,10 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
 
     await conn.close()
 
-    await audit_log(
-        admin["admin_id"],
-        "edit_plot",
-        plot_key,
-        {
-            "fio": data.fio,
-            "phone": data.phone,
-            "note": data.note
-        }
-    )
+    return {
+    "status": "ok",
+    "plot_key": plot_key
+}
 
     return {
         "status": "ok",
