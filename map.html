@@ -85,6 +85,10 @@
 <script>
 (function () {
 
+  function safeId(str) {
+  return String(str).replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
   const map = L.map("map");
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
@@ -184,54 +188,57 @@ function layerHasLatLngs(layer) {
   function renderPopupHtml(rawCard, plotKey) {
 
   const data = parseCard(rawCard);
+  const safe = safeId(plotKey);
 
   return `
     <div>
 
       <div style="margin-bottom:10px;">
         <b>📍 Адрес:</b><br>${data.address}<br><br>
-        <b>🏠 Кадастровый номер:</b><br>${data.cad}<br><br>
+        <b>🏠 Кадастровый номер:</b><br>
+        <b style="color:#2a5bd7;">${data.cad}</b><br><br>
         <b>📐 Площадь:</b> ${data.area} м²
       </div>
 
-
-          <div class="edit-row">
-            <label>Ф.И.О.</label>
-            <input id="fio-${plotKey}" type="text">
-          </div>
-
-          <div class="edit-row">
-            <label>Телефон</label>
-            <input id="phone-${plotKey}" type="text">
-          </div>
-
-          <div class="edit-row">
-            <label>Эл. почта</label>
-            <input id="email-${plotKey}" type="text">
-          </div>
-
-          <div class="edit-row">
-            <label>Примечание</label>
-            <textarea id="note-${plotKey}" rows="3"></textarea>
-          </div>
-
-          <div class="edit-row">
-            <label>
-              <input type="checkbox" id="voted-${plotKey}">
-              Проголосовал
-            </label>
-          </div>
-
-          <div class="edit-actions">
-            <button class="btn btn-reload" id="reload-${plotKey}">♻️ Обновить</button>
-            <button class="btn btn-save" id="save-${plotKey}">💾 Сохранить</button>
-          </div>
-
-          <div class="status-line" id="status-${plotKey}">plot_key: ${escapeHtml(plotKey)}</div>
-        </div>
+      <div class="edit-row">
+        <label>Ф.И.О.</label>
+        <input id="fio-${safe}" type="text">
       </div>
-    `;
-  }
+
+      <div class="edit-row">
+        <label>Телефон</label>
+        <input id="phone-${safe}" type="text">
+      </div>
+
+      <div class="edit-row">
+        <label>Эл. почта</label>
+        <input id="email-${safe}" type="text">
+      </div>
+
+      <div class="edit-row">
+        <label>Примечание</label>
+        <textarea id="note-${safe}" rows="3"></textarea>
+      </div>
+
+      <div class="edit-row">
+        <label>
+          <input type="checkbox" id="voted-${safe}">
+          Проголосовал
+        </label>
+      </div>
+
+      <div class="edit-actions">
+        <button class="btn btn-reload" id="reload-${safe}">♻️ Обновить</button>
+        <button class="btn btn-save" id="save-${safe}">💾 Сохранить</button>
+      </div>
+
+      <div class="status-line" id="status-${safe}">
+        plot_key: ${escapeHtml(plotKey)}
+      </div>
+
+    </div>
+  `;
+}
 
   function getPlotStyle(fio, phone, voted) {
 
@@ -277,12 +284,18 @@ function layerHasLatLngs(layer) {
   function bindPopupLogic(layer, feature) {
   const rawCard = String(feature?.properties?.card_final || "").trim();
   const plotKey = getPlotKey(feature);
+  const safe = safeId(plotKey);
 
   layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
   layer.on("popupopen", async (e) => {
 
     console.log("PLOT KEY:", plotKey);
+
+    if (!plotKey) {
+      alert("❌ Нет кадастрового номера");
+      return;
+    }
 
     map.dragging.disable();
     map.scrollWheelZoom.disable();
@@ -294,29 +307,33 @@ function layerHasLatLngs(layer) {
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.disableScrollPropagation(container);
 
-    const fioEl = container.querySelector(`#fio-${plotKey}`);
-    const phoneEl = container.querySelector(`#phone-${plotKey}`);
-    const noteEl = container.querySelector(`#note-${plotKey}`);
-    const emailEl = container.querySelector(`#email-${plotKey}`);
-    const votedEl = container.querySelector(`#voted-${plotKey}`);
-    const statusEl = container.querySelector(`#status-${plotKey}`);
-    const saveBtn = container.querySelector(`#save-${plotKey}`);
-    const reloadBtn = container.querySelector(`#reload-${plotKey}`);
+    const fioEl = container.querySelector(`#fio-${safe}`);
+    const phoneEl = container.querySelector(`#phone-${safe}`);
+    const emailEl = container.querySelector(`#email-${safe}`);
+    const noteEl = container.querySelector(`#note-${safe}`);
+    const votedEl = container.querySelector(`#voted-${safe}`);
+    const statusEl = container.querySelector(`#status-${safe}`);
+    const saveBtn = container.querySelector(`#save-${safe}`);
+    const reloadBtn = container.querySelector(`#reload-${safe}`);
 
-    const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
+    const setStatus = (t) => {
+      if (statusEl) statusEl.textContent = t;
+    };
 
     async function load() {
       try {
         setStatus("⏳ Загружаю...");
         const data = await apiGetPlot(plotKey);
+
         if (fioEl) fioEl.value = data?.fio ?? "";
         if (phoneEl) phoneEl.value = data?.phone ?? "";
-        if (noteEl) noteEl.value = data?.note ?? "";
         if (emailEl) emailEl.value = data?.email ?? "";
+        if (noteEl) noteEl.value = data?.note ?? "";
         if (votedEl) votedEl.checked = data?.voted ?? false;
-        // 🎨 применяем цвет
+
         const style = getPlotStyle(data?.fio, data?.phone, data?.voted);
         layer.setStyle(style);
+
         setStatus("✅ Загружено");
       } catch (err) {
         console.error(err);
@@ -332,13 +349,8 @@ function layerHasLatLngs(layer) {
       };
     }
 
-    if (!plotKey) {
-      alert("❌ Нет кадастрового номера");
-      return;
-    }
-    
     if (saveBtn) {
-        saveBtn.onclick = async (ev) => {
+      saveBtn.onclick = async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
 
@@ -346,6 +358,7 @@ function layerHasLatLngs(layer) {
 
         try {
           setStatus("💾 Сохраняю...");
+
           await apiSavePlot(plotKey, {
             fio: fioEl?.value?.trim() || null,
             phone: phoneEl?.value?.trim() || null,
@@ -353,14 +366,17 @@ function layerHasLatLngs(layer) {
             note: noteEl?.value?.trim() || null,
             voted: votedEl?.checked || false
           });
+
           setStatus("✅ Сохранено");
-          // 🎨 обновляем цвет после сохранения
+
           const style = getPlotStyle(
             fioEl?.value,
             phoneEl?.value,
             votedEl?.checked
           );
+
           layer.setStyle(style);
+
         } catch (err) {
           console.error(err);
           setStatus("❌ Ошибка сохранения");
