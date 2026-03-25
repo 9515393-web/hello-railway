@@ -154,7 +154,6 @@ async function apiSavePlot(plotKey, payload) {
   });
 
   if (!r.ok) throw new Error("POST failed");
-
   return await r.json();
 }
 
