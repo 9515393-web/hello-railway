@@ -145,16 +145,30 @@ function layerHasLatLngs(layer) {
 
   function getPlotKey(feature) {
 
-  const key =
-    feature?.properties?.plot_key ||
-    feature?.properties?.Plot_key ||
-    feature?.properties?.name ||
-    feature?.properties?.id;
+  const cad =
+    feature?.properties?.cadastre ||
+    feature?.properties?.cad_num ||
+    feature?.properties?.kadastr ||
+    feature?.properties?.кадастровый ||
+    feature?.properties?.КадастровыйНомер;
 
-  if (!key) {
-    console.warn("❌ NO KEY:", feature.properties);
-    return null;
+  if (cad) {
+    return cad;
   }
+
+  // fallback (если нет кадастра)
+  const uch =
+    feature?.properties?.Номер ||
+    feature?.properties?.nomer ||
+    feature?.properties?.number;
+
+  if (uch) {
+    return `2-${String(uch).trim()}`;
+  }
+
+  console.warn("❌ NO KEY:", feature.properties);
+  return null;
+}
 
   return String(key).trim();
 }
