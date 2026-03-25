@@ -103,14 +103,37 @@
   // KEY = КАДАСТР
   // ===============================
   function getPlotKey(feature) {
-    const text = feature?.properties?.card_final || "";
-    const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
 
-    if (match) return match[0];
+  const props = feature?.properties || {};
 
-    console.warn("❌ Кадастр не найден:", feature.properties);
-    return null;
+  // 1️⃣ пробуем взять напрямую из поля
+  const cadDirect =
+    props.cadastre ||
+    props.cad_num ||
+    props.kadastr ||
+    props.КадастровыйНомер;
+
+  if (cadDirect) {
+    return cadDirect;
   }
+
+  // 2️⃣ пробуем из card_final
+  const text = props.card_final || "";
+  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+
+  if (match) {
+    return match[0];
+  }
+
+  // 3️⃣ fallback (номер участка)
+  const uch = props.uch_num;
+  if (uch) {
+    return `2-${String(uch).trim()}`;
+  }
+
+  console.warn("❌ Ключ не найден:", props);
+  return null;
+}
 
   // ===============================
   // API
