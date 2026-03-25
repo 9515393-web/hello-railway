@@ -187,13 +187,29 @@ function layerHasLatLngs(layer) {
   return await r.json();
 }
 
-  function renderPopupHtml(rawCard, plotKey) {
-    return `
-      <div>
-        <div class="popup-raw">${cardFinalToHtml(rawCard)}</div>
+  function parseCard(text) {
+  return {
+    address: (text.match(/Адрес:\s*([^;]+)/i) || [])[1] || "",
+    cad: (text.match(/\d{2}:\d{2}:\d+:\d+/) || [])[0] || "",
+    area: (text.match(/Площадь[^0-9]*(\d+)/i) || [])[1] || "",
+    raw: text
+  };
+}
 
-        <div class="edit-box">
-          <div style="font-weight:700;margin-bottom:6px;">✍️ Данные участника</div>
+  function renderPopupHtml(rawCard, plotKey) {
+
+  const data = parseCard(rawCard);
+
+  return `
+    <div>
+
+      <div style="margin-bottom:10px;">
+        <b>📍 Адрес:</b><br>${data.address}<br><br>
+        <b>🏠 Кадастровый номер:</b><br>${data.cad}<br><br>
+        <b>📐 Площадь:</b> ${data.area} м²
+      </div>
+
+      <div class="popup-raw">${cardFinalToHtml(rawCard)}</div>
 
           <div class="edit-row">
             <label>Ф.И.О.</label>
