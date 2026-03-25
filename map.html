@@ -144,30 +144,15 @@ function layerHasLatLngs(layer) {
 }
 
   function getPlotKey(feature) {
+  const text = feature?.properties?.card_final || "";
 
-  console.log("PROPS FULL:", JSON.stringify(feature.properties, null, 2));
+  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
 
-  const cad =
-    feature?.properties?.cadastre ||
-    feature?.properties?.cad_num ||
-    feature?.properties?.kadastr ||
-    feature?.properties?.кадастровый ||
-    feature?.properties?.КадастровыйНомер;
-
-  if (cad) {
-    return cad;
+  if (match) {
+    return match[0];
   }
 
-  const uch =
-    feature?.properties?.Номер ||
-    feature?.properties?.nomer ||
-    feature?.properties?.number;
-
-  if (uch) {
-    return `2-${String(uch).trim()}`;
-  }
-
-  console.warn("❌ NO KEY:", feature.properties);
+  console.warn("❌ Кадастровый номер не найден:", feature.properties);
   return null;
 }
 
@@ -209,7 +194,6 @@ function layerHasLatLngs(layer) {
         <b>📐 Площадь:</b> ${data.area} м²
       </div>
 
-      <div class="popup-raw">${cardFinalToHtml(rawCard)}</div>
 
           <div class="edit-row">
             <label>Ф.И.О.</label>
@@ -341,13 +325,13 @@ function layerHasLatLngs(layer) {
       };
     }
 
-    if (!plotKey || plotKey.endsWith("-")) {
-      alert("❌ Некорректный участок (нет номера)");
+    if (!plotKey) {
+      alert("❌ Нет кадастрового номера");
       return;
     }
     
     if (saveBtn) {
-      saveBtn.onclick = async (ev) => {
+        saveBtn.onclick = async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
 
