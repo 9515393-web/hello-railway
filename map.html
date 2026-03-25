@@ -206,6 +206,11 @@ function layerHasLatLngs(layer) {
           </div>
 
           <div class="edit-row">
+            <label>Эл. почта</label>
+            <input id="email-${plotKey}" type="text">
+          </div>
+
+          <div class="edit-row">
             <label>Примечание</label>
             <textarea id="note-${plotKey}" rows="3"></textarea>
           </div>
@@ -292,6 +297,7 @@ function layerHasLatLngs(layer) {
     const fioEl = container.querySelector(`#fio-${plotKey}`);
     const phoneEl = container.querySelector(`#phone-${plotKey}`);
     const noteEl = container.querySelector(`#note-${plotKey}`);
+    const emailEl = container.querySelector(`#email-${plotKey}`);
     const votedEl = container.querySelector(`#voted-${plotKey}`);
     const statusEl = container.querySelector(`#status-${plotKey}`);
     const saveBtn = container.querySelector(`#save-${plotKey}`);
@@ -306,6 +312,7 @@ function layerHasLatLngs(layer) {
         if (fioEl) fioEl.value = data?.fio ?? "";
         if (phoneEl) phoneEl.value = data?.phone ?? "";
         if (noteEl) noteEl.value = data?.note ?? "";
+        if (emailEl) emailEl.value = data?.email ?? "";
         if (votedEl) votedEl.checked = data?.voted ?? false;
         // 🎨 применяем цвет
         const style = getPlotStyle(data?.fio, data?.phone, data?.voted);
@@ -340,10 +347,11 @@ function layerHasLatLngs(layer) {
         try {
           setStatus("💾 Сохраняю...");
           await apiSavePlot(plotKey, {
-              fio: fioEl?.value?.trim() || null,
-              phone: phoneEl?.value?.trim() || null,
-              note: noteEl?.value?.trim() || null,
-              voted: votedEl?.checked || false
+            fio: fioEl?.value?.trim() || null,
+            phone: phoneEl?.value?.trim() || null,
+            email: emailEl?.value?.trim() || null,
+            note: noteEl?.value?.trim() || null,
+            voted: votedEl?.checked || false
           });
           setStatus("✅ Сохранено");
           // 🎨 обновляем цвет после сохранения
