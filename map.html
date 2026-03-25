@@ -106,29 +106,22 @@
 
   const props = feature?.properties || {};
 
-  // 1️⃣ пробуем взять напрямую из поля
-  const cadDirect =
-    props.cadastre ||
-    props.cad_num ||
-    props.kadastr ||
-    props.КадастровыйНомер;
+  // 🧠 1. Берём весь текст
+  const text = String(props.card_final || "");
 
-  if (cadDirect) {
-    return cadDirect;
-  }
+  // 🧠 2. Нормализуем (важно!)
+  const clean = text.replace(/\s+/g, " ");
 
-  // 2️⃣ пробуем из card_final
-  const text = props.card_final || "";
-  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+  // 🧠 3. Ищем кадастр
+  const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
 
   if (match) {
     return match[0];
   }
 
-  // 3️⃣ fallback (номер участка)
-  const uch = props.uch_num;
-  if (uch) {
-    return `2-${String(uch).trim()}`;
+  // 🧠 4. fallback — номер участка
+  if (props.uch_num) {
+    return `2-${String(props.uch_num).trim()}`;
   }
 
   console.warn("❌ Ключ не найден:", props);
