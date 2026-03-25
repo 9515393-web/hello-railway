@@ -139,6 +139,7 @@ async def get_geojson(request: Request):
 class PlotDataIn(BaseModel):
     fio: str | None = None
     phone: str | None = None
+    email: str | None = None
     note: str | None = None
     voted: bool | None = None   # 👈 ВОТ ЭТО
 
@@ -155,7 +156,7 @@ async def get_all_plots(request: Request):
 
     rows = await conn.fetch(
         """
-        SELECT plot_key, fio, phone, note, voted
+        SELECT plot_key, fio, phone, email, note, voted
         FROM plot_cards
         """
     )
@@ -215,32 +216,36 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
 
     conn = await asyncpg.connect(DATABASE_URL)
 
-    await conn.execute(
-    """
-    INSERT INTO plot_cards (plot_key, fio, phone, note, voted, updated_at)
-    VALUES ($1, $2, $3, $4, $5, NOW())
+    try:
+        await conn.execute(
+            """
+            INSERT INTO plot_cards (plot_key, fio, phone, email, note, voted, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
 
-    ON CONFLICT (plot_key)
-    DO UPDATE SET
-        fio = EXCLUDED.fio,
-        phone = EXCLUDED.phone,
-        note = EXCLUDED.note,
-        voted = EXCLUDED.voted,
-        updated_at = NOW()
-    """,
-    plot_key,
-    data.fio,
-    data.phone,
-    data.note,
-    data.voted
-)
+            ON CONFLICT (plot_key)
+            DO UPDATE SET
+                fio = EXCLUDED.fio,
+                phone = EXCLUDED.phone,
+                email = EXCLUDED.email,
+                note = EXCLUDED.note,
+                voted = EXCLUDED.voted,
+                updated_at = NOW()
+            """,
+            plot_key,
+            data.fio,
+            data.phone,
+            data.email,
+            data.note,
+            data.voted
+        )
 
-    await conn.close()
+    finally:
+        await conn.close()
 
     return {
-    "status": "ok",
-    "plot_key": plot_key
-}
+        "status": "ok",
+        "plot_key": plot_key
+    }
 
     return {
         "status": "ok",
