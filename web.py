@@ -216,24 +216,24 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
     conn = await asyncpg.connect(DATABASE_URL)
 
     await conn.execute(
-        """
-        INSERT INTO plot_cards (plot_key, fio, phone, note, voted, updated_at)
-VALUES ($1, $2, $3, $4, $5, NOW())
+    """
+    INSERT INTO plot_cards (plot_key, fio, phone, note, voted, updated_at)
+    VALUES ($1, $2, $3, $4, $5, NOW())
 
-ON CONFLICT (plot_key)
-DO UPDATE SET
-    fio = EXCLUDED.fio,
-    phone = EXCLUDED.phone,
-    note = EXCLUDED.note,
-    voted = EXCLUDED.voted,
-    updated_at = NOW()
-        """,
-        plot_key,
-data.fio,
-data.phone,
-data.note,
-data.voted
-    )
+    ON CONFLICT (plot_key)
+    DO UPDATE SET
+        fio = EXCLUDED.fio,
+        phone = EXCLUDED.phone,
+        note = EXCLUDED.note,
+        voted = EXCLUDED.voted,
+        updated_at = NOW()
+    """,
+    plot_key,
+    data.fio,
+    data.phone,
+    data.note,
+    data.voted
+)
 
     await conn.close()
 
