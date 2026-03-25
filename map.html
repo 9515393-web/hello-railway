@@ -145,21 +145,18 @@ function layerHasLatLngs(layer) {
 
   function getPlotKey(feature) {
 
-  console.log("PROPS:", feature.properties); // 👈 ВОТ ЭТА СТРОКА
+  const key =
+    feature?.properties?.plot_key ||
+    feature?.properties?.Plot_key ||
+    feature?.properties?.name ||
+    feature?.properties?.id;
 
-  const uch = String(feature?.properties?.uch_num || "").trim();
-
-  // ❗ если нет номера — НЕ создаём ключ
-  if (!uch) {
-    console.warn("NO uch_num:", feature.properties);
+  if (!key) {
+    console.warn("❌ NO KEY:", feature.properties);
     return null;
   }
 
-  const card = String(feature?.properties?.card_final || "");
-  const m = card.match(/Захожье\s*[-–—]?\s*(2|3|4|5|6)\b/i);
-  const snt = m ? m[1] : "0";
-
-  return `${snt}-${uch}`;
+  return String(key).trim();
 }
 
   async function apiGetPlot(plotKey) {
