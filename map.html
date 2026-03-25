@@ -316,7 +316,7 @@ async function apiSavePlot(plotKey, payload) {
   // ===============================
   Promise.all([
     fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
-    fetch(`${API_BASE}/api/plot/all`).then(r => r.json())
+    fetch(`/api/plot/all`)
   ])
   .then(([geojson, all]) => {
 
