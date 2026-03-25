@@ -145,6 +145,8 @@ function layerHasLatLngs(layer) {
 
   function getPlotKey(feature) {
 
+  console.log("PROPS FULL:", JSON.stringify(feature.properties, null, 2));
+
   const cad =
     feature?.properties?.cadastre ||
     feature?.properties?.cad_num ||
