@@ -156,7 +156,6 @@ function layerHasLatLngs(layer) {
     return cad;
   }
 
-  // fallback (если нет кадастра)
   const uch =
     feature?.properties?.Номер ||
     feature?.properties?.nomer ||
@@ -168,9 +167,6 @@ function layerHasLatLngs(layer) {
 
   console.warn("❌ NO KEY:", feature.properties);
   return null;
-}
-
-  return String(key).trim();
 }
 
   async function apiGetPlot(plotKey) {
