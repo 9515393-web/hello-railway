@@ -103,38 +103,15 @@
   // KEY = КАДАСТР (главное)
   // ===============================
   function getPlotKey(feature) {
-  const props = feature?.properties || {};
+  const text = feature?.properties?.card_final || "";
 
-  // 🔥 ищем ВСЕ возможные поля
-  let text =
-    props.card_final ||
-    props.cardFinal ||
-    props.description ||
-    props.desc ||
-    props.text ||
-    "";
-
-  text = String(text);
-
-  // если вдруг объект
-  if (typeof text === "object") {
-    text = JSON.stringify(text);
-  }
-
-  text = text
-    .replace(/\n/g, " ")
-    .replace(/\r/g, " ")
-    .replace(/\s+/g, " ");
-
-  // 🔥 ищем кадастр
-  const match = text.match(/\d{2}:\d{2}:\d{3,}:\d+/);
+  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
 
   if (match) {
     return match[0];
   }
 
-  console.warn("❌ Ключ не найден:", text);
-
+  console.warn("❌ Кадастровый номер не найден:", feature.properties);
   return null;
 }
   // ===============================
