@@ -168,6 +168,7 @@ async def get_all_plots(request: Request):
             "plot_key": row["plot_key"],
             "fio": row["fio"],
             "phone": row["phone"],
+            "email": row["email"],
             "note": row["note"],
             "voted": row["voted"]
         }
@@ -185,23 +186,25 @@ async def get_plot_data(plot_key: str, request: Request):
     conn = await asyncpg.connect(DATABASE_URL)
 
     row = await conn.fetchrow(
-        """
-        SELECT plot_key, fio, phone, note
-        FROM plot_cards
-        WHERE plot_key = $1
-        """,
-        plot_key
-    )
+    """
+    SELECT plot_key, fio, phone, email, note, voted
+    FROM plot_cards
+    WHERE plot_key = $1
+    """,
+    plot_key
+)
 
     await conn.close()
 
-    if not row:
-        return {
-            "plot_key": plot_key,
-            "fio": None,
-            "phone": None,
-            "note": None
-        }
+   if not row:
+    return {
+        "plot_key": plot_key,
+        "fio": None,
+        "phone": None,
+        "email": None,
+        "note": None,
+        "voted": False
+    }
 
     return dict(row)
 
@@ -238,14 +241,8 @@ async def save_plot_data(plot_key: str, data: PlotDataIn, request: Request):
             data.note,
             data.voted
         )
-
     finally:
         await conn.close()
-
-    return {
-        "status": "ok",
-        "plot_key": plot_key
-    }
 
     return {
         "status": "ok",
