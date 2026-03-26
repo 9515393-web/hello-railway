@@ -85,67 +85,40 @@
 <script>
 (function () {
 
+  const API_BASE = ""; // если карта открывается с Railway — оставить пусто
+
+  const map = L.map("map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
   // ===============================
-  // SAFE ID (фикс для :)
+  // HELPERS
   // ===============================
   function safeId(key) {
     return String(key).replace(/[^a-zA-Z0-9_-]/g, "_");
   }
 
-  // ===============================
-  // ПРОВЕРКИ GEO
-  // ===============================
-  function hasGeometry(feature) {
-    const g = feature?.geometry;
-    if (!g) return false;
-
-    const coords = g.coordinates;
-    if (!coords) return false;
-
-    if (!Array.isArray(coords)) return false;
-    if (coords.length === 0) return false;
-
-    return true;
-  }
-
-  function isLandParcel(feature) {
-    if (!hasGeometry(feature)) return false;
-
-    const raw = String(feature?.properties?.card_final || "");
-    const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
-
-    if (!m) return false;
-    return Number(m[1]) >= 400;
-  }
-
-  function layerHasLatLngs(layer) {
-    if (!layer || !layer.getLatLngs) return false;
-
-    let ll;
-    try { ll = layer.getLatLngs(); } catch (e) { return false; }
-
-    if (!Array.isArray(ll) || ll.length === 0) return false;
-
-    const a0 = ll[0];
-    if (!Array.isArray(a0) || a0.length === 0) return false;
-
-    if (Array.isArray(a0[0])) {
-      return Array.isArray(a0[0]) && a0[0].length > 0;
-    }
-
-    return true;
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   // ===============================
-  // КЛЮЧ = КАДАСТР
+  // KEY = КАДАСТР (СТАБИЛЬНО!)
   // ===============================
   function getPlotKey(feature) {
-    const text = feature?.properties?.card_final || "";
 
-    const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+    const text = String(feature?.properties?.card_final || "");
+
+    // нормализация (убираем переносы)
+    const clean = text.replace(/\s+/g, " ");
+
+    const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
 
     if (match) return match[0];
 
+    console.warn("❌ Кадастр не найден:", feature.properties);
     return null;
   }
 
@@ -153,15 +126,17 @@
   // API
   // ===============================
   async function apiGetPlot(plotKey) {
-    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
+    const r = await fetch(`${API_BASE}/api/plot/${encodeURIComponent(plotKey)}`);
     if (!r.ok) throw new Error("GET failed");
     return await r.json();
   }
 
   async function apiSavePlot(plotKey, payload) {
-    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
+    const r = await fetch(`${API_BASE}/api/plot/${encodeURIComponent(plotKey)}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(payload)
     });
 
@@ -176,8 +151,7 @@
     return {
       address: (text.match(/Адрес:\s*([^;]+)/i) || [])[1] || "",
       cad: (text.match(/\d{2}:\d{2}:\d+:\d+/) || [])[0] || "",
-      area: (text.match(/Площадь[^0-9]*(\d+)/i) || [])[1] || "",
-      raw: text
+      area: (text.match(/Площадь[^0-9]*(\d+)/i) || [])[1] || ""
     };
   }
 
@@ -190,31 +164,34 @@
 
     return `
       <div>
+
         <div style="margin-bottom:10px;">
           <b>📍 Адрес:</b><br>${data.address}<br><br>
+
           <b>🏠 Кадастровый номер:</b><br>
           <b style="color:#2a5bd7;">${data.cad}</b><br><br>
+
           <b>📐 Площадь:</b> ${data.area} м²
         </div>
 
         <div class="edit-row">
           <label>Ф.И.О.</label>
-          <input id="fio-${sid}" type="text">
+          <input id="fio-${sid}">
         </div>
 
         <div class="edit-row">
           <label>Телефон</label>
-          <input id="phone-${sid}" type="text">
+          <input id="phone-${sid}">
         </div>
 
         <div class="edit-row">
           <label>Email</label>
-          <input id="email-${sid}" type="text">
+          <input id="email-${sid}">
         </div>
 
         <div class="edit-row">
           <label>Примечание</label>
-          <textarea id="note-${sid}" rows="3"></textarea>
+          <textarea id="note-${sid}"></textarea>
         </div>
 
         <div class="edit-row">
@@ -229,12 +206,13 @@
         </div>
 
         <div id="status-${sid}" class="status-line">${plotKey}</div>
+
       </div>
     `;
   }
 
   // ===============================
-  // СТИЛИ
+  // STYLE
   // ===============================
   function getPlotStyle(fio, phone, voted) {
 
@@ -254,11 +232,11 @@
   }
 
   // ===============================
-  // POPUP ЛОГИКА
+  // POPUP LOGIC
   // ===============================
   function bindPopupLogic(feature, layer) {
 
-    const rawCard = String(feature?.properties?.card_final || "").trim();
+    const rawCard = String(feature?.properties?.card_final || "");
     const plotKey = getPlotKey(feature);
 
     if (!plotKey) return;
@@ -281,7 +259,7 @@
 
       const setStatus = (t) => status.textContent = t;
 
-      // LOAD
+      // ===== LOAD =====
       try {
         setStatus("⏳ загрузка...");
         const data = await apiGetPlot(plotKey);
@@ -300,7 +278,7 @@
         setStatus("❌ ошибка загрузки");
       }
 
-      // SAVE
+      // ===== SAVE =====
       save.onclick = async () => {
         try {
           setStatus("💾 сохранение...");
@@ -325,45 +303,24 @@
   }
 
   // ===============================
-  // MAP INIT
-  // ===============================
-  const map = L.map("map");
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
-  // ===============================
-  // LOAD DATA
+  // ЗАГРУЗКА ДАННЫХ
   // ===============================
   Promise.all([
     fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
-    fetch(`/api/plot/all`).then(r => r.json())
+    fetch(`${API_BASE}/api/plot/all`).then(r => r.json())
   ])
   .then(([geojson, all]) => {
 
     const layer = L.geoJSON(geojson, {
-      filter: isLandParcel,
+
       style: f => {
         const key = getPlotKey(f);
         const d = all?.[key];
         return getPlotStyle(d?.fio, d?.phone, d?.voted);
       },
-      onEachFeature: (feature, layer) => {
 
-        bindPopupLogic(feature, layer);
+      onEachFeature: bindPopupLogic
 
-        const uch = (feature?.properties?.uch_num ?? "").toString().trim();
-
-        if (uch && layerHasLatLngs(layer)) {
-          try {
-            layer.bindTooltip(String(uch), {
-              permanent: true,
-              direction: "center",
-              className: "parcel-label"
-            });
-          } catch (e) {
-            console.warn("Tooltip error:", e);
-          }
-        }
-      }
     }).addTo(map);
 
     map.fitBounds(layer.getBounds());
