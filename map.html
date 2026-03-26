@@ -100,55 +100,44 @@
   }
 
   // ===============================
-  // KEY = КАДАСТР
+  // KEY = КАДАСТР (главное)
   // ===============================
   function getPlotKey(feature) {
+    const props = feature?.properties || {};
+    const text = String(props.card_final || "").replace(/\s+/g, " ");
 
-  const props = feature?.properties || {};
+    const match = text.match(/\d{2}:\d{2}:\d{4,}:\d+/);
 
-  // 🧠 1. Берём весь текст
-  const text = String(props.card_final || "");
+    if (match) return match[0];
 
-  // 🧠 2. Нормализуем (важно!)
-  const clean = text.replace(/\s+/g, " ");
+    // fallback (редкий случай)
+    if (props.uch_num) {
+      return `2-${String(props.uch_num).trim()}`;
+    }
 
-  // 🧠 3. Ищем кадастр
-  const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
-
-  if (match) {
-    return match[0];
+    console.warn("❌ Ключ не найден:", props);
+    return null;
   }
-
-  // 🧠 4. fallback — номер участка
-  if (props.uch_num) {
-    return `2-${String(props.uch_num).trim()}`;
-  }
-
-  console.warn("❌ Ключ не найден:", props);
-  return null;
-}
 
   // ===============================
   // API
   // ===============================
   async function apiGetPlot(plotKey) {
-  const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
-  if (!r.ok) throw new Error("GET failed");
-  return await r.json();
-}
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
+    if (!r.ok) throw new Error("GET failed");
+    return await r.json();
+  }
 
-async function apiSavePlot(plotKey, payload) {
-  const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  async function apiSavePlot(plotKey, payload) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  if (!r.ok) throw new Error("POST failed");
-  return await r.json();
-}
+    if (!r.ok) throw new Error("POST failed");
+    return await r.json();
+  }
 
   // ===============================
   // PARSE
@@ -163,7 +152,7 @@ async function apiSavePlot(plotKey, payload) {
   }
 
   // ===============================
-  // SAFE ID (фикс ошибки :)
+  // SAFE ID (фикс :)
   // ===============================
   function safeId(key) {
     return String(key).replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -237,7 +226,8 @@ async function apiSavePlot(plotKey, payload) {
   // ===============================
   // POPUP LOGIC
   // ===============================
-  function bindPopupLogic(layer, feature) {
+  function bindPopupLogic(feature, layer) {
+
     const rawCard = String(feature?.properties?.card_final || "");
     const plotKey = getPlotKey(feature);
 
@@ -309,7 +299,7 @@ async function apiSavePlot(plotKey, payload) {
   // ===============================
   Promise.all([
     fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
-    fetch(`/api/plot/all`)
+    fetch(`/api/plot/all`).then(r => r.json())
   ])
   .then(([geojson, all]) => {
 
@@ -325,7 +315,7 @@ async function apiSavePlot(plotKey, payload) {
     map.fitBounds(layer.getBounds());
 
   })
-  .catch(err => console.error(err));
+  .catch(err => console.error("LOAD ERROR:", err));
 
 })();
 </script>
