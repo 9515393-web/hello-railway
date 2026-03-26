@@ -85,291 +85,286 @@
 <script>
 (function () {
 
+  // ===============================
+  // SAFE ID (фикс для :)
+  // ===============================
   function safeId(key) {
     return String(key).replace(/[^a-zA-Z0-9_-]/g, "_");
   }
 
-  const map = L.map("map");
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  // ===============================
+  // ПРОВЕРКИ GEO
+  // ===============================
+  function hasGeometry(feature) {
+    const g = feature?.geometry;
+    if (!g) return false;
 
-  function escapeHtml(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    const coords = g.coordinates;
+    if (!coords) return false;
+
+    if (!Array.isArray(coords)) return false;
+    if (coords.length === 0) return false;
+
+    return true;
   }
 
-  function cardFinalToHtml(rawCard) {
-    return escapeHtml(rawCard).replace(/\n/g, "<br>");
+  function isLandParcel(feature) {
+    if (!hasGeometry(feature)) return false;
+
+    const raw = String(feature?.properties?.card_final || "");
+    const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
+
+    if (!m) return false;
+    return Number(m[1]) >= 400;
+  }
+
+  function layerHasLatLngs(layer) {
+    if (!layer || !layer.getLatLngs) return false;
+
+    let ll;
+    try { ll = layer.getLatLngs(); } catch (e) { return false; }
+
+    if (!Array.isArray(ll) || ll.length === 0) return false;
+
+    const a0 = ll[0];
+    if (!Array.isArray(a0) || a0.length === 0) return false;
+
+    if (Array.isArray(a0[0])) {
+      return Array.isArray(a0[0]) && a0[0].length > 0;
+    }
+
+    return true;
   }
 
   // ===============================
-  // KEY = КАДАСТР (главное)
+  // КЛЮЧ = КАДАСТР
   // ===============================
   function getPlotKey(feature) {
-  const text = feature?.properties?.card_final || "";
+    const text = feature?.properties?.card_final || "";
 
-  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+    const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
 
-  if (match) {
-    return match[0];
+    if (match) return match[0];
+
+    return null;
   }
 
-  return null;
-}
   // ===============================
   // API
   // ===============================
- async function apiGetPlot(plotKey) {
-  const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
-  if (!r.ok) throw new Error("GET failed");
-  return await r.json();
-}
+  async function apiGetPlot(plotKey) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
+    if (!r.ok) throw new Error("GET failed");
+    return await r.json();
+  }
 
-async function apiSavePlot(plotKey, payload) {
-  const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  async function apiSavePlot(plotKey, payload) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  if (!r.ok) throw new Error("POST failed");
-  return await r.json();
-}
+    if (!r.ok) throw new Error("POST failed");
+    return await r.json();
+  }
+
   // ===============================
-  // PARSE
+  // PARSE карточки
   // ===============================
   function parseCard(text) {
-  return {
-    address: (text.match(/Адрес:\s*([^;]+)/i) || [])[1] || "",
-    cad: (text.match(/\d{2}:\d{2}:\d+:\d+/) || [])[0] || "",
-    area: (text.match(/Площадь[^0-9]*(\d+)/i) || [])[1] || "",
-    raw: text
-  };
-}
-
-  // ===============================
-  // SAFE ID (фикс :)
-  // ===============================
-  function safeId(key) {
-    return String(key).replace(/[^a-zA-Z0-9_-]/g, "_");
+    return {
+      address: (text.match(/Адрес:\s*([^;]+)/i) || [])[1] || "",
+      cad: (text.match(/\d{2}:\d{2}:\d+:\d+/) || [])[0] || "",
+      area: (text.match(/Площадь[^0-9]*(\d+)/i) || [])[1] || "",
+      raw: text
+    };
   }
 
   // ===============================
   // POPUP HTML
   // ===============================
   function renderPopupHtml(rawCard, plotKey) {
-  const data = parseCard(rawCard);
-  const sid = safeId(plotKey);
+    const data = parseCard(rawCard);
+    const sid = safeId(plotKey);
 
-  return `
-    <div>
-      <div style="margin-bottom:10px;">
-        <b>📍 Адрес:</b><br>${data.address}<br><br>
-        <b>🏠 Кадастровый номер:</b><br>
-        <b style="color:#2a5bd7;">${data.cad}</b><br><br>
-        <b>📐 Площадь:</b> ${data.area} м²
-      </div>
+    return `
+      <div>
+        <div style="margin-bottom:10px;">
+          <b>📍 Адрес:</b><br>${data.address}<br><br>
+          <b>🏠 Кадастровый номер:</b><br>
+          <b style="color:#2a5bd7;">${data.cad}</b><br><br>
+          <b>📐 Площадь:</b> ${data.area} м²
+        </div>
 
-      <div class="edit-row">
-        <label>Ф.И.О.</label>
-        <input id="fio-${sid}" type="text">
-      </div>
+        <div class="edit-row">
+          <label>Ф.И.О.</label>
+          <input id="fio-${sid}" type="text">
+        </div>
 
-      <div class="edit-row">
-        <label>Телефон</label>
-        <input id="phone-${sid}" type="text">
-      </div>
+        <div class="edit-row">
+          <label>Телефон</label>
+          <input id="phone-${sid}" type="text">
+        </div>
 
-      <div class="edit-row">
-        <label>Email</label>
-        <input id="email-${sid}" type="text">
-      </div>
+        <div class="edit-row">
+          <label>Email</label>
+          <input id="email-${sid}" type="text">
+        </div>
 
-      <div class="edit-row">
-        <label>Примечание</label>
-        <textarea id="note-${sid}" rows="3"></textarea>
-      </div>
+        <div class="edit-row">
+          <label>Примечание</label>
+          <textarea id="note-${sid}" rows="3"></textarea>
+        </div>
 
-      <div class="edit-row">
-        <label>
-          <input type="checkbox" id="voted-${sid}">
-          Проголосовал
-        </label>
-      </div>
+        <div class="edit-row">
+          <label>
+            <input type="checkbox" id="voted-${sid}">
+            Проголосовал
+          </label>
+        </div>
 
-      <div class="edit-actions">
-        <button class="btn btn-reload" id="reload-${sid}">♻️ Обновить</button>
-        <button class="btn btn-save" id="save-${sid}">💾 Сохранить</button>
-      </div>
+        <div class="edit-actions">
+          <button id="save-${sid}" class="btn btn-save">💾 Сохранить</button>
+        </div>
 
-      <div class="status-line" id="status-${sid}">
-        plot_key: ${escapeHtml(plotKey)}
+        <div id="status-${sid}" class="status-line">${plotKey}</div>
       </div>
-    </div>
-  `;
-}
+    `;
+  }
 
   // ===============================
-  // STYLE
+  // СТИЛИ
   // ===============================
   function getPlotStyle(fio, phone, voted) {
-  if (voted) {
-    return {
-      color: "#006400",
-      fillColor: "#00cc00",
-      fillOpacity: 0.6,
-      weight: 2
-    };
-  }
 
-  if (fio && phone) {
-    return {
-      color: "#008000",
-      fillColor: "#00cc00",
-      fillOpacity: 0.4,
-      weight: 2
-    };
-  }
+    if (voted) {
+      return { color:"#006400", fillColor:"#00cc00", fillOpacity:0.6, weight:2 };
+    }
 
-  if (fio || phone) {
-    return {
-      color: "#cc7a00",
-      fillColor: "#ff9900",
-      fillOpacity: 0.5,
-      weight: 2
-    };
-  }
+    if (fio && phone) {
+      return { color:"#008000", fillColor:"#00cc00", fillOpacity:0.4, weight:2 };
+    }
 
-  return {
-    color: "#cc0000",
-    fillColor: "#ff0000",
-    fillOpacity: 0.3,
-    weight: 2
-  };
-}
+    if (fio || phone) {
+      return { color:"#cc7a00", fillColor:"#ff9900", fillOpacity:0.5, weight:2 };
+    }
+
+    return { color:"#cc0000", fillColor:"#ff0000", fillOpacity:0.3, weight:2 };
+  }
 
   // ===============================
-  // POPUP LOGIC
+  // POPUP ЛОГИКА
   // ===============================
   function bindPopupLogic(feature, layer) {
-  const rawCard = String(feature?.properties?.card_final || "").trim();
-  const plotKey = getPlotKey(feature);
 
-  if (!plotKey) return;
+    const rawCard = String(feature?.properties?.card_final || "").trim();
+    const plotKey = getPlotKey(feature);
 
-  const sid = safeId(plotKey);
+    if (!plotKey) return;
 
-  layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
+    const sid = safeId(plotKey);
 
-  layer.on("popupopen", async (e) => {
-    const el = e.popup.getElement();
-    if (!el) return;
+    layer.bindPopup(renderPopupHtml(rawCard, plotKey));
 
-    const fio = el.querySelector(`#fio-${sid}`);
-    const phone = el.querySelector(`#phone-${sid}`);
-    const email = el.querySelector(`#email-${sid}`);
-    const note = el.querySelector(`#note-${sid}`);
-    const voted = el.querySelector(`#voted-${sid}`);
-    const save = el.querySelector(`#save-${sid}`);
-    const reload = el.querySelector(`#reload-${sid}`);
-    const status = el.querySelector(`#status-${sid}`);
+    layer.on("popupopen", async (e) => {
 
-    const setStatus = (t) => {
-      if (status) status.textContent = t;
-    };
+      const el = e.popup.getElement();
 
-    async function load() {
+      const fio = el.querySelector(`#fio-${sid}`);
+      const phone = el.querySelector(`#phone-${sid}`);
+      const email = el.querySelector(`#email-${sid}`);
+      const note = el.querySelector(`#note-${sid}`);
+      const voted = el.querySelector(`#voted-${sid}`);
+      const save = el.querySelector(`#save-${sid}`);
+      const status = el.querySelector(`#status-${sid}`);
+
+      const setStatus = (t) => status.textContent = t;
+
+      // LOAD
       try {
         setStatus("⏳ загрузка...");
         const data = await apiGetPlot(plotKey);
 
-        if (fio) fio.value = data?.fio || "";
-        if (phone) phone.value = data?.phone || "";
-        if (email) email.value = data?.email || "";
-        if (note) note.value = data?.note || "";
-        if (voted) voted.checked = data?.voted || false;
+        fio.value = data?.fio || "";
+        phone.value = data?.phone || "";
+        email.value = data?.email || "";
+        note.value = data?.note || "";
+        voted.checked = data?.voted || false;
 
         layer.setStyle(getPlotStyle(data?.fio, data?.phone, data?.voted));
+
         setStatus("✅ загружено");
       } catch (e) {
         console.error(e);
         setStatus("❌ ошибка загрузки");
       }
-    }
 
-    if (reload) {
-      reload.onclick = async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        await load();
-      };
-    }
-
-    if (save) {
-      save.onclick = async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-
+      // SAVE
+      save.onclick = async () => {
         try {
           setStatus("💾 сохранение...");
 
           await apiSavePlot(plotKey, {
-            fio: fio?.value || null,
-            phone: phone?.value || null,
-            email: email?.value || null,
-            note: note?.value || null,
-            voted: voted?.checked || false
+            fio: fio.value || null,
+            phone: phone.value || null,
+            email: email.value || null,
+            note: note.value || null,
+            voted: voted.checked
           });
 
-          layer.setStyle(getPlotStyle(fio?.value, phone?.value, voted?.checked));
+          layer.setStyle(getPlotStyle(fio.value, phone.value, voted.checked));
+
           setStatus("✅ сохранено");
         } catch (e) {
           console.error(e);
           setStatus("❌ ошибка сохранения");
         }
       };
-    }
+    });
+  }
 
-    await load();
-  });
-}
+  // ===============================
+  // MAP INIT
+  // ===============================
+  const map = L.map("map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
   // ===============================
   // LOAD DATA
   // ===============================
   Promise.all([
-  fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
-  fetch(`/api/plot/all`).then(r => r.json())
-])
+    fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
+    fetch(`/api/plot/all`).then(r => r.json())
+  ])
   .then(([geojson, all]) => {
 
     const layer = L.geoJSON(geojson, {
-  filter: isLandParcel,
-  style: f => {
-    const key = getPlotKey(f);
-    const d = all?.[key];
-    return getPlotStyle(d?.fio, d?.phone, d?.voted);
-  },
-  onEachFeature: (feature, layer) => {
-    bindPopupLogic(feature, layer);
+      filter: isLandParcel,
+      style: f => {
+        const key = getPlotKey(f);
+        const d = all?.[key];
+        return getPlotStyle(d?.fio, d?.phone, d?.voted);
+      },
+      onEachFeature: (feature, layer) => {
 
-    const uch = (feature?.properties?.uch_num ?? "").toString().trim();
-    if (uch && layerHasLatLngs(layer)) {
-      try {
-        layer.bindTooltip(String(uch), {
-          permanent: true,
-          direction: "center",
-          className: "parcel-label"
-        });
-      } catch (e) {
-        console.warn("Tooltip skipped:", uch, e);
+        bindPopupLogic(feature, layer);
+
+        const uch = (feature?.properties?.uch_num ?? "").toString().trim();
+
+        if (uch && layerHasLatLngs(layer)) {
+          try {
+            layer.bindTooltip(String(uch), {
+              permanent: true,
+              direction: "center",
+              className: "parcel-label"
+            });
+          } catch (e) {
+            console.warn("Tooltip error:", e);
+          }
+        }
       }
-    }
-  }
-}).addTo(map);
+    }).addTo(map);
 
     map.fitBounds(layer.getBounds());
 
