@@ -105,34 +105,38 @@
   function getPlotKey(feature) {
   const props = feature?.properties || {};
 
-  // 1. берём текст
-  let text = String(props.card_final || "");
+  // 🔥 ищем ВСЕ возможные поля
+  let text =
+    props.card_final ||
+    props.cardFinal ||
+    props.description ||
+    props.desc ||
+    props.text ||
+    "";
 
-  // 2. жёсткая очистка
+  text = String(text);
+
+  // если вдруг объект
+  if (typeof text === "object") {
+    text = JSON.stringify(text);
+  }
+
   text = text
     .replace(/\n/g, " ")
     .replace(/\r/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/;/g, " ");
+    .replace(/\s+/g, " ");
 
-  // 3. ищем кадастр (более мягко)
+  // 🔥 ищем кадастр
   const match = text.match(/\d{2}:\d{2}:\d{3,}:\d+/);
 
   if (match) {
     return match[0];
   }
 
-  // 4. fallback (если вдруг нет)
-  if (props.uch_num) {
-    return `2-${String(props.uch_num).trim()}`;
-  }
-
-  // 5. DEBUG (ВАЖНО)
   console.warn("❌ Ключ не найден:", text);
 
   return null;
 }
-
   // ===============================
   // API
   // ===============================
