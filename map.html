@@ -109,18 +109,40 @@
   // ===============================
   function getPlotKey(feature) {
 
-    const text = String(feature?.properties?.card_final || "");
+  const props = feature?.properties || {};
 
-    // нормализация (убираем переносы)
-    const clean = text.replace(/\s+/g, " ");
+  // 1. пробуем напрямую (если вдруг есть поле)
+  const direct =
+    props.cadastre ||
+    props.cad_num ||
+    props.kadastr;
 
-    const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
+  if (direct) return String(direct).trim();
 
-    if (match) return match[0];
+  // 2. берём текст карточки
+  const text = String(props.card_final || "");
 
-    console.warn("❌ Кадастр не найден:", feature.properties);
-    return null;
+  // 3. убираем мусор
+  const clean = text
+    .replace(/\n/g, " ")
+    .replace(/\r/g, " ")
+    .replace(/\s+/g, " ");
+
+  // 4. ловим кадастр (максимально универсально)
+  const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
+
+  if (match) {
+    return match[0];
   }
+
+  // ❗ fallback — НЕ ЛОМАЕМ КАРТУ
+  if (props.uch_num) {
+    return "fallback-" + props.uch_num;
+  }
+
+  console.warn("❌ Кадастр не найден:", props);
+  return null;
+}
 
   // ===============================
   // API
