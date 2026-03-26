@@ -185,28 +185,30 @@ async def get_plot_data(plot_key: str, request: Request):
 
     conn = await asyncpg.connect(DATABASE_URL)
 
-    row = await conn.fetchrow(
-    """
-    SELECT plot_key, fio, phone, email, note, voted
-    FROM plot_cards
-    WHERE plot_key = $1
-    """,
-    plot_key
-)
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT plot_key, fio, phone, email, note, voted
+            FROM plot_cards
+            WHERE plot_key = $1
+            """,
+            plot_key
+        )
 
-    await conn.close()
+        if not row:
+            return {
+                "plot_key": plot_key,
+                "fio": None,
+                "phone": None,
+                "email": None,
+                "note": None,
+                "voted": False
+            }
 
-   if not row:
-    return {
-        "plot_key": plot_key,
-        "fio": None,
-        "phone": None,
-        "email": None,
-        "note": None,
-        "voted": False
-    }
+        return dict(row)
 
-    return dict(row)
+    finally:
+        await conn.close()
 
 
 # ===============================
