@@ -103,21 +103,35 @@
   // KEY = КАДАСТР (главное)
   // ===============================
   function getPlotKey(feature) {
-    const props = feature?.properties || {};
-    const text = String(props.card_final || "").replace(/\s+/g, " ");
+  const props = feature?.properties || {};
 
-    const match = text.match(/\d{2}:\d{2}:\d{4,}:\d+/);
+  // 1. берём текст
+  let text = String(props.card_final || "");
 
-    if (match) return match[0];
+  // 2. жёсткая очистка
+  text = text
+    .replace(/\n/g, " ")
+    .replace(/\r/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/;/g, " ");
 
-    // fallback (редкий случай)
-    if (props.uch_num) {
-      return `2-${String(props.uch_num).trim()}`;
-    }
+  // 3. ищем кадастр (более мягко)
+  const match = text.match(/\d{2}:\d{2}:\d{3,}:\d+/);
 
-    console.warn("❌ Ключ не найден:", props);
-    return null;
+  if (match) {
+    return match[0];
   }
+
+  // 4. fallback (если вдруг нет)
+  if (props.uch_num) {
+    return `2-${String(props.uch_num).trim()}`;
+  }
+
+  // 5. DEBUG (ВАЖНО)
+  console.warn("❌ Ключ не найден:", text);
+
+  return null;
+}
 
   // ===============================
   // API
