@@ -84,91 +84,33 @@
 
 <script>
 (function () {
-
-  const API_BASE = ""; // если карта открывается с Railway — оставить пусто
-
   const map = L.map("map");
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-  // ===============================
-  // HELPERS
-  // ===============================
   function safeId(key) {
     return String(key).replace(/[^a-zA-Z0-9_-]/g, "_");
   }
 
-  function escapeHtml(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+  function hasGeometry(feature) {
+    const g = feature?.geometry;
+    const c = g?.coordinates;
+    return !!g && Array.isArray(c) && c.length > 0;
   }
 
-  // ===============================
-  // KEY = КАДАСТР (СТАБИЛЬНО!)
-  // ===============================
+  function isLandParcel(feature) {
+    if (!hasGeometry(feature)) return false;
+    const raw = String(feature?.properties?.card_final || "");
+    const m = raw.match(/Площадь\s+земельного\s+участка\s+(\d+)/i);
+    if (!m) return false;
+    return Number(m[1]) >= 400;
+  }
+
   function getPlotKey(feature) {
-
-  const props = feature?.properties || {};
-
-  // 1. пробуем напрямую (если вдруг есть поле)
-  const direct =
-    props.cadastre ||
-    props.cad_num ||
-    props.kadastr;
-
-  if (direct) return String(direct).trim();
-
-  // 2. берём текст карточки
-  const text = String(props.card_final || "");
-
-  // 3. убираем мусор
-  const clean = text
-    .replace(/\n/g, " ")
-    .replace(/\r/g, " ")
-    .replace(/\s+/g, " ");
-
-  // 4. ловим кадастр (максимально универсально)
-  const match = clean.match(/\d{2}:\d{2}:\d{4,}:\d+/);
-
-  if (match) {
-    return match[0];
+    const text = String(feature?.properties?.card_final || "");
+    const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+    return match ? match[0] : null;
   }
 
-  // ❗ fallback — НЕ ЛОМАЕМ КАРТУ
-  if (props.uch_num) {
-    return "fallback-" + props.uch_num;
-  }
-
-  console.warn("❌ Кадастр не найден:", props);
-  return null;
-}
-
-  // ===============================
-  // API
-  // ===============================
-  async function apiGetPlot(plotKey) {
-    const r = await fetch(`${API_BASE}/api/plot/${encodeURIComponent(plotKey)}`);
-    if (!r.ok) throw new Error("GET failed");
-    return await r.json();
-  }
-
-  async function apiSavePlot(plotKey, payload) {
-    const r = await fetch(`${API_BASE}/api/plot/${encodeURIComponent(plotKey)}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!r.ok) throw new Error("POST failed");
-    return await r.json();
-  }
-
-  // ===============================
-  // PARSE карточки
-  // ===============================
   function parseCard(text) {
     return {
       address: (text.match(/Адрес:\s*([^;]+)/i) || [])[1] || "",
@@ -177,43 +119,53 @@
     };
   }
 
-  // ===============================
-  // POPUP HTML
-  // ===============================
+  async function apiGetPlot(plotKey) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`);
+    if (!r.ok) throw new Error("GET failed");
+    return await r.json();
+  }
+
+  async function apiSavePlot(plotKey, payload) {
+    const r = await fetch(`/api/plot/${encodeURIComponent(plotKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error("POST failed");
+    return await r.json();
+  }
+
   function renderPopupHtml(rawCard, plotKey) {
     const data = parseCard(rawCard);
     const sid = safeId(plotKey);
 
     return `
       <div>
-
         <div style="margin-bottom:10px;">
           <b>📍 Адрес:</b><br>${data.address}<br><br>
-
           <b>🏠 Кадастровый номер:</b><br>
           <b style="color:#2a5bd7;">${data.cad}</b><br><br>
-
           <b>📐 Площадь:</b> ${data.area} м²
         </div>
 
         <div class="edit-row">
           <label>Ф.И.О.</label>
-          <input id="fio-${sid}">
+          <input id="fio-${sid}" type="text">
         </div>
 
         <div class="edit-row">
           <label>Телефон</label>
-          <input id="phone-${sid}">
+          <input id="phone-${sid}" type="text">
         </div>
 
         <div class="edit-row">
           <label>Email</label>
-          <input id="email-${sid}">
+          <input id="email-${sid}" type="text">
         </div>
 
         <div class="edit-row">
           <label>Примечание</label>
-          <textarea id="note-${sid}"></textarea>
+          <textarea id="note-${sid}" rows="3"></textarea>
         </div>
 
         <div class="edit-row">
@@ -228,48 +180,53 @@
         </div>
 
         <div id="status-${sid}" class="status-line">${plotKey}</div>
-
       </div>
     `;
   }
 
-  // ===============================
-  // STYLE
-  // ===============================
   function getPlotStyle(fio, phone, voted) {
-
     if (voted) {
-      return { color:"#006400", fillColor:"#00cc00", fillOpacity:0.6, weight:2 };
+      return { color: "#006400", fillColor: "#00cc00", fillOpacity: 0.6, weight: 2 };
     }
-
     if (fio && phone) {
-      return { color:"#008000", fillColor:"#00cc00", fillOpacity:0.4, weight:2 };
+      return { color: "#008000", fillColor: "#00cc00", fillOpacity: 0.4, weight: 2 };
     }
-
     if (fio || phone) {
-      return { color:"#cc7a00", fillColor:"#ff9900", fillOpacity:0.5, weight:2 };
+      return { color: "#cc7a00", fillColor: "#ff9900", fillOpacity: 0.5, weight: 2 };
     }
-
-    return { color:"#cc0000", fillColor:"#ff0000", fillOpacity:0.3, weight:2 };
+    return { color: "#cc0000", fillColor: "#ff0000", fillOpacity: 0.3, weight: 2 };
   }
 
-  // ===============================
-  // POPUP LOGIC
-  // ===============================
+  function addParcelLabel(layer, feature) {
+    const uch = String(feature?.properties?.uch_num || "").trim();
+    if (!uch) return;
+    if (!layer.getBounds) return;
+
+    try {
+      const center = layer.getBounds().getCenter();
+      L.marker(center, {
+        interactive: false,
+        icon: L.divIcon({
+          className: "parcel-label",
+          html: uch
+        })
+      }).addTo(map);
+    } catch (e) {
+      console.warn("label error", uch, e);
+    }
+  }
+
   function bindPopupLogic(feature, layer) {
-
-    const rawCard = String(feature?.properties?.card_final || "");
+    const rawCard = String(feature?.properties?.card_final || "").trim();
     const plotKey = getPlotKey(feature);
-
     if (!plotKey) return;
 
     const sid = safeId(plotKey);
-
-    layer.bindPopup(renderPopupHtml(rawCard, plotKey));
+    layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
 
     layer.on("popupopen", async (e) => {
-
       const el = e.popup.getElement();
+      if (!el) return;
 
       const fio = el.querySelector(`#fio-${sid}`);
       const phone = el.querySelector(`#phone-${sid}`);
@@ -279,102 +236,74 @@
       const save = el.querySelector(`#save-${sid}`);
       const status = el.querySelector(`#status-${sid}`);
 
-      const setStatus = (t) => status.textContent = t;
+      const setStatus = (t) => {
+        if (status) status.textContent = t;
+      };
 
-      // ===== LOAD =====
       try {
         setStatus("⏳ загрузка...");
         const data = await apiGetPlot(plotKey);
 
-        fio.value = data?.fio || "";
-        phone.value = data?.phone || "";
-        email.value = data?.email || "";
-        note.value = data?.note || "";
-        voted.checked = data?.voted || false;
+        if (fio) fio.value = data?.fio || "";
+        if (phone) phone.value = data?.phone || "";
+        if (email) email.value = data?.email || "";
+        if (note) note.value = data?.note || "";
+        if (voted) voted.checked = data?.voted || false;
 
         layer.setStyle(getPlotStyle(data?.fio, data?.phone, data?.voted));
-
         setStatus("✅ загружено");
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        console.error(err);
         setStatus("❌ ошибка загрузки");
       }
 
-      // ===== SAVE =====
-      save.onclick = async () => {
-        try {
-          setStatus("💾 сохранение...");
+      if (save) {
+        save.onclick = async () => {
+          try {
+            setStatus("💾 сохранение...");
+            await apiSavePlot(plotKey, {
+              fio: fio?.value || null,
+              phone: phone?.value || null,
+              email: email?.value || null,
+              note: note?.value || null,
+              voted: voted?.checked || false
+            });
 
-          await apiSavePlot(plotKey, {
-            fio: fio.value || null,
-            phone: phone.value || null,
-            email: email.value || null,
-            note: note.value || null,
-            voted: voted.checked
-          });
-
-          layer.setStyle(getPlotStyle(fio.value, phone.value, voted.checked));
-
-          setStatus("✅ сохранено");
-        } catch (e) {
-          console.error(e);
-          setStatus("❌ ошибка сохранения");
-        }
-      };
+            layer.setStyle(getPlotStyle(fio?.value, phone?.value, voted?.checked));
+            setStatus("✅ сохранено");
+          } catch (err) {
+            console.error(err);
+            setStatus("❌ ошибка сохранения");
+          }
+        };
+      }
     });
   }
 
-  function addParcelLabel(layer, feature) {
-  const uch = String(feature?.properties?.uch_num || "").trim();
-
-  if (!uch) return;
-  if (!layer.getBounds) return;
-
-  try {
-    const center = layer.getBounds().getCenter();
-
-    L.marker(center, {
-      interactive: false,
-      icon: L.divIcon({
-        className: "parcel-label",
-        html: uch
-      })
-    }).addTo(map);
-
-  } catch (e) {
-    console.warn("label error", uch, e);
-  }
-}
-
-  // ===============================
-  // ЗАГРУЗКА ДАННЫХ
-  // ===============================
   Promise.all([
     fetch("Zahozhe_final_2026.geojson").then(r => r.json()),
-    fetch(`${API_BASE}/api/plot/all`).then(r => r.json())
+    fetch(`/api/plot/all`).then(r => r.json())
   ])
-  .then(([geojson, all]) => {
+    .then(([geojson, all]) => {
+      const layer = L.geoJSON(geojson, {
+        filter: isLandParcel,
+        style: (feature) => {
+          const key = getPlotKey(feature);
+          const d = all?.[key];
+          return getPlotStyle(d?.fio, d?.phone, d?.voted);
+        },
+        onEachFeature: (feature, layer) => {
+          bindPopupLogic(feature, layer);
+          addParcelLabel(layer, feature);
+        }
+      }).addTo(map);
 
-   const layer = L.geoJSON(geojson, {
-
-  style: f => {
-    const key = getPlotKey(f);
-    const d = all?.[key];
-    return getPlotStyle(d?.fio, d?.phone, d?.voted);
-  },
-
-  onEachFeature: (feature, layer) => {
-    bindPopupLogic(feature, layer);
-    addParcelLabel(layer, feature);
-  }
-
-}).addTo(map);
-
-    map.fitBounds(layer.getBounds());
-
-  })
-  .catch(err => console.error("LOAD ERROR:", err));
-
+      const bounds = layer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
+      }
+    })
+    .catch(err => console.error("LOAD ERROR:", err));
 })();
 </script>
 </body>
