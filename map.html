@@ -324,6 +324,28 @@
     });
   }
 
+  function addParcelLabel(layer, feature) {
+  const uch = String(feature?.properties?.uch_num || "").trim();
+
+  if (!uch) return;
+  if (!layer.getBounds) return;
+
+  try {
+    const center = layer.getBounds().getCenter();
+
+    L.marker(center, {
+      interactive: false,
+      icon: L.divIcon({
+        className: "parcel-label",
+        html: uch
+      })
+    }).addTo(map);
+
+  } catch (e) {
+    console.warn("label error", uch, e);
+  }
+}
+
   // ===============================
   // ЗАГРУЗКА ДАННЫХ
   // ===============================
@@ -333,17 +355,20 @@
   ])
   .then(([geojson, all]) => {
 
-    const layer = L.geoJSON(geojson, {
+   const layer = L.geoJSON(geojson, {
 
-      style: f => {
-        const key = getPlotKey(f);
-        const d = all?.[key];
-        return getPlotStyle(d?.fio, d?.phone, d?.voted);
-      },
+  style: f => {
+    const key = getPlotKey(f);
+    const d = all?.[key];
+    return getPlotStyle(d?.fio, d?.phone, d?.voted);
+  },
 
-      onEachFeature: bindPopupLogic
+  onEachFeature: (feature, layer) => {
+    bindPopupLogic(feature, layer);
+    addParcelLabel(layer, feature);
+  }
 
-    }).addTo(map);
+}).addTo(map);
 
     map.fitBounds(layer.getBounds());
 
