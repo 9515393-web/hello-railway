@@ -11,13 +11,34 @@
   <style>
     html, body, #map { height: 100%; margin: 0; }
 
-    .leaflet-popup-content{
-      width: 420px !important;
-      max-width: 420px !important;
-      max-height: 60vh;
-      overflow-y: auto;
-      font-size: 15px;
-    }
+   .leaflet-popup-content{
+  width: 100%;
+  max-width: 420px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-size: 15px;
+}
+
+.leaflet-popup-content-wrapper{
+  max-width: 90vw;
+}
+
+/* мобильная версия */
+@media (max-width: 600px) {
+  .leaflet-popup-content-wrapper{
+    max-width: 85vw;
+  }
+
+  .leaflet-popup-content{
+    max-height: 65vh;
+    font-size: 14px;
+  }
+
+  .leaflet-popup-close-button{
+    font-size: 22px;
+    padding: 6px;
+  }
+}
 
     .popup-raw { margin-bottom: 12px; }
 
@@ -222,7 +243,14 @@
     if (!plotKey) return;
 
     const sid = safeId(plotKey);
-    layer.bindPopup(renderPopupHtml(rawCard, plotKey), { maxWidth: 9999 });
+    layer.bindPopup(renderPopupHtml(rawCard, plotKey), {
+      maxWidth: 320,
+      minWidth: 200,
+      autoPan: true,
+      keepInView: true,
+      closeButton: true,
+      offset: [0, -10]
+    });
 
     layer.on("popupopen", async (e) => {
       const el = e.popup.getElement();
