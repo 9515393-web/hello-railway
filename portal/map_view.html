@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карта участков</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+html, body, #map { height:100%; margin:0; }
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<script>
+const map = L.map("map");
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+function getPlotKey(feature) {
+  const text = String(feature?.properties?.card_final || "");
+  const match = text.match(/\d{2}:\d{2}:\d+:\d+/);
+  return match ? match[0] : null;
+}
+
+function getPlotStyle(fio, phone, voted) {
+  if (voted) return { color:"#006400", fillColor:"#00cc00", fillOpacity:0.6 };
+  if (fio && phone) return { color:"#008000", fillColor:"#00cc00", fillOpacity:0.4 };
+  if (fio || phone) return { color:"#ff9900", fillColor:"#ff9900", fillOpacity:0.5 };
+  return { color:"#cc0000", fillColor:"#ff0000", fillOpacity:0.3 };
+}
+
+Promise.all([
+  fetch("../Zahozhe_final_2026.geojson").then(r=>r.json()),
+  fetch("/api/plot/all").then(r=>r.json())
+])
+.then(([geojson, all]) => {
+
+  const layer = L.geoJSON(geojson, {
+    style: (feature) => {
+      const key = getPlotKey(feature);
+      const d = all?.[key];
+      return getPlotStyle(d?.fio, d?.phone, d?.voted);
+    },
+
+    // ❗ ВАЖНО: НЕТ popup
+    onEachFeature: (feature, layer) => {
+      layer.on("click", () => {
+        // ничего не делаем
+      });
+    }
+  }).addTo(map);
+
+  map.fitBounds(layer.getBounds());
+
+})
+.catch(err => console.error(err));
+</script>
+</body>
+</html>
