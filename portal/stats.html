@@ -112,11 +112,18 @@ grid-template-columns:1fr;
 </div>
 
 <script>
-const API_URL = "https://hello-railway-production.up.railway.app/api/stats";
-
-fetch(API_URL)
+fetch("/api/stats")
   .then(res => res.json())
   .then(data => {
+    if (data.error) {
+      console.error(data.details || data.error);
+
+      document.getElementById("total").innerText = "Ошибка";
+      document.getElementById("support").innerText = "—";
+      document.getElementById("other").innerText = "—";
+      return;
+    }
+
     const total = data.participants ?? 0;
     const support = data.support_yes ?? 0;
     const other = data.support_no ?? 0;
@@ -131,8 +138,8 @@ fetch(API_URL)
       type: "pie",
       data: {
         labels: [
-          "Поддерживают инициативу",
-          "Не поддерживают"
+          "Отмечены как участвовавшие",
+          "Не отмечены"
         ],
         datasets: [{
           data: [support, other],
