@@ -112,55 +112,45 @@ grid-template-columns:1fr;
 </div>
 
 <script>
+const API_URL = "https://hello-railway-production.up.railway.app/api/stats";
 
-const sheetID = "1lB6_E7lGqh-DiIx-x4Jy-B_z0pNWdkCvaJEftCKAjXg";
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    const total = data.participants ?? 0;
+    const support = data.support_yes ?? 0;
+    const other = data.support_no ?? 0;
 
-const url =
-`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
+    document.getElementById("total").innerText = total;
+    document.getElementById("support").innerText = support;
+    document.getElementById("other").innerText = other;
 
-fetch("/api/stats")
+    const ctx = document.getElementById("chart");
 
-.then(res => res.json())
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: [
+          "Поддерживают инициативу",
+          "Не поддерживают"
+        ],
+        datasets: [{
+          data: [support, other],
+          backgroundColor: [
+            "#2a5bd7",
+            "#cccccc"
+          ]
+        }]
+      }
+    });
+  })
+  .catch(error => {
+    console.error("Ошибка загрузки статистики:", error);
 
-.then(data => {
-
-const total = data.votes
-const support = data.people
-const other = total - support
-
-document.getElementById("total").innerText = total
-document.getElementById("support").innerText = support
-document.getElementById("other").innerText = other
-
-const ctx = document.getElementById("chart")
-
-new Chart(ctx,{
-
-type:"pie",
-
-data:{
-labels:[
-"Поддерживают инициативу",
-"Другие ответы"
-],
-
-datasets:[{
-
-data:[support,other],
-
-backgroundColor:[
-"#2a5bd7",
-"#cccccc"
-]
-
-}]
-
-}
-
-})
-
-})
-
+    document.getElementById("total").innerText = "Ошибка";
+    document.getElementById("support").innerText = "—";
+    document.getElementById("other").innerText = "—";
+  });
 </script>
 
 </div>
