@@ -1,6 +1,7 @@
 import asyncpg
 import asyncio
 import aiohttp
+from aiohttp import web
 import csv
 import secrets
 
@@ -313,6 +314,100 @@ async def get_votes_by_date(days_ago: int) -> int:
 
     await conn.close()
     return count
+
+# ===== ПУБЛИЧНАЯ СТАТИСТИКА ДЛЯ САЙТА =====
+
+async def get_public_stats():
+    # Клики по кнопке "ОПРОС"
+    clicks = await get_votes_count()
+    unique_clicks = await get_unique_users_count()
+
+    # Реальные ответы из Google Forms / Google Sheets
+    rows = await fetch_google_sheet_rows()
+
+    total_forms = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+    )
+
+    col_disagree = "Несогласие с инициативой (при наличии)"
+    col_ready = "Готовность участвовать в инициативе"
+    col_live = "Сведения о проживании на территории (по желанию)"
+
+    support_no = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+        and (r.get(col_disagree) or "").strip() != ""
+    )
+
+    support_yes = total_forms - support_no
+
+    sign_ready = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+        and (r.get(col_ready) or "").strip() != ""
+    )
+
+    live_const = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+        and "постоян" in (r.get(col_live) or "").lower()
+    )
+
+    live_season = sum(
+        1 for r in rows
+        if (r.get("Отметка времени") or "").strip() != ""
+        and "сезон" in (r.get(col_live) or "").lower()
+    )
+
+    return {
+        "participants": total_forms,
+        "support_yes": support_yes,
+        "support_no": support_no,
+        "sign_ready": sign_ready,
+        "live_const": live_const,
+        "live_season": live_season,
+        "clicks": clicks,
+        "unique_clicks": unique_clicks,
+    }
+
+
+async def stats_api(request):
+    try:
+        data = await get_public_stats()
+
+        response = web.json_response(data)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    except Exception as e:
+        print("STATS API ERROR:", repr(e))
+        return web.json_response(
+            {"error": "stats_unavailable"},
+            status=500
+        )
+
+
+async def health(request):
+    return web.Response(text="OK")
+
+
+async def start_web_server():
+    app = web.Application()
+
+    app.router.add_get("/", health)
+    app.router.add_get("/api/stats", stats_api)
+
+    port = int(os.getenv("PORT", "8080"))
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+    print(f"WEB SERVER STARTED ON PORT {port}")
+
 
 # ===== ЛОГИ РАССЫЛОК =====
 async def log_broadcast(admin_id: int, text: str, sent: int, failed: int):
@@ -1465,12 +1560,13 @@ bot = Bot(
 
 # ===== ЗАПУСК =====
 
-async def start_bot():
-
+async def main():
     await asyncio.sleep(3)
 
     try:
         await init_db()
+
+        await start_web_server()
 
         await bot.delete_webhook(drop_pending_updates=True)
 
@@ -1481,3 +1577,7 @@ async def start_bot():
     except Exception as e:
         print("BOT CRASH:", repr(e))
         await asyncio.sleep(5)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
