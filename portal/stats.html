@@ -10,8 +10,6 @@
 
 <title>Статистика опроса — Захожье</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 
 body{
@@ -34,33 +32,27 @@ padding:40px;
 }
 
 .stats-grid{
-
 display:grid;
-grid-template-columns:repeat(3,1fr);
+grid-template-columns:1fr;
 gap:20px;
 margin-bottom:40px;
-
+max-width:360px;
+margin-left:auto;
+margin-right:auto;
 }
 
 .stat-card{
-
 background:white;
 padding:25px;
 border-radius:12px;
 text-align:center;
 box-shadow:0 6px 16px rgba(0,0,0,0.08);
-
 }
 
 .stat-number{
 font-size:34px;
 font-weight:bold;
 margin-top:10px;
-}
-
-.chart-container{
-max-width:600px;
-margin:auto;
 }
 
 @media(max-width:700px){
@@ -86,7 +78,7 @@ grid-template-columns:1fr;
 
 <div class="container">
 
-<div class="stats-grid single-stat">
+<div class="stats-grid">
 
 <div class="stat-card">
 Участвовали в опросе
@@ -94,61 +86,6 @@ grid-template-columns:1fr;
 </div>
 
 </div>
-
-<div class="chart-container">
-<canvas id="chart"></canvas>
-</div>
-
-</div>
-
-<script>
-fetch("/api/stats")
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) {
-      console.error(data.details || data.error);
-
-      document.getElementById("total").innerText = "Ошибка";
-      document.getElementById("support").innerText = "—";
-      document.getElementById("other").innerText = "—";
-      return;
-    }
-
-    const total = data.participants ?? 0;
-    const support = data.support_yes ?? 0;
-    const other = data.support_no ?? 0;
-
-    document.getElementById("total").innerText = total;
-    document.getElementById("support").innerText = support;
-    document.getElementById("other").innerText = other;
-
-    const ctx = document.getElementById("chart");
-
-    new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: [
-          "Отмечены как участвовавшие",
-          "Не отмечены"
-        ],
-        datasets: [{
-          data: [support, other],
-          backgroundColor: [
-            "#2a5bd7",
-            "#cccccc"
-          ]
-        }]
-      }
-    });
-  })
-  .catch(error => {
-    console.error("Ошибка загрузки статистики:", error);
-
-    document.getElementById("total").innerText = "Ошибка";
-    document.getElementById("support").innerText = "—";
-    document.getElementById("other").innerText = "—";
-  });
-</script>
 
 </div>
 
@@ -160,7 +97,27 @@ fetch("/api/stats")
 
 </div>
 
-</div>
+<script>
+fetch("/api/stats")
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    console.log("STATS DATA:", data);
+
+    if (data.error) {
+      console.error("API error:", data);
+      document.getElementById("total").innerText = "Ошибка";
+      return;
+    }
+
+    document.getElementById("total").innerText = data.participants ?? 0;
+  })
+  .catch(function(error) {
+    console.error("Ошибка загрузки статистики:", error);
+    document.getElementById("total").innerText = "Ошибка";
+  });
+</script>
 
 </body>
 </html>
