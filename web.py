@@ -329,21 +329,40 @@ async def get_stats():
 
     conn = await asyncpg.connect(DATABASE_URL)
 
-    total_votes = await conn.fetchval(
-        "SELECT COUNT(*) FROM votes"
-    )
+    try:
+        total_plots = await conn.fetchval(
+            """
+            SELECT COUNT(*)
+            FROM plot_cards
+            """
+        )
 
-    unique_users = await conn.fetchval(
-        "SELECT COUNT(DISTINCT user_id) FROM votes"
-    )
+        voted_plots = await conn.fetchval(
+            """
+            SELECT COUNT(*)
+            FROM plot_cards
+            WHERE voted = TRUE
+            """
+        )
 
-    await conn.close()
+        not_voted_plots = await conn.fetchval(
+            """
+            SELECT COUNT(*)
+            FROM plot_cards
+            WHERE voted IS DISTINCT FROM TRUE
+            """
+        )
 
-    return {
-        "votes": total_votes,
-        "people": unique_users,
-        "target": 1600
-    }
+        return {
+            "participants": voted_plots,
+            "support_yes": voted_plots,
+            "support_no": not_voted_plots,
+            "total_plots": total_plots,
+            "target": 1600
+        }
+
+    finally:
+        await conn.close()
 
 DOCS_PATH = BASE_DOCS
 
