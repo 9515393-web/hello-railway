@@ -98,16 +98,22 @@ grid-template-columns:1fr;
 </div>
 
 <script>
-fetch("/api/stats")
+const API_URL = "/api/stats?ts=" + Date.now();
+
+fetch(API_URL)
   .then(function(response) {
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status + " " + response.statusText);
+    }
     return response.json();
   })
   .then(function(data) {
     console.log("STATS DATA:", data);
 
     if (data.error) {
+      document.getElementById("total").innerText = "Ошибка API";
+      document.getElementById("total").title = data.details || data.error;
       console.error("API error:", data);
-      document.getElementById("total").innerText = "Ошибка";
       return;
     }
 
@@ -115,7 +121,7 @@ fetch("/api/stats")
   })
   .catch(function(error) {
     console.error("Ошибка загрузки статистики:", error);
-    document.getElementById("total").innerText = "Ошибка";
+    document.getElementById("total").innerText = "Ошибка загрузки";
   });
 </script>
 
