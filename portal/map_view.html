@@ -35,7 +35,7 @@ function getPlotStyle(fio, phone, voted) {
 
 Promise.all([
   fetch("/Zahozhe_final_2026.geojson").then(r=>r.json()),
-  fetch("/api/plot/public").then(r=>r.json())
+  fetch("/api/plot/all").then(r=>r.json())
 ])
 .then(([geojson, all]) => {
 
@@ -46,6 +46,7 @@ Promise.all([
       return getPlotStyle(d?.fio, d?.phone, d?.voted);
     },
 
+    // ❗ ВАЖНО: НЕТ popup
     onEachFeature: (feature, layer) => {
       layer.on("click", () => {
         // ничего не делаем
