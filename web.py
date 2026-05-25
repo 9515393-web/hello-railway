@@ -118,9 +118,7 @@ async def portal_site():
 # ===============================
 
 @app.get("/Zahozhe_final_2026.geojson")
-async def get_geojson(request: Request):
-
-    check_admin(request)
+async def get_geojson():
 
     if not os.path.exists("Zahozhe_final_2026.geojson"):
         raise HTTPException(status_code=500, detail="GeoJSON file not found")
@@ -128,7 +126,7 @@ async def get_geojson(request: Request):
     return FileResponse(
         "Zahozhe_final_2026.geojson",
         media_type="application/geo+json",
-        filename="Zahozhe_final_2026.geojson"
+        headers={"Cache-Control": "no-store"}
     )
 
 
