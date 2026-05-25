@@ -174,6 +174,35 @@ async def get_all_plots(request: Request):
     }
 
 # ===============================
+# ПУБЛИЧНЫЕ ДАННЫЕ УЧАСТКОВ ДЛЯ КАРТЫ
+# без ФИО, телефона, email и заметок
+# ===============================
+
+@app.get("/api/plot/public")
+async def get_public_plots():
+
+    conn = await asyncpg.connect(DATABASE_URL)
+
+    try:
+        rows = await conn.fetch(
+            """
+            SELECT plot_key, voted
+            FROM plot_cards
+            """
+        )
+
+        return {
+            row["plot_key"]: {
+                "plot_key": row["plot_key"],
+                "voted": row["voted"]
+            }
+            for row in rows
+        }
+
+    finally:
+        await conn.close()
+
+# ===============================
 # ПОЛУЧИТЬ ДАННЫЕ УЧАСТКА
 # ===============================
 
